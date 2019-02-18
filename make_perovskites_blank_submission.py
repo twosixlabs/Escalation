@@ -18,6 +18,7 @@ def make_versioned_data_repo_path():
     with open('local_versioned_data_repo_path.py', 'w') as fout:
         fout.write("# This file acts as a local cache to the user's versioned dataset code\n")
         fout.write("repo_path = '%s'\n" % user_input)
+    # import the repo_path from the python file cache we just created
     from local_versioned_data_repo_path import repo_path
     return repo_path
 
@@ -27,9 +28,6 @@ def get_versioned_data_repo_directory():
         from local_versioned_data_repo_path import repo_path
     except ModuleNotFoundError:
         repo_path = make_versioned_data_repo_path()
-    # try to import after making the versioned data path.  Should also catch bad user-provided paths in make function
-    # if not repo_path:
-    #     get_versioned_data_repo_directory()
     return repo_path
 
 
