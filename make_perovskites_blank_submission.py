@@ -70,7 +70,8 @@ print("Using {} as versioned-datasets path.  Getting git commit from data there.
 file_types = get_files_of_necessary_types(versioned_datasets_repo_path)
 git_sha, git_username = get_git_info(versioned_datasets_repo_path)
 training_data_git_hash = git_sha[:7]
-# todo: they could have checked thius code out without pulling the most recent dataset using the pull script
+# NB: they could have checked this code out without pulling the most recent dataset using the pull script,
+# but that should be caught by having a stale crank number
 print("Git commit of local versioned-datasets manifest: {}.  Git username: {}".format(git_sha, git_username))
 # file name formatted like 0015.trainingdata.csv
 crank_number = os.path.basename(file_types['trainingdata']).split('.')[0]
