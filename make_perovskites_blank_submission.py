@@ -13,22 +13,23 @@ from builtins import input
 
 
 def make_versioned_data_repo_path():
-    user_input = input("Enter the path of your file: ")
+    user_input = input("Enter the absolute path of your versioned-datsets repo (e.g., /Users/nick.leiby/versioned-datasets/): ")
     assert os.path.exists(user_input), "Unable to find a versioned repo directory at:  "+str(user_input)
     with open('local_versioned_data_repo_path.py', 'w') as fout:
         fout.write("# This file acts as a local cache to the user's versioned dataset code\n")
         fout.write("repo_path = '%s'\n" % user_input)
+    from local_versioned_data_repo_path import repo_path
+    return repo_path
 
 
 def get_versioned_data_repo_directory():
-    repo_path = None
     try:
         from local_versioned_data_repo_path import repo_path
     except ModuleNotFoundError:
-        make_versioned_data_repo_path()
+        repo_path = make_versioned_data_repo_path()
     # try to import after making the versioned data path.  Should also catch bad user-provided paths in make function
-    if not repo_path:
-        get_versioned_data_repo_directory()
+    # if not repo_path:
+    #     get_versioned_data_repo_directory()
     return repo_path
 
 
@@ -46,8 +47,12 @@ def get_files_of_necessary_types(versioned_datasets_repo_path):
     # get information from the perovskite manifest for the template
     perovskite_manifest_filename = 'perovskite.manifest.yml'
 
-    with open(os.path.join(versioned_datasets_repo_path, 'manifest', perovskite_manifest_filename)) as mf:
-        perovskite_manifest = yaml.load(mf)
+    try:
+        with open(os.path.join(versioned_datasets_repo_path, 'manifest', perovskite_manifest_filename)) as mf:
+            perovskite_manifest = yaml.load(mf)
+    except FileNotFoundError:
+        print("!!\n!!\n!! Unable to find perovskites manifest.  Try changing the versioned-datasets repo path in local_versioned_data_repo_path.py or deleting the file to resolve.\n")
+        raise
 
     # the perovskite manifest should only have one each uncommented file of training data and stateset at a same time
     file_names = perovskite_manifest['files']
@@ -71,7 +76,7 @@ def get_files_of_necessary_types(versioned_datasets_repo_path):
     return file_types
 
 
-def make_submission_template_csv():
+def get_submission_template_info():
     versioned_datasets_repo_path = get_versioned_data_repo_directory()
     print("Using {} as versioned-datasets path.  Getting git commit from data there.".format(
         versioned_datasets_repo_path))
@@ -88,7 +93,11 @@ def make_submission_template_csv():
                                              'train',
                                              training_data_git_hash,
                                              git_username_no_whitespace]) + '.csv'
+    return submission_template_filename, git_username
 
+
+def make_submission_template_csv():
+    submission_template_filename, git_username = get_submission_template_info()
     # Create a submission template file in the locatin that the script was run
     with open(submission_template_filename, 'w') as fout:
         fout.write("# USERNAME: %s\n" % git_username)
