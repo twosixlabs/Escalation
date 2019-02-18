@@ -1,7 +1,12 @@
+"""
+This script creates a blank submission template.
+It relies on the user having installed the versioned datasets code, and providing a path that repo installed locally.
+The path to the versioned datasets repo is cached in local_versioned_data_repo_path.py
+"""
+
 import git
 import os
 import yaml
-import sys
 
 # handles python 2/3 compatibility
 from builtins import input
@@ -11,6 +16,7 @@ def make_versioned_data_repo_path():
     user_input = input("Enter the path of your file: ")
     assert os.path.exists(user_input), "Unable to find a versioned repo directory at:  "+str(user_input)
     with open('local_versioned_data_repo_path.py', 'w') as fout:
+        fout.write("# This file acts as a local cache to the user's versioned dataset code\n")
         fout.write("repo_path = '%s'\n" % user_input)
 
 
