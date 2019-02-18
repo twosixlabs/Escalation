@@ -8,6 +8,7 @@ import git
 import os
 import yaml
 
+from configparser import NoOptionError
 # handles python 2/3 compatibility
 from builtins import input
 
@@ -37,7 +38,13 @@ def get_git_info(versioned_datasets_repo_path):
     repo = git.Repo(versioned_datasets_repo_path)
     git_sha = repo.head.object.hexsha
     reader = repo.config_reader()
-    git_username = reader.get_value("user", "name")
+
+    try:
+        git_username = reader.get_value("user", "name")
+    except NoOptionError:
+        print("User name is not defined. Run 'git config --global user.name <uname>'")
+        exit(1)
+        
     return git_sha, git_username
 
 
