@@ -1,0 +1,5 @@
+local_versioned_data_repo_path.py
+
+# General
+.DS_Store
+.idea
