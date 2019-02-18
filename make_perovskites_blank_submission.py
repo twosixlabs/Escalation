@@ -66,13 +66,19 @@ def get_files_of_necessary_types(versioned_datasets_repo_path):
 
 
 versioned_datasets_repo_path = get_versioned_data_repo_directory()
+print("Using {} as versioned-datasets path.  Getting git commit from data there.".format(versioned_datasets_repo_path))
 file_types = get_files_of_necessary_types(versioned_datasets_repo_path)
 git_sha, git_username = get_git_info(versioned_datasets_repo_path)
 training_data_git_hash = git_sha[:7]
-state_set_git_hash = git_sha[:7]
+# todo: they could have checked thius code out without pulling the most recent dataset using the pull script
+print("Git commit of local versioned-datasets manifest: {}.  Git username: {}".format(git_sha, git_username))
 # file name formatted like 0015.trainingdata.csv
 crank_number = os.path.basename(file_types['trainingdata']).split('.')[0]
-submission_template_filename = '_'.join([crank_number, 'train', training_data_git_hash, 'stateset', state_set_git_hash]) + '.csv'
+git_username_no_whitespace = git_username.replace(' ', '')
+submission_template_filename = '_'.join([crank_number,
+                                         'train',
+                                         training_data_git_hash,
+                                         git_username_no_whitespace]) + '.csv'
 
 
 # Create a submission template file in the locatin that the script was run
