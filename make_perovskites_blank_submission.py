@@ -56,7 +56,7 @@ def get_files_of_necessary_types(versioned_datasets_repo_path):
     file_names = perovskite_manifest['files']
 
     file_types = {
-        'trainingdata': None,
+        'perovskitedata': None,
         'stateset': None,
     }
 
@@ -85,7 +85,7 @@ def get_submission_template_info():
     # but that should be caught by having a stale crank number
     print("Git commit of local versioned-datasets manifest: {}.  Git username: {}".format(git_sha, git_username))
     # file name formatted like 0015.trainingdata.csv
-    crank_number = os.path.basename(file_types['trainingdata']).split('.')[0]
+    crank_number = os.path.basename(file_types['perovskitedata']).split('.')[0]
     git_username_no_whitespace = git_username.replace(' ', '')
     submission_template_filename = '_'.join([crank_number,
                                              'train',
