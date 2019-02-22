@@ -1,3 +1,4 @@
+
 html {
   font-family: sans-serif;
   background: #eee;
@@ -83,6 +84,14 @@ nav ul li a, nav ul li span, header .action {
   margin: 1em 0;
   display: flex;
   flex-direction: column;
+  max-width: 400px;  
+}
+
+.content form input[type=text]{
+  margin: 1em 0;
+  display: flex;
+  flex-direction: column;
+  max-width: 100px;  
 }
 
 .content label {

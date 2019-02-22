@@ -37,7 +37,9 @@ def create_app(test_config=None):
         return 'Hello, World!'
 
     from . import submission
-    app.register_blueprint(submission.bp)    
+    from . import view
+    app.register_blueprint(submission.bp)
+    app.register_blueprint(view.bp)        
     db.init_app(app)
 
     return app

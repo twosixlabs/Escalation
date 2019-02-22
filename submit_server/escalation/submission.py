@@ -1,3 +1,5 @@
+# Submit a CS
+
 import pandas as pd
 import os
 import functools
@@ -6,16 +8,19 @@ from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for
 )
 from flask import current_app as app
-
 from werkzeug.utils import secure_filename
+
 from escalation.db import get_db
 from escalation.validate import validate_submission
 
-bp = Blueprint('submission', __name__)
 
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ['csv']
+
+
+
+bp = Blueprint('submission', __name__)
 
 @bp.route('/upload', methods=('GET', 'POST'))
 def upload():
@@ -35,9 +40,9 @@ def upload():
             error = "Must upload a csv file"
 
         #save temporary local copy
-        filename = os.path.join(app.config['UPLOAD_FOLDER'], csvfile.filename)
-        csvfile.save(filename)
-        error = validate_submission(filename)
+        filename = secure_filename(csvfile.filename)
+        csvfile.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        error = validate_submission(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
         if error is None:
             db.execute(

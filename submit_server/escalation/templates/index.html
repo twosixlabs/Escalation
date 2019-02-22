@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Submissions{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+<table style="width:66%">
+  <tr>
+    <th>ID</th>
+    <th>User Name</th> 
+    <th>Crank</th>
+    <th>Filename</th>
+    <th>Notes</th>
+    <th>Timestamp</th>            
+  </tr>
+{% for sub in submissions %}
+<tr>
+  <td>{{ sub['id'] }}</td>
+  <td> {{ sub['username'] }} </td>
+  <td> {{ sub['crank'] }} </td>
+  <td> {{ sub['filename'] }} </td>
+  <td> {{ sub['notes'] }} </td>
+  <td> {{ sub['created'].strftime('%Y-%m-%d') }} </tr> 
+</tr>
+{% endfor %}
+</table>
+{% endblock %}
