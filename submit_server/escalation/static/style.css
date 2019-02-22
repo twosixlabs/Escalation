@@ -14,11 +14,11 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-family: serif;
   color: #377ba8;
-  margin: 1rem 0;
+  margin: 1rem 0.5rem 1rem 0.5rem;
 }
 
 a {
-  color: #377ba8;
+    color: #3d2087;
 }
 
 hr {

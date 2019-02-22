@@ -26,6 +26,7 @@ bp = Blueprint('submission', __name__)
 def upload():
     if request.method == 'POST':
         username = request.form['username']
+        expname = request.form['expname']        
         crank = request.form['crank']
         notes = request.form['notes']        
         csvfile = request.files['csvfile']
@@ -34,6 +35,8 @@ def upload():
         error = None
         if not username:
             error = 'Username is required.'
+        if not expname:
+            error = 'Experiment name is required.'            
         elif not crank:
             error = 'Crank number is required (e.g. 0015)'
         elif not csvfile or not allowed_file(csvfile.filename):
@@ -46,8 +49,9 @@ def upload():
 
         if error is None:
             db.execute(
-                'INSERT INTO submission (username, crank, filename,notes) VALUES (?, ?, ?, ?)',
+                'INSERT INTO submission (username, expname,crank, filename,notes) VALUES (?,?, ?, ?, ?)',
                 (username,
+                 expname,
                  crank,
                  filename,
                  notes)
