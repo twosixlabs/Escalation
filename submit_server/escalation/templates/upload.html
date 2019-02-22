@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Upload CSV{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+  <form method="post">
+    <label for="username">Username</label>
+    <input name="username" id="username" required>
+    <label for="crank">Crank</label>
+    <input type="crank" name="crank" id="crank" required>
+    <label for="crank">Notes</label>
+    <input type="notes" name="notes" id="notes">
+    <input type="submit" value="Submit">
+  </form>
+{% endblock %}
