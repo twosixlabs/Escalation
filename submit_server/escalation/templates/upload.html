@@ -1,17 +1,25 @@
+
 {% extends 'base.html' %}
+
 
 {% block header %}
   <h1>{% block title %}Upload CSV{% endblock %}</h1>
 {% endblock %}
 
 {% block content %}
-  <form method="post">
+  <form method="post" enctype="multipart/form-data">
     <label for="username">Username</label>
-    <input name="username" id="username" required>
+    <input type="text" name="username" required>
+
     <label for="crank">Crank</label>
-    <input type="crank" name="crank" id="crank" required>
-    <label for="crank">Notes</label>
-    <input type="notes" name="notes" id="notes">
+    <input type="text" name="crank" required>
+
+    <label for="csvfile">CSV file</label>
+    <input type="file" name="csvfile" accept="csv" required>
+
+    <label for="notes">Notes</label>    
+    <textarea placeholder="Enter notes about your submission" name="notes" rows="10" cols="30"></textarea>
+    
     <input type="submit" value="Submit">
   </form>
 {% endblock %}

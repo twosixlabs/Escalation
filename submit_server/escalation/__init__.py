@@ -9,6 +9,9 @@ def create_app(test_config=None):
     app.config.from_mapping(
         SECRET_KEY='dev',
         DATABASE=os.path.join(app.instance_path, 'escalation.sqlite'),
+        UPLOAD_FOLDER = os.path.join(app.instance_path,'submissions'),
+        #32 MB max upload
+        MAX_CONTENT_LENGTH = 32 * 1024 * 1024        
     )
 
     if test_config is None:
@@ -20,7 +23,11 @@ def create_app(test_config=None):
 
     # ensure the instance folder exists
     try:
-        os.makedirs(app.instance_path)
+        if not os.path.exists(app.config['UPLOAD_FOLDER']):
+            print("HERE")
+            os.makedirs(app.config['UPLOAD_FOLDER'])
+        if not os.path.exists(app.instance_path):
+            os.makedirs(app.instance_path)
     except OSError:
         pass
 
@@ -31,5 +38,6 @@ def create_app(test_config=None):
 
     from . import submission
     app.register_blueprint(submission.bp)    
-    db.init_app(app)    
+    db.init_app(app)
+
     return app

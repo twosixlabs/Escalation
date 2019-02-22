@@ -2,9 +2,9 @@ DROP TABLE IF EXISTS submission;
 
 CREATE TABLE submission (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  crank TEXT NOT NULL,
   username TEXT NOT NULL,
-/* ;  filename TEXT NOT NULL, */  
+  crank TEXT NOT NULL,  
+  filename TEXT NOT NULL,
   notes TEXT,
   created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

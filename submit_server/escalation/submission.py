@@ -1,11 +1,21 @@
+import pandas as pd
+import os
 import functools
 
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for
 )
+from flask import current_app as app
 
+from werkzeug.utils import secure_filename
 from escalation.db import get_db
-bp = Blueprint('submission', __name__, url_prefix='/submission')
+from escalation.validate import validate_submission
+
+bp = Blueprint('submission', __name__)
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ['csv']
 
 @bp.route('/upload', methods=('GET', 'POST'))
 def upload():
@@ -13,26 +23,34 @@ def upload():
         username = request.form['username']
         crank = request.form['crank']
         notes = request.form['notes']        
-#TODO        filename = request.form['filename']
+        csvfile = request.files['csvfile']
         db = get_db()
 
         error = None
         if not username:
             error = 'Username is required.'
-        elif len(username) < 5:
-            error = "Username must be 5 chars or greater"
         elif not crank:
             error = 'Crank number is required (e.g. 0015)'
+        elif not csvfile or not allowed_file(csvfile.filename):
+            error = "Must upload a csv file"
 
-        #TODO: validate file
+        #save temporary local copy
+        filename = os.path.join(app.config['UPLOAD_FOLDER'], csvfile.filename)
+        csvfile.save(filename)
+        error = validate_submission(filename)
+
         if error is None:
             db.execute(
-                'INSERT INTO submission (username, crank, notes) VALUES (?, ?, ?)',
-                (username, crank, notes)
+                'INSERT INTO submission (username, crank, filename,notes) VALUES (?, ?, ?, ?)',
+                (username,
+                 crank,
+                 filename,
+                 notes)
             )
             db.commit()
-            return render_template('success.html')
-
+            
+            return render_template('success.html',username=username)
+        
         flash(error)
 
     return render_template('upload.html')
