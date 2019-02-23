@@ -116,3 +116,12 @@ input[type=submit] {
   align-self: start;
   min-width: 10em;
 }
+
+select{
+  align-self: start;
+  max-width: 10em
+}
+
+th {
+  text-align: left
+}
