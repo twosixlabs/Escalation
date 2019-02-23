@@ -26,8 +26,9 @@ def view():
     submissions = db.execute(query).fetchall()
         
     if request.method == 'POST' and 'download' in request.form:
-        metadata = [dict(sub) for sub in submissions]
-        zipfile = download_zip(app.config['UPLOAD_FOLDER'],request.form.getlist('download'), curr_crank,metadata)
+        files=request.form.getlist('download')
+        metadata = [dict(sub) for sub in submissions if sub['filename'] in files]
+        zipfile = download_zip(app.config['UPLOAD_FOLDER'],files, curr_crank,metadata)
         return send_file(os.path.join(app.config['UPLOAD_FOLDER'],zipfile),as_attachment=True)
     
     return render_template('index.html', submissions=submissions,cranks=cranks, crank=curr_crank)
