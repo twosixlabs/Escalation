@@ -11,7 +11,8 @@ def create_app(test_config=None):
         DATABASE=os.path.join(app.instance_path, 'escalation.sqlite'),
         UPLOAD_FOLDER = os.path.join(app.instance_path,'submissions'),
         #32 MB max upload
-        MAX_CONTENT_LENGTH = 32 * 1024 * 1024        
+        MAX_CONTENT_LENGTH = 32 * 1024 * 1024,
+        ADMIN_KEY='secret',
     )
 
     if test_config is None:
@@ -38,8 +39,10 @@ def create_app(test_config=None):
 
     from . import submission
     from . import view
+    from . import admin    
     app.register_blueprint(submission.bp)
-    app.register_blueprint(view.bp)        
+    app.register_blueprint(view.bp)
+    app.register_blueprint(admin.bp)            
     db.init_app(app)
 
     return app

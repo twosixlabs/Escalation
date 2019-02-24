@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block header %}
+ <h1>{% block title %}Current Crank Administration{% endblock %}</h1>
+{% endblock %}
+
+ {% block content %}
+ <p> Add new crank configuration
+   <form method="post">
+
+     {% if 'crank' in session %}
+     <label for="crank">Crank number</label>
+     <input type="text" name="crank" maxlength="4" value="{{ session['crank'] }}" required>
+     
+     <label for="stateset">Stateset hash</label>
+     <input type="text" name="stateset" maxlength="11" value="{{ session['stateset'] }}" required>
+
+     <label for="length">Stateset length</label>
+     <input type="text" name="length" value="{{ session['length'] }}" required>
+  
+     <label for="gitcommit">Git commit</label>  
+     <input type="text" name="gitcommit" value="{{ session['gitcommit'] }}" maxlength="7" required>
+  
+     <label for="admincode">Admin code</label>  
+     <input type="text" name="admincode" value="{{ session['admincode'] }}" required>
+     
+  {% else %}
+
+  <label for="crank">Crank number</label>
+  <input type="text" name="crank" maxlength="4" required>
+  
+  <label for="stateset">Stateset hash</label>
+  <input type="text" name="stateset" maxlength="11" required>
+
+  <label for="length">Stateset length</label>
+  <input type="text" name="length" required>
+  
+  <label for="gitcommit">Git commit</label>  
+  <input type="text" name="gitcommit" maxlength="7" required>
+  
+  <label for="admincode">Admin code</label>  
+  <input type="text" name="admincode" required>
+
+  {% endif %}
+  <input type="submit" value="Insert New Crank">
+ </form>
+
+ <p> Ten most recent crank records </p>
+ <table style="min-width:720px">
+  <tr>
+   <th> Crank </th>
+   <th> Stateset Hash </th>
+   <th> Stateset Length </th>
+   <th> Git commit </th>   
+   <th> Timestamp </th>
+  </tr>
+  {% for r in cranks[:10] %}
+  <tr>
+   <td> {{ r['crank'] }} </td>
+   <td> {{ r['stateset'] }} </td>
+   <td> {{ r['length'] }} </td>
+   <td> {{ r['gitcommit'] }} </td>   
+   <td> {{ r['created'].strftime("%Y-%m-%d %H:%M:%S") }} </td>
+   {% if r['Current'] == 'TRUE' %}
+   <td> <b> Current </b> </td>
+   {% endif %}
+  </tr>
+
+  {% endfor %}
+
+ </table>
+{% endblock %}

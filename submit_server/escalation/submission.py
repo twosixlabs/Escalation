@@ -49,7 +49,7 @@ def upload():
 
         if error is None:
             db.execute(
-                'INSERT INTO submission (username, expname,crank, filename,notes) VALUES (?,?, ?, ?, ?)',
+                'INSERT INTO Submission (Username, Expname,Crank, Filename,Notes) VALUES (?,?, ?, ?, ?)',
                 (username,
                  expname,
                  crank,

@@ -31,6 +31,15 @@ def init_db():
     with current_app.open_resource('schema.sql') as f:
         db.executescript(f.read().decode('utf8'))
 
+# set the 'current' status of a crank to FALSE
+
+def get_current_crank():
+    db = get_db()
+    res=db.execute('SELECT crank FROM cranks WHERE current="TRUE"').fetchall()
+    return [r['crank'] for r in res]
+    
+def set_current_crank():
+    db.execute('UPDATE cranks SET current = "TRUE" WHERE current = "TRUE"')    
 
 @click.command('init-db')
 @with_appcontext

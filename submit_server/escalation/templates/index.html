@@ -6,7 +6,7 @@
 
 {% block content %}
 <form method="post">
-<table style="width:500px">
+<table style="min-width:500px">
   <tr>
     <th></th>
     <th>Crank</th>    
@@ -18,11 +18,11 @@
 {% for sub in submissions %}
   <tr>
     <td> <input type="checkbox" name="download" value="{{ sub['filename'] }}" checked>
-    <td> {{ sub['crank'] }} </td>  
-    <td> {{ sub['username'] }} </td>
-    <td> {{ sub['expname'] }} </td>
-    <td> {{ sub['created'].strftime('%Y-%m-%d') }} </td>
-    <td> {{ sub['notes'][:20] + "..." }} </td>
+    <td> {{ sub['Crank'] }} </td>  
+    <td> {{ sub['Username'] }} </td>
+    <td> {{ sub['Expname'] }} </td>
+    <td> {{ sub['Created'].strftime('%Y-%m-%d') }} </td>
+    <td> {{ sub['Notes'][:20] + "..." }} </td>
   </tr>
 {% endfor %}
 </table>

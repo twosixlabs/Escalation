@@ -11,7 +11,7 @@ bp = Blueprint('view', __name__)
 
 def view():
     db = get_db()
-    cranks = db.execute("SELECT DISTINCT crank FROM cranks ORDER by crank DESC").fetchall()
+    cranks = db.execute("SELECT DISTINCT Crank FROM Cranks ORDER by Crank DESC").fetchall()
     cranks = [ x['crank'] for x in cranks]
 
     curr_crank = "all"
@@ -19,9 +19,9 @@ def view():
         curr_crank = request.form['crank']
 
     if curr_crank != 'all':
-        query = "SELECT id, username, expname, crank, filename, notes, created FROM submission WHERE crank = '%s' ORDER BY created DESC" % curr_crank
+        query = "SELECT id, Username, Expname, Crank, Filename, Notes, Created FROM Submission WHERE Crank = '%s' ORDER BY Created DESC" % curr_crank
     else:
-        query = "SELECT id, username, expname, crank, filename, notes, created FROM submission ORDER BY created DESC"
+        query = "SELECT id, username, Expname, Crank, Filename, Notes, Created FROM Submission ORDER BY Created DESC"
 
     submissions = db.execute(query).fetchall()
         
