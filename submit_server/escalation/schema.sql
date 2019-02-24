@@ -16,15 +16,15 @@ CREATE TABLE Cranks (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   Crank TEXT NOT NULL,
   Stateset TEXT NOT NULL,
-  Length INT NOT NULL,
+  Filename TEXT NOT NULL,
   Gitcommit TEXT NOT NULL,
   Current BOOL DEFAULT FALSE,
   Created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO Cranks (Crank,Stateset,Length,Gitcommit,Current,Created) VALUES ("0001", "aaaaaaaaaaa","10","abc1111",'FALSE','2019-02-19 05:04:56.200');
-INSERT INTO Cranks (Crank,Stateset,Length,Gitcommit,Current,Created) VALUES ("0002", "aaaaaaaaaab","10","abc2222",'FALSE','2019-02-20 10:20:56.200');
-INSERT INTO Cranks (Crank,Stateset,Length,Gitcommit,Current,Created) VALUES ("0002", "aaaaaaaaaac","10","abc3333",'TRUE', '2019-02-21 15:18:56.200');
+INSERT INTO Cranks (Crank,Stateset,Filename,Gitcommit,Current,Created) VALUES ("0001", "aaaaaaaaaaa","0001.csv","abc1111",'FALSE','2019-02-19 05:04:56.200');
+INSERT INTO Cranks (Crank,Stateset,Filename,Gitcommit,Current,Created) VALUES ("0002", "aaaaaaaaaab","0001.csv","abc2222",'FALSE','2019-02-20 10:20:56.200');
+INSERT INTO Cranks (Crank,Stateset,Filename,Gitcommit,Current,Created) VALUES ("0002", "aaaaaaaaaac","0002.csv","abc3333",'TRUE', '2019-02-21 15:18:56.200');
 
 INSERT into Submission (Username, Expname, Crank, Filename, Notes) VALUES ("snovot","first","0001","abc.csv","test test");
 INSERT into Submission (Username, Expname, Crank, Filename, Notes) VALUES ("snovot","second","0001","abc1.csv","test test");
