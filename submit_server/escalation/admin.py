@@ -3,6 +3,7 @@ BAD_DELIMITERS = set('\t, |.') - set(DELIMITER)  # common delimiters that are di
 import os
 import pandas as pd
 import hashlib
+
 def md5(fname):
     hash_md5 = hashlib.md5()
     with open(fname, "rb") as f:
@@ -18,13 +19,14 @@ from flask import current_app as app
 from werkzeug.utils import secure_filename
 from escalation.db import get_db
 
+session_vars= ('githash','adminkey','username')
 # check that admin key is correct, git commit is 7 digits and csv file is the right format
-def validate(admincode,gitcommit,filename):
-    if admincode != app.config['ADMIN_KEY']:
-        return "Wrong admin code"
+def validate(adminkey,githash,filename):
+    if adminkey != app.config['ADMIN_KEY']:
+        return "Wrong admin key"
     
-    if len(gitcommit) != 7:
-        return "Git commit hash is not 7 characters (current length is %d)" % len(gitcommit)
+    if len(githash) != 7:
+        return "Git commit hash is not 7 characters (current length is %d)" % len(githash)
 
     #make sure file is comma  delimited
     with open(filename, 'r') as fh:
@@ -53,34 +55,34 @@ def admin():
     error = None
     
     if request.method == 'GET':
-        for key in ('gitcommit','admincode'):
+        for key in session_vars:
             session.pop(key,None)
                 
     if request.method == 'POST':
         print(request.form)
         print(request.files['csvfile'].filename)
         #save form values to pre-populate if there's an error so user saves time
-        for key in ('gitcommit','admincode'):
+        for key in session_vars:
             session[key] = request.form[key]
 
         csvfile = request.files['csvfile']
+        username = request.form['username']        
         filename = secure_filename(csvfile.filename)
         outfile = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        gitcommit = request.form['gitcommit']            
+        githash = request.form['githash']            
         csvfile.save(outfile)
 
-        error = validate(request.form['admincode'],gitcommit,outfile)
+        error = validate(request.form['adminkey'],githash,outfile)
 
         if error == None:
             crank, stateset = get_metadata(outfile)
-            print("Crank",crank)
             #check if row already in table
-            res=db.execute('SELECT Created FROM Cranks WHERE Stateset=? AND Gitcommit=?',
-                           (stateset, gitcommit)
+            res=db.execute('SELECT Created FROM Cranks WHERE Stateset=? AND Githash=?',
+                           (stateset, githash)
             ).fetchall()
         
             if len(res) > 0:
-                error = "State hash %s and git commit %s already in db. Created on %s" % (stateset,gitcommit, ",".join(r['created'].strftime("%Y-%m-%d") for r in res))
+                error = "State hash %s and git commit %s already in db. Created on %s" % (stateset,githash, ",".join(r['created'].strftime("%Y-%m-%d") for r in res))
         
         if error == None:
             #expire all other current cranks since we're updating to this one
@@ -88,17 +90,23 @@ def admin():
             
             #insert new entry
             db.execute(
-                'INSERT INTO Cranks (Crank,Stateset,Filename,Gitcommit,Current)'
-                'VALUES (?,?,?,?,?)',
+                'INSERT INTO Cranks (Crank,Stateset,Filename,Githash,Username,Current)'
+                'VALUES (?,?,?,?,?,?)',
                 (crank,
                  stateset,
                  filename, #not outfile since thats absolute path
-                 gitcommit,
+                 githash,
+                 username,
                  "TRUE") #true is current
-            ) 
+            )
+
+            db.execute('DELETE FROM Stateset')
+            
             db.commit()
             
-            for key in ('gitcommit','admincode'):
+            
+            
+            for key in session_vars:
                 session.pop(key,None)
                 
             flash("Successfully added crank info")

@@ -22,8 +22,8 @@ def allowed_file(filename):
 
 bp = Blueprint('submission', __name__)
 
-@bp.route('/upload', methods=('GET', 'POST'))
-def upload():
+@bp.route('/submission', methods=('GET', 'POST'))
+def submission():
     if request.method == 'POST':
         username = request.form['username']
         expname = request.form['expname']        
@@ -47,6 +47,9 @@ def upload():
         csvfile.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         error = validate_submission(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
+        for key in ('username','expname','crank','notes'):
+            session[key] = request.form[key]
+        
         if error is None:
             db.execute(
                 'INSERT INTO Submission (Username, Expname,Crank, Filename,Notes) VALUES (?,?, ?, ?, ?)',
@@ -57,9 +60,11 @@ def upload():
                  notes)
             )
             db.commit()
+            for key in ('username','expname','crank','notes'):
+                session.pop(key,None)
             
             return render_template('success.html',username=username)
         
         flash(error)
 
-    return render_template('upload.html')
+    return render_template('submission.html',session=session)

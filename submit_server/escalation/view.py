@@ -14,6 +14,10 @@ def view():
     cranks = db.execute("SELECT DISTINCT Crank FROM Cranks ORDER by Crank DESC").fetchall()
     cranks = [ x['crank'] for x in cranks]
 
+    if 'username' in g:
+        print("Here")
+        flash(g.username)
+        
     curr_crank = "all"
     if request.method == 'POST' and 'crank' in request.form:
         curr_crank = request.form['crank']

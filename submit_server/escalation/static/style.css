@@ -84,19 +84,19 @@ nav ul li a, nav ul li span, header .action {
   margin: 1em 0;
   display: flex;
   flex-direction: column;
-  max-width: 400px;  
+  max-width: 500px;  
 }
 
 .content form input[type=text]{
   margin: 1em 0;
   display: flex;
   flex-direction: column;
-  max-width: 100px;  
+  max-width: 200px;  
 }
 
 .content label {
   font-weight: bold;
-  margin-bottom: 0.5em;
+  margin-top: 0.1em;
 }
 
 .content input, .content textarea {
@@ -124,4 +124,22 @@ select{
 
 th {
   text-align: left
+}
+
+
+pre {
+    background: #f4f4f4;
+    border: 1px solid #ddd;
+    border-left: 3px solid #f36d33;
+    color: #666;
+    page-break-inside: avoid;
+    font-family: monospace;
+    font-size: 15px;
+    line-height: 1.6;
+    margin-bottom: 1.6em;
+    max-width: 100%;
+    overflow: auto;
+    padding: 1em 1.5em;
+    display: block;
+    word-wrap: break-word;
 }

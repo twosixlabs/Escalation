@@ -1,33 +1,41 @@
 {% extends 'base.html' %}
 
 {% block header %}
- <h1>{% block title %}Current Crank Administration{% endblock %}</h1>
+ <h1>{% block title %}Crank Administration{% endblock %}</h1>
 {% endblock %}
 
  {% block content %}
 <p> Add new crank configuration </p>
-<p>CSV format is "dataset,name,_rxn_M_inorganic,_rxn_M_organic"</p>
+<p>Expected CSV format is "dataset,name,_rxn_M_inorganic,_rxn_M_organic"</p>
+<p>You can also run</p>
+<pre>python3 escalation/submit_server/scripts/upload_stateset.py  path_to_versioned_repo </pre>
    <form method="post" enctype="multipart/form-data">
 
-     {% if 'crank' in session %}
+     {% if 'githash' in session %}
      <label for="csvfile">CSV file</label>
      <input type="file" name="csvfile" accept="csv" required>
      
-     <label for="gitcommit">Git commit</label>  
-     <input type="text" name="gitcommit" value="{{ session['gitcommit'] }}" maxlength="7" required>
+     <label for="username">User name</label>  
+     <input type="text" name="username" value="{{ session['username'] }}" required>
 
-     <label for="admincode">Admin code</label>  
-     <input type="text" name="admincode" value="{{ session['admincode'] }}" required>
+     <label for="githash">Git commit (7 chars)</label>  
+     <input type="text" name="githash" value="{{ session['githash'] }}" maxlength="7" required>
+
+     <label for="adminkey">Admin code</label>  
+     <input type="text" name="adminkey" value="{{ session['adminkey'] }}" required>
      
      {% else %}
      <label for="csvfile">CSV file</label>
      <input type="file" name="csvfile" accept="csv" required>
+
+     <label for="username">User name</label>  
+     <input type="text" name="username" required>
      
-     <label for="gitcommit">Git commit</label>  
-     <input type="text" name="gitcommit" maxlength="7" required>
+     <label for="githash">Git commit (7 chars)</label>  
+     <input type="text" name="githash" maxlength="7" required>
   
-     <label for="admincode">Admin code</label>  
-     <input type="text" name="admincode" required>
+     <label for="adminkey">Admin code</label>  
+     <input type="text" name="adminkey" required>
 
      {% endif %}
   <input type="submit" value="Update current crank">
@@ -38,14 +46,16 @@
   <tr>
    <th> Crank </th>
    <th> Stateset Hash </th>
-   <th> Git commit </th>   
+   <th> Git commit </th>
+   <th> Uploader </th>
    <th> Timestamp </th>
   </tr>
   {% for r in cranks[:10] %}
   <tr>
    <td> {{ r['crank'] }} </td>
    <td> {{ r['stateset'] }} </td>
-   <td> {{ r['gitcommit'] }} </td>   
+   <td> {{ r['githash'] }} </td>
+   <td> {{ r['username'] }} </td>
    <td> {{ r['created'].strftime("%Y-%m-%d %H:%M:%S") }} </td>
    {% if r['Current'] == 'TRUE' %}
    <td> <b> Current </b> </td>
