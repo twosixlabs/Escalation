@@ -1,20 +1,27 @@
+import hashlib
 import tempfile
-import sys
 import os
 import git
 import yaml
 import requests
 import pandas as pd
+import argparse
 
-ADMIN_KEY='secret'
-ENDPOINT = 'http://127.0.0.1:5000/admin'
 
-#TODO: replace with opt
-if len(sys.argv) > 2:
-    ADMIN_KEY = sys.argv[2]
-if len(sys.argv) > 3:
-    ENDPOINT = sys.argv[3]
-    
+parser = argparse.ArgumentParser()
+parser.add_argument('--endpoint',help="Rest endpoint",default='http://127.0.0.1:5000/admin')
+parser.add_argument('--data',help="verisoned data path",default='../../versioned-datasets')
+parser.add_argument('--key',help="admin secret key",default='secret')
+args=parser.parse_args()
+
+# compute md5 hash using small chunks
+def md5(fname):
+    hash_md5 = hashlib.md5()
+    with open(fname, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+
 def get_files_of_necessary_types(versioned_datasets_repo_path):
     # get information from the perovskite manifest for the template
     perovskite_manifest_filename = 'perovskite.manifest.yml'
@@ -61,19 +68,27 @@ def get_git_info(versioned_datasets_repo_path):
         
     return git_sha, git_username
 
-git_sha, git_username = get_git_info(sys.argv[1])
-files = get_files_of_necessary_types(sys.argv[1])
+git_sha, git_username = get_git_info(args.data)
+files = get_files_of_necessary_types(args.data)
 
 csvfile=tempfile.mkstemp()[1]
-stateset = os.path.join(sys.argv[1],'data','perovskite',files['stateset'])
+stateset = os.path.join(args.data,'data','perovskite',files['stateset'])
+crank = os.path.basename(files['perovskitedata']).split('.')[0]
 print("Filtering",stateset,"to",csvfile)
 
 #TODO: turn into a file and reduce I/O
 df = pd.read_csv(stateset,comment='#')
-df[['dataset','name','_rxn_M_inorganic','_rxn_M_organic']].to_csv(csvfile,index=False)
+df = df[['dataset','name','_rxn_M_inorganic','_rxn_M_organic']]
+df['dataset'] = md5(stateset)[:11]
+df.to_csv(csvfile,index=False)
 
 #TODO:manipulate stateset
-print("Pushing filtered csv to",ENDPOINT)
-r = requests.post(ENDPOINT, headers={'User-Agent':'escalation'},data={'user':git_username,'githash':git_sha[:7], 'adminkey':ADMIN_KEY},files={'csvfile':open(csvfile,'rb')})
+print("Pushing filtered csv to",args.endpoint)
+
+r = requests.post(args.endpoint, headers={'User-Agent':'escalation'},data={'crank':crank,'githash':git_sha[:7], 'username':git_username,'adminkey':args.key},
+                  files={'csvfile':open(csvfile,'rb')})
 print(r.status_code, r.reason,r)
-print(r.json())
+try:
+    print(r.json())
+except:
+    pass

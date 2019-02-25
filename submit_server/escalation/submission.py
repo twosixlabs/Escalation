@@ -10,7 +10,7 @@ from flask import (
 from flask import current_app as app
 from werkzeug.utils import secure_filename
 
-from escalation.db import add_submission, get_current_crank
+from escalation import db
 from escalation.validate import validate_submission
 
 
@@ -24,8 +24,10 @@ bp = Blueprint('submission', __name__)
 
 @bp.route('/submission', methods=('GET', 'POST'))
 def submission():
+    curr_crank = db.get_current_crank()
+    curr_stateset = db.get_stateset()[0]['stateset']
+    
     if request.method == 'POST':
-
         for key in ('username','expname','crank','notes'):
             session[key] = request.form[key]
 
@@ -34,7 +36,6 @@ def submission():
         crank    = request.form['crank']
         notes    = request.form['notes']        
         csvfile  = request.files['csvfile']
-        curr_crank = get_current_crank()
         error = None
         if not username:
             error = 'Username is required.'
@@ -56,12 +57,13 @@ def submission():
         if error:
             flash(error)
         else:
-            add_submission(username,expname,crank,filename,notes)
-            
+            db.add_submission(username,expname,crank,filename,notes)
+
             #clear out session
             for key in ('username','expname','crank','notes'):
                 session.pop(key,None)
                 
             return render_template('success.html',username=username)
 
-    return render_template('submission.html',session=session)
+        
+    return render_template('submission.html',session=session,crank=curr_crank,stateset=curr_stateset)

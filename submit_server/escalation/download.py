@@ -9,12 +9,10 @@ def download_zip(basedir,files,pfx="",metadata=[]):
     tmpdir = mkdtemp()
 
     df = pd.DataFrame(metadata)
-    print("Creating metadat",df)
     df.to_csv(os.path.join(tmpdir,'metadata.csv'),index=False)
 
     
     for f in files:
-        print(f)
         id = df[df.Filename == f]['id'].values[0]
         shutil.copy(os.path.join(basedir,f), os.path.join(tmpdir,"%s_%s" % (id,f)))
 

@@ -5,9 +5,10 @@
 {% endblock %}
 
  {% block content %}
-<p> Add new crank configuration </p>
-<p>Expected CSV format is "dataset,name,_rxn_M_inorganic,_rxn_M_organic"</p>
-<p>You can also run</p>
+<h1> Add new crank configuration </h1>
+<p>Expected CSV format is </p>
+<pre>dataset,name,_rxn_M_inorganic,_rxn_M_organic</pre>
+<p>Instead of manually uploading here, you can also run</p>
 <pre>python3 escalation/submit_server/scripts/upload_stateset.py  path_to_versioned_repo </pre>
    <form method="post" enctype="multipart/form-data">
 
@@ -47,9 +48,11 @@
   <input type="submit" value="Update current crank">
  </form>
 
- <p> Ten most recent crank records </p>
+<h1> Ten most recent crank records </h1>
+<form method="post">
  <table style="min-width:720px">
-  <tr>
+   <tr>
+     <th></th>
    <th> Crank </th>
    <th> Stateset Hash </th>
    <th> Git commit </th>
@@ -57,7 +60,8 @@
    <th> Timestamp </th>
   </tr>
   {% for r in cranks[:10] %}
-  <tr>
+   <tr>
+    <td> <input type="radio" name="new_stateset" value="{{ r['id'] }}" > </td>    
    <td> {{ r['crank'] }} </td>
    <td> {{ r['stateset'] }} </td>
    <td> {{ r['githash'] }} </td>
@@ -69,6 +73,10 @@
   </tr>
 
   {% endfor %}
-
  </table>
+ <label for="adminkey">Admin code</label>  
+ <input type="text" name="adminkey" required>
+ 
+ <input type="submit" value="Roll back Stateset">
+ </form>
 {% endblock %}

@@ -6,7 +6,11 @@
   <h1>{% block title %}Upload CSV{% endblock %}</h1>
 {% endblock %}
 
-{% block content %}
+  {% block content %}
+
+  <h3>Current crank: {{ crank }}</h3>
+  <h3>Current stateset: {{ stateset }}</h3>
+  
   <form method="post" enctype="multipart/form-data">
 
     {% if 'crank' in session %}

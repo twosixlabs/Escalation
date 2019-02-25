@@ -25,7 +25,6 @@ def create_app(test_config=None):
     # ensure the instance folder exists
     try:
         if not os.path.exists(app.config['UPLOAD_FOLDER']):
-            print("HERE")
             os.makedirs(app.config['UPLOAD_FOLDER'])
         if not os.path.exists(app.instance_path):
             os.makedirs(app.instance_path)

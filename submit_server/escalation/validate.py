@@ -46,7 +46,7 @@ def validate_submission(f,num_rows=10,statespace=None):
     
     cols = df.columns
     if len(cols) != len(COLUMNS):
-        arr.append("Extra columns in uploaded CSV.<br/> expected: '%s'" % " , ".join(COLUMNS))
+        arr.append(",".join(cols) + "Extra columns in uploaded CSV.<br/> expected: '%s'" % " , ".join(COLUMNS))
         return arr2html(arr)
     
     for i, col in enumerate(cols):

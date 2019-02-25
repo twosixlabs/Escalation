@@ -37,10 +37,6 @@ def get_current_crank():
     res=db.execute('SELECT crank FROM cranks WHERE current="TRUE"').fetchone()
     return res['crank']
     
-def set_current_crank():
-    db = get_db()
-    db.execute('UPDATE cranks SET current = "TRUE" WHERE current = "TRUE"')    
-
 def get_cranks():
     db = get_db()
     cranks = db.execute("SELECT DISTINCT Crank FROM Cranks ORDER by Crank DESC").fetchall()
@@ -55,7 +51,32 @@ def get_submissions(crank='all'):
 
     return db.execute(query).fetchall()
 
-def set_stateset(crank, stateset,filename,githash,username):
+def set_stateset(set_id):
+    db = get_db()
+    #expire all other current cranks since we're updating to this one
+    db.execute('UPDATE Cranks SET Current = "FALSE" WHERE Current = "TRUE"')
+    db.execute("UPDATE Cranks SET Current = 'TRUE' WHERE id='%s'" % set_id)
+    res = db.execute("SELECT * FROM Cranks WHERE id='%s'" % set_id).fetchone()
+
+    
+    df = pd.read_csv(res['filename'],dtype = {'dataset': str,'name': str,'_rxn_M_inorganic': str,'_rxn_M_organic': str},comment='#')
+
+    db.execute("DELETE FROM Stateset")
+    
+    for i, r in df.iterrows():
+        db.execute('INSERT INTO Stateset (crank,stateset,dataset, name, _rxn_M_inorganic, _rxn_M_organic)'
+                   'VALUES (?,?,?,?,?,?)',
+                   (res['crank'],
+                    res['stateset'],
+                    r['dataset'],
+                    r['name'],
+                    r['_rxn_M_inorganic'],
+                    r['_rxn_M_organic'])
+                   )
+    db.commit()
+    return len(df)
+
+def add_stateset(crank, stateset,filename,githash,username):
     db = get_db()
     
     #expire all other current cranks since we're updating to this one
@@ -74,8 +95,8 @@ def set_stateset(crank, stateset,filename,githash,username):
     )
 
 
-    df = pd.read_csv(filename,dtype = {'dataset': str,'name': str,'_rxn_M_inorganic': str,'_rxn_M_organic': str})
-
+    df = pd.read_csv(filename,dtype = {'dataset': str,'name': str,'_rxn_M_inorganic': str,'_rxn_M_organic': str},comment='#')
+    db.execute("DELETE FROM Stateset")
     for i, r in df.iterrows():
         db.execute('INSERT INTO Stateset (crank,stateset,dataset, name, _rxn_M_inorganic, _rxn_M_organic)'
                    'VALUES (?,?,?,?,?,?)',
@@ -89,9 +110,12 @@ def set_stateset(crank, stateset,filename,githash,username):
     db.commit()
     return len(df)
 
-def get_stateset():
+def get_stateset(id=None):
     db = get_db()
-    return db.execute("SELECT * FROM Stateset ORDER by name DESC").fetchall()
+    if id:
+        return db.execute("SELECT * FROM Cranks WHERE id='%s'" % id).fetchone()
+    else:
+        return db.execute("SELECT * FROM Cranks WHERE Current='TRUE'").fetchall()    
 
 def get_cranks():
     db = get_db()

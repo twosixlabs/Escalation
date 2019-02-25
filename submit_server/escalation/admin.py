@@ -4,20 +4,12 @@ import os
 import pandas as pd
 import hashlib
 
-def md5(fname):
-    hash_md5 = hashlib.md5()
-    with open(fname, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            hash_md5.update(chunk)
-    return hash_md5.hexdigest()
-
-
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for, jsonify
 )
 from flask import current_app as app
 from werkzeug.utils import secure_filename
-from escalation.db import get_db, get_cranks, is_stateset_stored, set_stateset, get_stateset
+from escalation.db import get_db, get_cranks, is_stateset_stored, set_stateset, get_stateset, add_stateset
 
 session_vars= ('githash','adminkey','username','crank')
 # check that admin key is correct, git commit is 7 digits and csv file is the right format
@@ -44,9 +36,6 @@ bp = Blueprint('admin',__name__)
 @bp.route('/admin', methods=('GET','POST'))
 def admin():
 
-    #TODO
-    for r in get_stateset():
-        print(r['dataset'],r['name'],r['_rxn_M_inorganic'],r['_rxn_M_organic'])
     error = None
     
     if request.method == 'GET':
@@ -54,7 +43,7 @@ def admin():
         for key in session_vars:
             session.pop(key,None)
                 
-    if request.method == 'POST':
+    if request.method == 'POST' and 'username' in request.form:
         #save form values to pre-populate if there's an error so user saves time
         for key in session_vars:
             session[key] = request.form[key]
@@ -70,26 +59,37 @@ def admin():
         error = validate(request.form['adminkey'],githash,outfile)
 
         if error == None:
-            stateset = md5(outfile)[:11]
+            df = pd.read_csv(outfile,comment='#')
+            stateset = str(df['dataset'][0])
             #check if stateset hash was already stored
-            #TODOerror = is_stateset_stored(stateset)
+            error = is_stateset_stored(stateset)
                 
         if error:
-            print("Error",error)
             flash(error)
         else:
-            num_rows = set_stateset(crank,stateset,outfile,githash,username)
+            num_rows = add_stateset(crank,stateset,outfile,githash,username)
             
             flash("Successfully updated to crank %s and stateset %s with %d rows" % (crank, stateset,num_rows))
             for key in session_vars:
                 session.pop(key,None)
-                
+
         #custom check if POST from script instead of UI
         if request.headers.get('User-Agent') == 'escalation':
             if error:
                 return jsonify({'error':error}), 400
             else:
-                return jsonify({'success':'Added updated to crank %s and stateset hash %s with %d rows' % (crank,stateset,num_rows)}), 200
+                return jsonify({'success':'updated to crank %s and stateset hash %s with %d rows' % (crank,stateset,num_rows)}), 200
 
+    if request.method == 'POST' and 'new_stateset' in request.form:
+        if request.form['adminkey'] != app.config['ADMIN_KEY']:
+            flash("Incorrect admin code")
+        else:
+            res = get_stateset(request.form['new_stateset'])
+            if res is None:
+                flash("Something went wrong getting stateset id",request.form['new_stateset'])
+            else:
+                flash("Updating stateset to crank %s and hash %s" % (res['crank'], res['stateset']))
+                set_stateset(res['id'])
+                
     cranks = get_cranks()
     return render_template('admin.html',cranks=cranks,session=session)
