@@ -12,7 +12,7 @@ def md5(fname):
 
 
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for
+    Blueprint, flash, g, redirect, render_template, request, session, url_for, jsonify
 )
 from flask import current_app as app
 from werkzeug.utils import secure_filename
@@ -43,22 +43,22 @@ def get_metadata(csvfile):
     md5sum = md5(csvfile)
     df = pd.read_csv(csvfile,comment='#')
     crank = "%04d" % df['dataset'][0]
-    print(crank)
     del df
     return crank, md5sum[:11]
 
 bp = Blueprint('admin',__name__)
 @bp.route('/admin', methods=('GET','POST'))
 def admin():
+    db = get_db()
+    error = None
     
     if request.method == 'GET':
         for key in ('gitcommit','admincode'):
             session.pop(key,None)
                 
     if request.method == 'POST':
-        db = get_db()
-        error = None
-
+        print(request.form)
+        print(request.files['csvfile'].filename)
         #save form values to pre-populate if there's an error so user saves time
         for key in ('gitcommit','admincode'):
             session[key] = request.form[key]
@@ -73,7 +73,7 @@ def admin():
 
         if error == None:
             crank, stateset = get_metadata(outfile)
-            print(crank)
+            print("Crank",crank)
             #check if row already in table
             res=db.execute('SELECT Created FROM Cranks WHERE Stateset=? AND Gitcommit=?',
                            (stateset, gitcommit)
@@ -87,7 +87,6 @@ def admin():
             db.execute('UPDATE Cranks SET Current = "FALSE" WHERE Current = "TRUE"')
             
             #insert new entry
-            print(crank)
             db.execute(
                 'INSERT INTO Cranks (Crank,Stateset,Filename,Gitcommit,Current)'
                 'VALUES (?,?,?,?,?)',
@@ -104,8 +103,16 @@ def admin():
                 
             flash("Successfully added crank info")
 
-    if error:
-        flash(error)
+        #custom check if POST from script instead of UI
+        if request.headers.get('User-Agent') == 'escalation':
+            if error:
+                return jsonify({'error':error}), 400
+            else:
+                return jsonify({'success':'Added crank %s with stateset hash %s' % (crank,stateset)}), 200
 
-    cranks = db.execute("SELECT * FROM Cranks ORDER by Created DESC").fetchall()        
+        if error:
+            print("Error",error)
+            flash(error)
+
+    cranks = db.execute("SELECT * FROM Cranks ORDER by Created DESC").fetchall()
     return render_template('admin.html',cranks=cranks,session=session)
