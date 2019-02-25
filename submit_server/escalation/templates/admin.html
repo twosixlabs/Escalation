@@ -18,6 +18,9 @@
      <label for="username">User name</label>  
      <input type="text" name="username" value="{{ session['username'] }}" required>
 
+     <label for="crank">Crank id</label>  
+     <input type="text" name="crank" value="{{ session['crank'] }}" required>
+
      <label for="githash">Git commit (7 chars)</label>  
      <input type="text" name="githash" value="{{ session['githash'] }}" maxlength="7" required>
 
@@ -30,6 +33,9 @@
 
      <label for="username">User name</label>  
      <input type="text" name="username" required>
+
+     <label for="crank">Crank id</label>  
+     <input type="text" name="crank" required>
      
      <label for="githash">Git commit (7 chars)</label>  
      <input type="text" name="githash" maxlength="7" required>

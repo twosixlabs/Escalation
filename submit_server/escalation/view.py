@@ -3,31 +3,20 @@ from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for, send_file
 )
 from flask import current_app as app
-from escalation.db import get_db
+from escalation.db import get_cranks, get_submissions, get_unique_cranks
 from escalation.download import download_zip
 
 bp = Blueprint('view', __name__)
 @bp.route('/', methods=('GET','POST'))
 
 def view():
-    db = get_db()
-    cranks = db.execute("SELECT DISTINCT Crank FROM Cranks ORDER by Crank DESC").fetchall()
-    cranks = [ x['crank'] for x in cranks]
-
-    if 'username' in g:
-        print("Here")
-        flash(g.username)
+    cranks = get_unique_cranks()
         
     curr_crank = "all"
     if request.method == 'POST' and 'crank' in request.form:
         curr_crank = request.form['crank']
 
-    if curr_crank != 'all':
-        query = "SELECT id, Username, Expname, Crank, Filename, Notes, Created FROM Submission WHERE Crank = '%s' ORDER BY Created DESC" % curr_crank
-    else:
-        query = "SELECT id, username, Expname, Crank, Filename, Notes, Created FROM Submission ORDER BY Created DESC"
-
-    submissions = db.execute(query).fetchall()
+    submissions = get_submissions(curr_crank)
         
     if request.method == 'POST' and 'download' in request.form:
         files=request.form.getlist('download')

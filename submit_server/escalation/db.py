@@ -34,12 +34,26 @@ def init_db():
 
 def get_current_crank():
     db = get_db()
-    res=db.execute('SELECT crank FROM cranks WHERE current="TRUE"').fetchall()
-    return [r['crank'] for r in res]
+    res=db.execute('SELECT crank FROM cranks WHERE current="TRUE"').fetchone()
+    return res['crank']
     
 def set_current_crank():
     db = get_db()
     db.execute('UPDATE cranks SET current = "TRUE" WHERE current = "TRUE"')    
+
+def get_cranks():
+    db = get_db()
+    cranks = db.execute("SELECT DISTINCT Crank FROM Cranks ORDER by Crank DESC").fetchall()
+    return [ x['crank'] for x in cranks]
+
+def get_submissions(crank='all'):
+    db = get_db()
+    if crank != 'all':
+        query = "SELECT id, Username, Expname, Crank, Filename, Notes, Created FROM Submission WHERE Crank = '%s' ORDER BY Created DESC" % crank
+    else:
+        query = "SELECT id, username, Expname, Crank, Filename, Notes, Created FROM Submission ORDER BY Created DESC"
+
+    return db.execute(query).fetchall()
 
 def set_stateset(crank, stateset,filename,githash,username):
     db = get_db()
@@ -60,7 +74,8 @@ def set_stateset(crank, stateset,filename,githash,username):
     )
 
 
-    df = pd.read_csv(filename,comment='#')
+    df = pd.read_csv(filename,dtype = {'dataset': str,'name': str,'_rxn_M_inorganic': str,'_rxn_M_organic': str})
+
     for i, r in df.iterrows():
         db.execute('INSERT INTO Stateset (crank,stateset,dataset, name, _rxn_M_inorganic, _rxn_M_organic)'
                    'VALUES (?,?,?,?,?,?)',
@@ -74,9 +89,17 @@ def set_stateset(crank, stateset,filename,githash,username):
     db.commit()
     return len(df)
 
+def get_stateset():
+    db = get_db()
+    return db.execute("SELECT * FROM Stateset ORDER by name DESC").fetchall()
+
 def get_cranks():
     db = get_db()
     return db.execute("SELECT * FROM Cranks ORDER by Created DESC").fetchall()
+
+def get_unique_cranks():
+    db = get_db()
+    return [x['crank'] for x in db.execute("SELECT DISTINCT Crank FROM Cranks ORDER by Created DESC").fetchall()]
 
 def is_stateset_stored(stateset):
     db = get_db()    
@@ -87,6 +110,31 @@ def is_stateset_stored(stateset):
     else:
         return None
 
+def add_submission(username,expname,crank,filename,notes):
+    db = get_db()
+    db.execute(
+        'INSERT INTO Submission (Username, Expname,Crank, Filename,Notes) VALUES (?,?, ?, ?, ?)',
+        (username,
+         expname,
+         crank,
+        filename,
+         notes)
+    )
+    db.commit()
+            
+def is_row_in_stateset(row):
+    db = get_db()
+    res = db.execute("SELECT * FROM Stateset").fetchall()
+    res=db.execute("SELECT dataset FROM Stateset WHERE dataset='%s' AND name='%s' AND _rxn_M_inorganic='%s' AND _rxn_M_organic='%s'" %
+                (row['dataset'],
+                 row['name'],
+                 row['_rxn_M_inorganic'],
+                 row['_rxn_M_organic']
+                )
+     ).fetchone()
+    return res != None
+               
+        
 @click.command('init-db')
 @with_appcontext
 def init_db_command():

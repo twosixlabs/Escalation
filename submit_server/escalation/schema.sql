@@ -7,8 +7,8 @@ CREATE TABLE Stateset (
  stateset TEXT NOT NULL,
  dataset TEXT NOT NULL,
  name TEXT NOT NULL,
- _rxn_M_inorganic NOT NULL,
- _rxn_M_organic NOT NULL
+ _rxn_M_inorganic TEXT NOT NULL,
+ _rxn_M_organic TEXT NOT NULL
 );
 
 

@@ -17,9 +17,9 @@ from flask import (
 )
 from flask import current_app as app
 from werkzeug.utils import secure_filename
-from escalation.db import get_db, get_cranks, is_stateset_stored, set_stateset
+from escalation.db import get_db, get_cranks, is_stateset_stored, set_stateset, get_stateset
 
-session_vars= ('githash','adminkey','username')
+session_vars= ('githash','adminkey','username','crank')
 # check that admin key is correct, git commit is 7 digits and csv file is the right format
 def validate(adminkey,githash,filename):
     if adminkey != app.config['ADMIN_KEY']:
@@ -40,18 +40,13 @@ def validate(adminkey,githash,filename):
     
     return None
 
-# fetch crank number, md5sum from file (md5sum is copy/pasted from versioned https://gitlab.sd2e.org/sd2program/versioned-datasets/blob/master/scripts/file_hash.py
-def get_metadata(csvfile):
-    md5sum = md5(csvfile)
-    df = pd.read_csv(csvfile,comment='#')
-    crank = "%04d" % df['dataset'][0]
-    del df
-    return crank, md5sum[:11]
-
 bp = Blueprint('admin',__name__)
 @bp.route('/admin', methods=('GET','POST'))
 def admin():
-    db = get_db()
+
+    #TODO
+    for r in get_stateset():
+        print(r['dataset'],r['name'],r['_rxn_M_inorganic'],r['_rxn_M_organic'])
     error = None
     
     if request.method == 'GET':
@@ -65,7 +60,8 @@ def admin():
             session[key] = request.form[key]
 
         csvfile  = request.files['csvfile']
-        username = request.form['username']        
+        username = request.form['username']
+        crank = request.form['crank']                
         filename = secure_filename(csvfile.filename)
         outfile  = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         githash  = request.form['githash']
@@ -74,9 +70,9 @@ def admin():
         error = validate(request.form['adminkey'],githash,outfile)
 
         if error == None:
-            crank, stateset = get_metadata(outfile)
+            stateset = md5(outfile)[:11]
             #check if stateset hash was already stored
-            error = is_stateset_stored(stateset)
+            #TODOerror = is_stateset_stored(stateset)
                 
         if error:
             print("Error",error)

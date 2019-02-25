@@ -11,6 +11,7 @@ VALID_CATEGORIES = set([1,2,3,4])
 BAD_DELIMITERS = set('\t, |.') - set(DELIMITER)  # common delimiters that are disallowed
 COLUMNS = ['dataset','name','_rxn_M_inorganic','_rxn_M_organic','predicted_out','score']
 
+from escalation.db import is_row_in_stateset
 def arr2html(arr):
     out="<ul>\n"
     out += "\n".join("<li>%s</li>" % x for x in arr)
@@ -31,8 +32,23 @@ def validate_submission(f,num_rows=10,statespace=None):
         return arr2html(arr)
 
     #make sure columns match
-    df = pd.read_csv(f,comment='#',sep=DELIMITER)
+    try:
+        df = pd.read_csv(f,comment='#',sep=DELIMITER,dtype = {'dataset': str,
+                                                              'name': str,
+                                                              '_rxn_M_inorganic': str,
+                                                              '_rxn_M_organic':str,
+                                                              'predicted_out':int,
+                                                              'score':float
+                                                              })
+    except:
+        arr.append("Unable to read uploaded data frame due to incorrect formats")
+        return arr2html(arr)
+    
     cols = df.columns
+    if len(cols) != len(COLUMNS):
+        arr.append("Extra columns in uploaded CSV.<br/> expected: '%s'" % " , ".join(COLUMNS))
+        return arr2html(arr)
+    
     for i, col in enumerate(cols):
         if COLUMNS[i] != col:
             arr.append( "Wrong columns uploaded.<br/>Received '%s'<br/>expected '%s'" % (",".join(cols), ",".join(COLUMNS)))
@@ -82,6 +98,11 @@ def validate_submission(f,num_rows=10,statespace=None):
         except ValueError:
             num_errors+=1                
             arr.append("Row %d 'score' column (%s) is not a float. Did you use the values from the state set?" % (i, row['score']))                        
+
+        if not is_row_in_stateset(row):
+            num_errors +=1
+            arr.append("Row %d is not in list of current stateset: %s" % (i,",".join([row['dataset'],row['name'],row['_rxn_M_organic'],row['_rxn_M_inorganic']])))
+
         
     if len(arr) > 0:
         return arr2html(arr)
