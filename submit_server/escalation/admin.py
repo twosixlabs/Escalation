@@ -17,7 +17,7 @@ from flask import (
 )
 from flask import current_app as app
 from werkzeug.utils import secure_filename
-from escalation.db import get_db
+from escalation.db import get_db, get_cranks, is_stateset_stored, set_stateset
 
 session_vars= ('githash','adminkey','username')
 # check that admin key is correct, git commit is 7 digits and csv file is the right format
@@ -36,7 +36,7 @@ def validate(adminkey,githash,filename):
 
     required_header="dataset,name,_rxn_M_inorganic,_rxn_M_organic"
     if header.strip() != required_header:
-        return "csv file does not have required header '%s' % required_header"
+        return "csv file does not have required header '%s'" % required_header
     
     return None
 
@@ -55,72 +55,45 @@ def admin():
     error = None
     
     if request.method == 'GET':
+        #clear POST variables between sessions
         for key in session_vars:
             session.pop(key,None)
                 
     if request.method == 'POST':
-        print(request.form)
-        print(request.files['csvfile'].filename)
         #save form values to pre-populate if there's an error so user saves time
         for key in session_vars:
             session[key] = request.form[key]
 
-        csvfile = request.files['csvfile']
+        csvfile  = request.files['csvfile']
         username = request.form['username']        
         filename = secure_filename(csvfile.filename)
-        outfile = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        githash = request.form['githash']            
-        csvfile.save(outfile)
+        outfile  = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        githash  = request.form['githash']
 
+        csvfile.save(outfile)
         error = validate(request.form['adminkey'],githash,outfile)
 
         if error == None:
             crank, stateset = get_metadata(outfile)
-            #check if row already in table
-            res=db.execute('SELECT Created FROM Cranks WHERE Stateset=? AND Githash=?',
-                           (stateset, githash)
-            ).fetchall()
-        
-            if len(res) > 0:
-                error = "State hash %s and git commit %s already in db. Created on %s" % (stateset,githash, ",".join(r['created'].strftime("%Y-%m-%d") for r in res))
-        
-        if error == None:
-            #expire all other current cranks since we're updating to this one
-            db.execute('UPDATE Cranks SET Current = "FALSE" WHERE Current = "TRUE"')
+            #check if stateset hash was already stored
+            error = is_stateset_stored(stateset)
+                
+        if error:
+            print("Error",error)
+            flash(error)
+        else:
+            num_rows = set_stateset(crank,stateset,outfile,githash,username)
             
-            #insert new entry
-            db.execute(
-                'INSERT INTO Cranks (Crank,Stateset,Filename,Githash,Username,Current)'
-                'VALUES (?,?,?,?,?,?)',
-                (crank,
-                 stateset,
-                 filename, #not outfile since thats absolute path
-                 githash,
-                 username,
-                 "TRUE") #true is current
-            )
-
-            db.execute('DELETE FROM Stateset')
-            
-            db.commit()
-            
-            
-            
+            flash("Successfully updated to crank %s and stateset %s with %d rows" % (crank, stateset,num_rows))
             for key in session_vars:
                 session.pop(key,None)
                 
-            flash("Successfully added crank info")
-
         #custom check if POST from script instead of UI
         if request.headers.get('User-Agent') == 'escalation':
             if error:
                 return jsonify({'error':error}), 400
             else:
-                return jsonify({'success':'Added crank %s with stateset hash %s' % (crank,stateset)}), 200
+                return jsonify({'success':'Added updated to crank %s and stateset hash %s with %d rows' % (crank,stateset,num_rows)}), 200
 
-        if error:
-            print("Error",error)
-            flash(error)
-
-    cranks = db.execute("SELECT * FROM Cranks ORDER by Created DESC").fetchall()
+    cranks = get_cranks()
     return render_template('admin.html',cranks=cranks,session=session)
