@@ -1,6 +1,5 @@
 # Submit a CS
 
-import pandas as pd
 import os
 import functools
 

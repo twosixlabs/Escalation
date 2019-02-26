@@ -1,6 +1,5 @@
-import pandas as pd
 import sqlite3
-
+import csv
 import click
 from flask import current_app, g
 from flask.cli import with_appcontext
@@ -58,23 +57,25 @@ def set_stateset(set_id):
     db.execute("UPDATE Cranks SET Current = 'TRUE' WHERE id='%s'" % set_id)
     res = db.execute("SELECT * FROM Cranks WHERE id='%s'" % set_id).fetchone()
 
-    
-    df = pd.read_csv(res['filename'],dtype = {'dataset': str,'name': str,'_rxn_M_inorganic': str,'_rxn_M_organic': str},comment='#')
 
     db.execute("DELETE FROM Stateset")
     
-    for i, r in df.iterrows():
-        db.execute('INSERT INTO Stateset (crank,stateset,dataset, name, _rxn_M_inorganic, _rxn_M_organic)'
-                   'VALUES (?,?,?,?,?,?)',
-                   (res['crank'],
-                    res['stateset'],
-                    r['dataset'],
-                    r['name'],
-                    r['_rxn_M_inorganic'],
-                    r['_rxn_M_organic'])
-                   )
+    with open(res['filename']) as csvfile:
+        csvreader = csv.DictReader(filter(lambda row: row[0]!='#', csvfile))
+        num_rows = 0
+        for r in csvreader:
+            num_rows+=1
+            db.execute('INSERT INTO Stateset (crank,stateset,dataset, name, _rxn_M_inorganic, _rxn_M_organic)'
+                       'VALUES (?,?,?,?,?,?)',
+                       (res['crank'],
+                        res['stateset'],
+                        r['dataset'],
+                        r['name'],
+                        r['_rxn_M_inorganic'],
+                        r['_rxn_M_organic'])
+            )
     db.commit()
-    return len(df)
+    return num_rows
 
 def add_stateset(crank, stateset,filename,githash,username):
     db = get_db()
@@ -94,21 +95,23 @@ def add_stateset(crank, stateset,filename,githash,username):
          "TRUE") #true is current
     )
 
-
-    df = pd.read_csv(filename,dtype = {'dataset': str,'name': str,'_rxn_M_inorganic': str,'_rxn_M_organic': str},comment='#')
     db.execute("DELETE FROM Stateset")
-    for i, r in df.iterrows():
-        db.execute('INSERT INTO Stateset (crank,stateset,dataset, name, _rxn_M_inorganic, _rxn_M_organic)'
-                   'VALUES (?,?,?,?,?,?)',
-                   (crank,
-                    stateset,
-                    r['dataset'],
-                    r['name'],
-                    r['_rxn_M_inorganic'],
-                    r['_rxn_M_organic'])
-                   )
+    with open(filename) as csvfile:
+        csvreader = csv.DictReader(filter(lambda row: row[0]!='#', csvfile))
+        num_rows = 0
+        for r in csvreader:
+            num_rows+=1
+            db.execute('INSERT INTO Stateset (crank,stateset,dataset, name, _rxn_M_inorganic, _rxn_M_organic)'
+                       'VALUES (?,?,?,?,?,?)',
+                       (crank,
+                        stateset,
+                        r['dataset'],
+                        r['name'],
+                        r['_rxn_M_inorganic'],
+                        r['_rxn_M_organic'])
+            )
     db.commit()
-    return len(df)
+    return num_rows
 
 def get_stateset(id=None):
     db = get_db()

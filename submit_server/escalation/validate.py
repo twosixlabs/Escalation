@@ -5,7 +5,7 @@
 # 3. Ensure that the values of name, _rxn_M_inorganic, and _rxn_M_organic, all correspond to the appropriate row in the state set
 # 3 a. Based on the name of the row (0,1,2,3,etc) the _rxn_M* columns should be identical to those in the state set (the state set with the same crank number)
 
-import pandas as pd
+import csv
 DELIMITER = ','
 VALID_CATEGORIES = set([1,2,3,4])
 BAD_DELIMITERS = set('\t, |.') - set(DELIMITER)  # common delimiters that are disallowed
@@ -18,7 +18,7 @@ def arr2html(arr):
     out += "\n</ul>\n"
     return out
 
-def validate_submission(f,num_rows=10,statespace=None):
+def validate_submission(f,statespace=None):
     
     arr = []
 
@@ -30,38 +30,25 @@ def validate_submission(f,num_rows=10,statespace=None):
     if any(d in header.split(DELIMITER)[0] for d in BAD_DELIMITERS):
         arr.append("file does not appear to be comma delimited. No tabs or spaces allowed")
         return arr2html(arr)
-
-    #make sure columns match
-    try:
-        df = pd.read_csv(f,comment='#',sep=DELIMITER,dtype = {'dataset': str,
-                                                              'name': str,
-                                                              '_rxn_M_inorganic': str,
-                                                              '_rxn_M_organic':str,
-                                                              'predicted_out':int,
-                                                              'score':float
-                                                              })
-    except:
-        arr.append("Unable to read uploaded data frame due to incorrect formats")
-        return arr2html(arr)
+    cols = header.strip().split(DELIMITER)
     
-    cols = df.columns
     if len(cols) != len(COLUMNS):
         arr.append(",".join(cols) + "Extra columns in uploaded CSV.<br/> expected: '%s'" % " , ".join(COLUMNS))
         return arr2html(arr)
     
     for i, col in enumerate(cols):
-        if COLUMNS[i] != col:
+         if COLUMNS[i] != col:
+            print(COLUMNS[i],col)
+            print(type(COLUMNS[i]),type(col))
             arr.append( "Wrong columns uploaded.<br/>Received '%s'<br/>expected '%s'" % (",".join(cols), ",".join(COLUMNS)))
             return arr2html(arr)
 
-    # assert the number of rows
-    if len(df) != num_rows:
-        arr.append("Length of CSV (%d) is not equal to the target number of rows (%d)" % (len(df),num_rows))
+    csvfile = open(f)
+    csvreader = csv.DictReader(filter(lambda row:row[0] != '#', csvfile))
         
     # validate each row
     num_errors = 0
-    for i, row in df.iterrows():
-
+    for i, row in enumerate(csvreader):
         if num_errors > 10:
             arr.append("Stopping checks due to more than 10 errors")
             break
@@ -87,7 +74,7 @@ def validate_submission(f,num_rows=10,statespace=None):
         except ValueError:
             num_errors+=1                
             arr.append("Row %d '_rxn_M_organic' column (%s) is not a float. Did you use the values from the state set?" % (i, row['_rxn_M_organic']))                            
-        if row['predicted_out'] not in VALID_CATEGORIES:
+        if int(row['predicted_out']) not in VALID_CATEGORIES:
             num_errors+=1
             arr.append("Row %d 'predicted_out' column (%s) is not in %s" %(i,row['predicted_out'],",".join([str(x) for x in VALID_CATEGORIES])))
         try:
@@ -103,7 +90,7 @@ def validate_submission(f,num_rows=10,statespace=None):
             num_errors +=1
             arr.append("Row %d is not in list of current stateset: %s" % (i,",".join([row['dataset'],row['name'],row['_rxn_M_organic'],row['_rxn_M_inorganic']])))
 
-        
+    csvfile.close()
     if len(arr) > 0:
         return arr2html(arr)
     else:

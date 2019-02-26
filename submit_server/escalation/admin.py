@@ -1,7 +1,7 @@
 DELIMITER = ','
 BAD_DELIMITERS = set('\t, |.') - set(DELIMITER)  # common delimiters that are disallowed
 import os
-import pandas as pd
+import csv
 import hashlib
 
 from flask import (
@@ -59,8 +59,13 @@ def admin():
         error = validate(request.form['adminkey'],githash,outfile)
 
         if error == None:
-            df = pd.read_csv(outfile,comment='#')
-            stateset = str(df['dataset'][0])
+            #get statset from first element
+            with open(outfile) as csv_file:
+                csv_reader = csv.DictReader(filter(lambda row: row[0]!='#', csv_file))
+                for row in csv_reader:
+                    stateset = row['dataset']
+                    break
+                
             #check if stateset hash was already stored
             error = is_stateset_stored(stateset)
                 

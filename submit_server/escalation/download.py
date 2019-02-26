@@ -2,18 +2,25 @@ import shutil
 from tempfile import mkdtemp
 import os
 import time
-import pandas as pd
-    
+import csv    
     
 def download_zip(basedir,files,pfx="",metadata=[]):
     tmpdir = mkdtemp()
 
-    df = pd.DataFrame(metadata)
-    df.to_csv(os.path.join(tmpdir,'metadata.csv'),index=False)
+    fileids={}
+    with open(os.path.join(tmpdir,'metadata.csv'),'w') as csvfile:
+        fieldnames = ['id','Crank','Created','Expname','Filename','Notes','Username']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        for elem in metadata:
+            writer.writerow(elem)
+            fileids[elem['Filename']] = elem['id']
+            print(elem)
 
-    
+    print(fileids)
     for f in files:
-        id = df[df.Filename == f]['id'].values[0]
+        id = fileids[f]
+        print(f,id)
         shutil.copy(os.path.join(basedir,f), os.path.join(tmpdir,"%s_%s" % (id,f)))
 
     if pfx:
