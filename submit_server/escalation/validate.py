@@ -11,7 +11,7 @@ VALID_CATEGORIES = set([1,2,3,4])
 BAD_DELIMITERS = set('\t, |.') - set(DELIMITER)  # common delimiters that are disallowed
 COLUMNS = ['dataset','name','_rxn_M_inorganic','_rxn_M_organic','predicted_out','score']
 
-from escalation.db import is_row_in_stateset
+from escalation import db
 def arr2html(arr):
     out="<ul>\n"
     out += "\n".join("<li>%s</li>" % x for x in arr)
@@ -86,7 +86,7 @@ def validate_submission(f,statespace=None):
             num_errors+=1                
             arr.append("Row %d 'score' column (%s) is not a float. Did you use the values from the state set?" % (i, row['score']))                        
 
-        if not is_row_in_stateset(row):
+        if not db.is_row_in_stateset(row):
             num_errors +=1
             arr.append("Row %d is not in list of current stateset: %s" % (i,",".join([row['dataset'],row['name'],row['_rxn_M_organic'],row['_rxn_M_inorganic']])))
 

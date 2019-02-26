@@ -9,7 +9,7 @@ from flask import (
 )
 from flask import current_app as app
 from werkzeug.utils import secure_filename
-from escalation.db import get_db, get_cranks, is_stateset_stored, set_stateset, get_stateset, add_stateset
+from escalation import db
 
 session_vars= ('githash','adminkey','username','crank')
 # check that admin key is correct, git commit is 7 digits and csv file is the right format
@@ -67,12 +67,12 @@ def admin():
                     break
                 
             #check if stateset hash was already stored
-            error = is_stateset_stored(stateset)
+            error = db.is_stateset_stored(stateset)
                 
         if error:
             flash(error)
         else:
-            num_rows = add_stateset(crank,stateset,outfile,githash,username)
+            num_rows = db.add_stateset(crank,stateset,outfile,githash,username)
             
             flash("Successfully updated to crank %s and stateset %s with %d rows" % (crank, stateset,num_rows))
             for key in session_vars:
@@ -89,12 +89,12 @@ def admin():
         if request.form['adminkey'] != app.config['ADMIN_KEY']:
             flash("Incorrect admin code")
         else:
-            res = get_stateset(request.form['new_stateset'])
+            res = db.get_stateset(request.form['new_stateset'])
             if res is None:
                 flash("Something went wrong getting stateset id",request.form['new_stateset'])
             else:
                 flash("Updating stateset to crank %s and hash %s" % (res['crank'], res['stateset']))
-                set_stateset(res['id'])
+                db.set_stateset(res['id'])
                 
-    cranks = get_cranks()
+    cranks = db.get_cranks()
     return render_template('admin.html',cranks=cranks,session=session)
