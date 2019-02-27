@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Submissions{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+<form method="post">
+<table style="min-width:500px">
+  <tr>
+    <th></th>
+    <th>Crank</th>    
+    <th>User Name</th>
+    <th>Name</th>    
+    <th>Timestamp</th>                
+    <th>Notes</th>
+  </tr>
+{% for sub in submissions %}
+  <tr>
+    <td> <input type="checkbox" name="download" value="{{ sub['filename'] }}" checked>
+    <td> {{ sub['Crank'] }} </td>  
+    <td> {{ sub['Username'] }} </td>
+    <td> {{ sub['Expname'] }} </td>
+    <td> {{ sub['Created'].strftime('%Y-%m-%d') }} </td>
+    <td> {{ sub['Notes'][:20] + "..." }} </td>
+  </tr>
+{% endfor %}
+</table>
+  <input type="hidden" value="{{ crank }}" name="crank">
+  <input type="submit" value="Download files">
+</form>  
+<form method="post">
+  <label for="crank">Select specific crank</label>
+  <select name="crank">
+    <option value="all">All</option>
+    {% for crank in cranks %}
+    <option value="{{ crank }}">{{ crank }} </option>
+    {% endfor %}
+  </select>
+  <input type="submit" value="Select">
+</form>
+{% endblock %}
