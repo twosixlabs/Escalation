@@ -9,7 +9,7 @@ import argparse
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--endpoint',help="Rest endpoint",default='http://127.0.0.1:5000/admin')
+parser.add_argument('--endpoint',help="Rest endpoint",default='http://escalation.sd2e.org/admin')
 parser.add_argument('--data',help="verisoned data path",default='../../versioned-datasets')
 parser.add_argument('--key',help="admin secret key",default='secret')
 args=parser.parse_args()
