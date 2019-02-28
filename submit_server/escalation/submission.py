@@ -4,7 +4,7 @@ import os
 import functools
 
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for
+    Blueprint, flash, g, redirect, render_template, request, session, url_for, jsonify
 )
 from flask import current_app as app
 from werkzeug.utils import secure_filename
@@ -35,7 +35,10 @@ def submission():
         crank    = request.form['crank']
         notes    = request.form['notes']        
         csvfile  = request.files['csvfile']
+
+        app.logger.info("POST {} {} {} {} {}".format(username,expname,crank,notes,csvfile.filename))
         error = None
+        
         if not username:
             error = 'Username is required.'
         if not expname:
@@ -53,10 +56,23 @@ def submission():
         if not error:
             error = validate_submission(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
+        app.logger.info("Processed {}".format(csvfile.filename)            )
+        #custom check if POST from script instead of UI
+        if request.headers.get('User-Agent') == 'escalation':
+            if error:
+                app.logger.error(error)
+                return jsonify({'error':error}), 400
+            else:
+                app.logger.info("Added submission")
+                return jsonify({'success':'Added submission'})
+
+        #case of web based user agent
         if error:
+            app.logger.error(error)
             flash(error)
         else:
             db.add_submission(username,expname,crank,filename,notes)
+            app.logger.info("Added submission")            
 
             #clear out session
             for key in ('username','expname','crank','notes'):

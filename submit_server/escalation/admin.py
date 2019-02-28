@@ -55,9 +55,12 @@ def admin():
         outfile  = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         githash  = request.form['githash']
 
+        app.logger.info("request: {} {} {} {}".format(csvfile.filename,username,crank,githash))
+
         csvfile.save(outfile)
         error = validate(request.form['adminkey'],githash,outfile)
-
+        app.logger.info("Validated %s" % csvfile.filename)
+        
         if error == None:
             #get statset from first element
             with open(outfile) as csv_file:
@@ -70,11 +73,13 @@ def admin():
             error = db.is_stateset_stored(stateset)
                 
         if error:
+            app.logger.error(error)
             flash(error)
         else:
             num_rows = db.add_stateset(crank,stateset,outfile,githash,username)
-            
-            flash("Successfully updated to crank %s and stateset %s with %d rows" % (crank, stateset,num_rows))
+            out="Successfully updated to crank %s and stateset %s with %d rows" % (crank, stateset,num_rows)
+            app.logger.info(out)
+            flash(out)
             for key in session_vars:
                 session.pop(key,None)
 
@@ -95,6 +100,7 @@ def admin():
             else:
                 flash("Updating stateset to crank %s and hash %s" % (res['crank'], res['stateset']))
                 db.set_stateset(res['id'])
+                app.logger.info("Updating stateset to crank %s and hash %s" % (res['crank'], res['stateset']))
                 
     cranks = db.get_cranks()
     return render_template('admin.html',cranks=cranks,session=session)

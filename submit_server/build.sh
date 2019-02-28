@@ -1,1 +1,1 @@
-docker build -t escalation-main:latest .
+docker build -t escalation-server:latest .

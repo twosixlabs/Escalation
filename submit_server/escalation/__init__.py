@@ -2,6 +2,8 @@ import os
 
 from . import db
 from flask import Flask
+import logging
+from logging.handlers import RotatingFileHandler
 
 def create_app(test_config=None):
     # create and configure the app
@@ -43,5 +45,19 @@ def create_app(test_config=None):
     app.register_blueprint(view.bp)
     app.register_blueprint(admin.bp)            
     db.init_app(app)
+
+    if not app.debug:
+
+        if not os.path.exists('logs'):
+            os.mkdir('logs')
+        file_handler = RotatingFileHandler('logs/escalation.log', maxBytes=10240,
+                                           backupCount=10)
+        file_handler.setFormatter(logging.Formatter(
+            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
+        file_handler.setLevel(logging.INFO)
+        app.logger.addHandler(file_handler)
+
+        app.logger.setLevel(logging.INFO)
+        app.logger.info('ESCALATion started')    
 
     return app

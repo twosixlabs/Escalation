@@ -1,3 +1,5 @@
 GitPython
 pyyaml
 six
+requests
+pandas
