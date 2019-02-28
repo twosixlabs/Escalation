@@ -63,7 +63,8 @@ def submission():
                 app.logger.error(error)
                 return jsonify({'error':error}), 400
             else:
-                app.logger.info("Added submission")
+                db.add_submission(username,expname,crank,filename,notes)
+                app.logger.info("Added submission")                
                 return jsonify({'success':'Added submission'})
 
         #case of web based user agent
