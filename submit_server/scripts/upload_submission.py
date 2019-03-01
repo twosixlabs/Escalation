@@ -1,10 +1,9 @@
 import os
-import git
-import yaml
 import requests
 import pandas as pd
 import argparse
 import re
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--endpoint',help="REST endpoint",default='http://escalation.sd2e.org/submission')
 parser.add_argument('--csv',help="csv file")
@@ -19,6 +18,7 @@ regex=r'(\d{4})_train_([^-]{7})_([^\.]+)\.csv'
 crank = None
 commit = None
 user = None
+
 #print( re.match(regex2,args.csv))
 m = re.search(regex,args.csv)
 if m:
@@ -33,8 +33,7 @@ elif args.crank == None:
 elif args.user == None:
     print("Can't extract data from CSV, must pass in --user")
     exit()    
-
-if args.expname == None or ' ' in args.expname:
+elif args.expname == None or ' ' in args.expname:
     print("Must pass in experiment name and not have spaces")
     exit()
 if args.csv == None:
@@ -47,6 +46,7 @@ if crank is None:
     crank = args.crank
 if user is None:
     user = args.user
+    
 print("crank",crank)
 print("username",user)
 print("expname",args.expname)
