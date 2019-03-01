@@ -16,7 +16,9 @@ args=parser.parse_args()
 
 regex=r'(\d{4})_train_([^-]{7})_([^\.]+)\.csv'
 
-
+crank = None
+commit = None
+user = None
 #print( re.match(regex2,args.csv))
 m = re.search(regex,args.csv)
 if m:
@@ -24,6 +26,7 @@ if m:
     commit = m.group(2)
     user = m.group(3)
     print(crank,commit,user)
+    
 elif args.crank == None:
     print("Can't extract data from CSV, must pass in --crank")
     exit()
@@ -38,7 +41,12 @@ if args.csv == None:
     print("Must pass in csv file")
     exit()
 
-notes = args.notes or ""    
+notes = args.notes or ""
+
+if crank is None:
+    crank = args.crank
+if user is None:
+    user = args.user
 print("crank",crank)
 print("username",user)
 print("expname",args.expname)
