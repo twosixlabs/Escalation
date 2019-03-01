@@ -3,6 +3,7 @@ import csv
 import click
 from flask import current_app, g
 from flask.cli import with_appcontext
+import numpy as np
 
 def init_app(app):
     app.teardown_appcontext(close_db)
@@ -148,20 +149,17 @@ def add_submission(username,expname,crank,filename,notes):
          notes)
     )
     db.commit()
-            
-def is_row_in_stateset(row):
+
+def get_rxns(names):
     db = get_db()
-    res = db.execute("SELECT * FROM Stateset").fetchall()
-    res=db.execute("SELECT dataset FROM Stateset WHERE dataset='%s' AND name='%s' AND _rxn_M_inorganic='%s' AND _rxn_M_organic='%s'" %
-                (row['dataset'],
-                 row['name'],
-                 row['_rxn_M_inorganic'],
-                 row['_rxn_M_organic']
-                )
-     ).fetchone()
-    return res != None
-               
-        
+    res = db.execute('SELECT * FROM Stateset WHERE name IN (%s)' %
+                           ','.join('?'*len(names)), names).fetchall()
+    current_app.logger.debug("Returned %d reactions from stateset" % (len(res)))
+    d={}
+    for r in res:
+        d[r['name']] = {'organic':r['_rxn_M_organic'],'inorganic':r['_rxn_M_inorganic']}
+    return d
+
 @click.command('init-db')
 @with_appcontext
 def init_db_command():

@@ -1,4 +1,3 @@
-
 # Here is a list of possible validations on the submission template:
 # 1. I really like the structural validations, all of the ones that you suggested should be present
 # 2. Strict enforcement of the 11 character md5 hash of the stateset, and having a value in each of the subsequent columns for each entry
@@ -11,7 +10,12 @@ VALID_CATEGORIES = set([1,2,3,4])
 BAD_DELIMITERS = set('\t, |.') - set(DELIMITER)  # common delimiters that are disallowed
 COLUMNS = ['dataset','name','_rxn_M_inorganic','_rxn_M_organic','predicted_out','score']
 
+from flask import current_app as app
 from escalation import db
+
+def isclose(a,b,rtol=1e-05,atol=1e-08):
+        return abs(a - b) <= (atol + rtol * abs(b))
+        
 def arr2html(arr):
     out="<ul>\n"
     out += "\n".join("<li>%s</li>" % x for x in arr)
@@ -22,6 +26,7 @@ def validate_submission(f,statespace=None):
     
     arr = []
 
+    app.logger.debug("Reading " + f)
     #make sure file is comma  delimited
     with open(f, 'r') as fh:
         for header in fh:
@@ -31,7 +36,7 @@ def validate_submission(f,statespace=None):
         arr.append("file does not appear to be comma delimited. No tabs or spaces allowed")
         return arr2html(arr)
     cols = header.strip().split(DELIMITER)
-    
+
     if len(cols) != len(COLUMNS):
         arr.append(",".join(cols) + "Extra columns in uploaded CSV.<br/> expected: '%s'" % " , ".join(COLUMNS))
         return arr2html(arr)
@@ -45,13 +50,20 @@ def validate_submission(f,statespace=None):
 
     csvfile = open(f)
     csvreader = csv.DictReader(filter(lambda row:row[0] != '#', csvfile))
-        
+    rows=[]
+    for row in csvreader:
+        rows.append(row)
+
+    names = [r['name'] for r in rows]
+    rxns = db.get_rxns(names)
     # validate each row
     num_errors = 0
-    for i, row in enumerate(csvreader):
+
+    for i, row in enumerate(rows):
         if num_errors > 10:
             arr.append("Stopping checks due to more than 10 errors")
             break
+        app.logger.debug("VALIDATE: %5d:%s" % (i,row))
 
         if len(row) != len(COLUMNS):
             arr.append("Row %d, with %d columns, does not equal specified number (%d)" % ( i, len(row), len(COLUMNS)))
@@ -86,9 +98,20 @@ def validate_submission(f,statespace=None):
             num_errors+=1                
             arr.append("Row %d 'score' column (%s) is not a float. Did you use the values from the state set?" % (i, row['score']))                        
 
-        if not db.is_row_in_stateset(row):
-            num_errors +=1
-            arr.append("Row %d is not in list of current stateset: %s" % (i,",".join([row['dataset'],row['name'],row['_rxn_M_organic'],row['_rxn_M_inorganic']])))
+        org, inorg = rxns[row['name']]['organic'], rxns[row['name']]['inorganic']
+        
+        if not (isclose(float(row['_rxn_M_inorganic']),float(inorg),1e-03,1e-05)):
+            num_errors += 1
+            arr.append("Row %d '_rxn_M_inorganic' value %d does not match statespace value '%d' -- did you mix up rows?" % (i,row['_rxn_M_inorganic'],inorganic))
+
+        if not (isclose(float(row['_rxn_M_organic']),float(org),1e-03,1e-05)):
+            num_errors += 1
+            arr.append("Row %d '_rxn_M_organic' value %d does not match statespace value '%d' -- did you mix up rows?" % (i,row['_rxn_M_organic'],organic))
+                     
+#        except:
+#            app.logger.debug("rxns didn't work")
+#            num_errors +=1
+#            arr.append("Row %d is not in list of current stateset: %s" % (i,",".join([row['dataset'],row['name'],row['_rxn_M_organic'],row['_rxn_M_inorganic']])))
 
     csvfile.close()
     if len(arr) > 0:
