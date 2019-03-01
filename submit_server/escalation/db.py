@@ -3,7 +3,6 @@ import csv
 import click
 from flask import current_app, g
 from flask.cli import with_appcontext
-import numpy as np
 
 def init_app(app):
     app.teardown_appcontext(close_db)
