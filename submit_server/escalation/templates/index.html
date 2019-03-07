@@ -21,8 +21,8 @@
     <td> {{ sub['Crank'] }} </td>  
     <td> {{ sub['Username'] }} </td>
     <td> {{ sub['Expname'] }} </td>
-    <td> {{ sub['Created'].strftime('%Y-%m-%d') }} </td>
-    <td> {{ sub['Notes'][:20] + "..." }} </td>
+    <td> {{ sub['Created'].strftime('%Y-%m-%d %H:%M:%S') }} </td>
+    <td> {{ sub['Notes'][:50] + "..." }} </td>
   </tr>
 {% endfor %}
 </table>
