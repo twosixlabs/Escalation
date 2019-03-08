@@ -43,8 +43,6 @@ def validate_submission(f,statespace=None):
     
     for i, col in enumerate(cols):
          if COLUMNS[i] != col:
-            print(COLUMNS[i],col)
-            print(type(COLUMNS[i]),type(col))
             arr.append( "Wrong columns uploaded.<br/>Received '%s'<br/>expected '%s'" % (",".join(cols), ",".join(COLUMNS)))
             return arr2html(arr)
 

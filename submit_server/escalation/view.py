@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import os
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for, send_file
@@ -10,9 +11,10 @@ bp = Blueprint('view', __name__)
 @bp.route('/', methods=('GET','POST'))
 
 def view():
-    cranks = db.get_unique_cranks()
-        
+    cranks = [c['crank'] for c in db.get_cranks()]
+    cranks = list(OrderedDict.fromkeys(cranks))
     curr_crank = "all"
+    
     if request.method == 'POST' and 'crank' in request.form:
         curr_crank = request.form['crank']
 

@@ -23,7 +23,7 @@ bp = Blueprint('submission', __name__)
 
 @bp.route('/submission', methods=('GET', 'POST'))
 def submission():
-    curr_crank = db.get_current_crank()
+    curr_crank = db.get_current_crank().crank
     curr_stateset = db.get_stateset()[0]['stateset']
     
     if request.method == 'POST':

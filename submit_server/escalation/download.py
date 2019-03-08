@@ -1,4 +1,4 @@
-import shutil
+rinimport shutil
 from tempfile import mkdtemp
 import os
 import time
@@ -15,12 +15,9 @@ def download_zip(basedir,files,pfx="",metadata=[]):
         for elem in metadata:
             writer.writerow(elem)
             fileids[elem['Filename']] = elem['id']
-            print(elem)
 
-    print(fileids)
     for f in files:
         id = fileids[f]
-        print(f,id)
         shutil.copy(os.path.join(basedir,f), os.path.join(tmpdir,"%s_%s" % (id,f)))
 
     if pfx:

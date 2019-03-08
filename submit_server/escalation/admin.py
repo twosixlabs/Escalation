@@ -103,5 +103,4 @@ def admin():
                 app.logger.info("Updating stateset to crank %s and hash %s" % (res['crank'], res['stateset']))
                 
     cranks = db.get_cranks()
-    print(cranks)
     return render_template('admin.html',cranks=cranks,session=session)
