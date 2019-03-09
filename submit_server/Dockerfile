@@ -4,13 +4,14 @@ RUN adduser -D escalation
 
 WORKDIR /home/escalation
 
-RUN apk add g++ libstdc++ python3-dev bash git
+RUN apk add g++ libstdc++ python3-dev bash git gcc libffi-dev libressl-dev
+# RUN apk update && apk add libressl-dev libffi-dev gcc musl-dev python3-dev
 
 COPY requirements.txt requirements.txt
 RUN python -m venv venv
 RUN venv/bin/pip3 install --upgrade pip
 RUN venv/bin/pip3 install -r requirements.txt
-RUN venv/bin/pip3 install gunicorn pymysql
+RUN venv/bin/pip3 install gunicorn pymysql 
 
 ENV FLASK_APP escalation
 ENV SECRET_KEY perovskite52cb883e323b48d

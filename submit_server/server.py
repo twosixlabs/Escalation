@@ -1,2 +1,1 @@
-from app import create_app, db
-app = create_app()
+from escalation import app, db

@@ -50,7 +50,7 @@ df.to_csv(csvfile,index=False)
 print("Pushing filtered csv to",args.endpoint)
 
 r = requests.post(args.endpoint, headers={'User-Agent':'escalation'},data={'crank':crank,'githash':git_sha[:7], 'username':git_username,'adminkey':args.key},
-                  files={'csvfile':open(csvfile,'rb')},timeout=30)
+                  files={'csvfile':open(csvfile,'rb')},timeout=300)
 print(r.status_code, r.reason,r)
 try:
     print(r.json())

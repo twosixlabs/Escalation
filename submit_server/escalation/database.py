@@ -5,22 +5,27 @@ import csv
 
 def read_in_stateset(filename,crank,stateset):
     Run.query.delete()
+    current_app.logger.info("reading in csv")        
     with open(filename) as csvfile:
         csvreader = csv.DictReader(filter(lambda row: row[0]!='#', csvfile))
         num_rows = 0
+        objs=[]
         for r in csvreader:
             num_rows+=1
-            db.session.add(Run(crank=crank,stateset=stateset,dataset=r['dataset'],name=r['name'],_rxn_M_inorganic=r['_rxn_M_inorganic'],_rxn_M_organic=r['_rxn_M_organic']))    
+            objs.append(Run(crank=crank,stateset=stateset,dataset=r['dataset'],name=r['name'],_rxn_M_inorganic=r['_rxn_M_inorganic'],_rxn_M_organic=r['_rxn_M_organic']))
+#            db.session.add(Run(crank=crank,stateset=stateset,dataset=r['dataset'],name=r['name'],_rxn_M_inorganic=r['_rxn_M_inorganic'],_rxn_M_organic=r['_rxn_M_organic']))
+    current_app.logger.info("adding objects")        
+    db.session.bulk_save_objects(objs)
     db.session.commit()
+    current_app.logger.info("Added objects")    
     return num_rows
     
 def is_stateset_stored(stateset):
     return Crank.query.filter_by(stateset=stateset).scalar() is not None
 
 def add_stateset(crank,stateset,filename,githash,username):
-    Crank.query.filter_by(current=True).update({'current':False})    
+    Crank.query.filter_by(current=True).update({'current':False})
     db.session.add(Crank(crank=crank,stateset=stateset,filename=filename,githash=githash,username=username,current=True))
-
     return read_in_stateset(filename,crank,stateset)
 
 def set_stateset(id=None):
@@ -50,7 +55,7 @@ def get_crank(id=None):
 
 def get_rxns(names):
     res = Run.query.filter(Run.name.in_(names)).all()
-    current_app.logger.debug("Returned %d reactions from stateset" % (len(res)))
+    current_app.logger.info("Returned %d reactions from stateset" % (len(res)))
     d={}
     for r in res:
         d[r.name] = {'organic':r._rxn_M_organic,'inorganic':r._rxn_M_inorganic}

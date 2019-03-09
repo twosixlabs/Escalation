@@ -1,4 +1,4 @@
-rinimport shutil
+import shutil
 from tempfile import mkdtemp
 import os
 import time

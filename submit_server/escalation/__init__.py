@@ -48,7 +48,7 @@ class Crank(db.Model):
     filename = db.Column(db.String(256))    
     githash  = db.Column(db.String(7))    #git commit of stateset file
     username = db.Column(db.String(64))
-    current  = db.Column(db.Boolean,server_default='FALSE')
+    current  = db.Column(db.Boolean)
     created  = db.Column(db.DateTime(timezone=True), server_default=sql.func.now())
 
     def  __repr__(self):
@@ -72,7 +72,12 @@ def init_db():
     db.create_all()
     click.echo('Initialized the database.')   
 
-@app.cli.command('demo-data')
+    
+def delete_db():
+    Run.query.delete()
+    Submission.query.delete()
+    Crank.query.delete()    
+
 def insert_demo_data():
     Run.query.delete()
     Submission.query.delete()
@@ -95,7 +100,15 @@ def insert_demo_data():
     db.session.add(Run(crank='0002',stateset='bbbb5678901',dataset='12345678901',name='9',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))    
     db.session.commit()
     click.echo("Added demo data")
-    
+
+@app.cli.command('demo-data')
+def demo_data():
+    insert_demo_data()
+
+@app.cli.command('reset-db')
+def reset_db():
+    delete_db()
+
 # a simple page that says hello
 @app.route('/hello')
 def hello():
@@ -107,6 +120,7 @@ from . import admin
 app.register_blueprint(submission.bp)
 app.register_blueprint(view.bp)
 app.register_blueprint(admin.bp)            
+
 
 if not app.debug:
     if not os.path.exists('logs'):
@@ -121,9 +135,4 @@ if not app.debug:
     app.logger.setLevel(logging.INFO)
     app.logger.info('ESCALATion started')    
 
-
-from .database import *
-@app.cli.command()
-def test():
-    click.echo(get_stateset(1))
-    
+app.logger.info("Writing to %s" % app.config['SQLALCHEMY_DATABASE_URI'])

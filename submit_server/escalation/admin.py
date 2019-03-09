@@ -71,10 +71,10 @@ def admin():
                 
             #check if stateset hash was already stored
             error = db.is_stateset_stored(stateset)
-                
+            error = None #TODO
         if error:
-            app.logger.error(error)
-            flash(error)
+            app.logger.error("Stateset already in database")
+            flash("Stateset already in database")
         else:
             num_rows = db.add_stateset(crank,stateset,outfile,githash,username)
             out="Successfully updated to crank %s and stateset %s with %d rows" % (crank, stateset,num_rows)
@@ -102,5 +102,22 @@ def admin():
                 db.set_stateset(res['id'])
                 app.logger.info("Updating stateset to crank %s and hash %s" % (res['crank'], res['stateset']))
                 
+    if request.method == 'POST' and 'db' in request.form:
+        if request.form['adminkey'] != app.config['ADMIN_KEY']:
+            flash("Incorrect admin code")
+        else:
+            from . import insert_demo_data, delete_db
+            if request.form['db'] == 'demo':
+                insert_demo_data()
+                app.logger.info("Reset database to demo data")
+                flash("Reset statespace to demo data")
+            elif request.form['db'] == 'reset':
+                delete_db()
+                app.logger.info("Deleted all data")
+                flash("Deleted all data")
+            else:
+                flash("Unknown command, doing nothing")
+            
+            
     cranks = db.get_cranks()
     return render_template('admin.html',cranks=cranks,session=session)
