@@ -43,7 +43,7 @@ def admin():
         for key in session_vars:
             session.pop(key,None)
                 
-    if request.method == 'POST' and 'username' in request.form:
+    if request.method == 'POST' and request.form['submit'] == "Update current crank":
         #save form values to pre-populate if there's an error so user saves time
         for key in session_vars:
             session[key] = request.form[key]
@@ -90,7 +90,7 @@ def admin():
             else:
                 return jsonify({'success':'updated to crank %s and stateset hash %s with %d rows' % (crank,stateset,num_rows)}), 200
 
-    if request.method == 'POST' and 'new_stateset' in request.form:
+    if request.method == 'POST' and request.form['submit'] == "Roll back Stateset":
         if request.form['adminkey'] != app.config['ADMIN_KEY']:
             flash("Incorrect admin code")
         else:
@@ -102,7 +102,9 @@ def admin():
                 db.set_stateset(res['id'])
                 app.logger.info("Updating stateset to crank %s and hash %s" % (res['crank'], res['stateset']))
                 
-    if request.method == 'POST' and 'db' in request.form:
+    if request.method == 'POST' and  request.form['submit'] == 'Update Database' :
+        for k in request.form:
+            app.logger.info(k)
         if request.form['adminkey'] != app.config['ADMIN_KEY']:
             flash("Incorrect admin code")
         else:

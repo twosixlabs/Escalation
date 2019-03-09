@@ -24,9 +24,6 @@
 
      <label for="githash">Git commit (7 chars)</label>  
      <input type="text" name="githash" value="{{ session['githash'] }}" maxlength="7" required>
-
-     <label for="adminkey">Admin code</label>  
-     <input type="text" name="adminkey" value="{{ session['adminkey'] }}" required>
      
      {% else %}
      <label for="csvfile">CSV file</label>
@@ -41,15 +38,12 @@
      <label for="githash">Git commit (7 chars)</label>  
      <input type="text" name="githash" maxlength="7" required>
   
-     <label for="adminkey">Admin code</label>  
-     <input type="text" name="adminkey" required>
-
      {% endif %}
-  <input type="submit" value="Update current crank">
- </form>
+  <input type="submit" value="Update current crank" name="submit">
 
+</form>  
 <h1> Ten most recent crank records </h1>
-<form method="post">
+<form method="post">   
  <table style="min-width:720px">
    <tr>
      <th></th>
@@ -74,14 +68,9 @@
 
   {% endfor %}
  </table>
- <label for="adminkey">Admin code</label>  
- <input type="text" name="adminkey" required>
- 
- <input type="submit" value="Roll back Stateset">
-</form>
+ <input type="submit" value="Roll back Stateset" name="submit">
 
 <h1>Development commands for database</h1>
-<form method="post">
   <label>
     <input type="radio" name="db" value="demo">Reset DB with test data
   </label>
@@ -92,6 +81,6 @@
   <label for="adminkey">Admin code</label>  
   <input type="text" name="adminkey" required>
   
-  <input type="submit" value="Update Database">  
+  <input type="submit" value="Update Database" name="submit"  >
 </form>
 {% endblock %}
