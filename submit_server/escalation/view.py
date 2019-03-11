@@ -11,8 +11,7 @@ bp = Blueprint('view', __name__)
 @bp.route('/', methods=('GET','POST'))
 
 def view():
-    cranks = [c['crank'] for c in db.get_cranks()]
-    cranks = list(OrderedDict.fromkeys(cranks))
+    cranks = db.get_unique_cranks()
     curr_crank = "all"
     
     if request.method == 'POST' and 'crank' in request.form:

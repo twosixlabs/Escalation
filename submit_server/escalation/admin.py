@@ -43,7 +43,7 @@ def admin():
         for key in session_vars:
             session.pop(key,None)
                 
-    if request.method == 'POST' and request.form['submit'] == "Update current crank":
+    if request.method == 'POST' and (request.headers.get('User-Agent') == 'escalation' or request.form['submit'] == "Update current crank"):
         #save form values to pre-populate if there's an error so user saves time
         for key in session_vars:
             session[key] = request.form[key]

@@ -23,7 +23,15 @@ bp = Blueprint('submission', __name__)
 
 @bp.route('/submission', methods=('GET', 'POST'))
 def submission():
-    curr_crank = db.get_current_crank().crank
+
+    
+    curr_crank = db.get_current_crank()
+
+    if curr_crank is None:
+        return render_template('submission.html')
+    else:
+        curr_crank = curr_crank.crank
+        
     curr_stateset = db.get_stateset()[0]['stateset']
     
     if request.method == 'POST':
@@ -54,6 +62,7 @@ def submission():
         filename = secure_filename("_".join([crank,username,expname,csvfile.filename]))
         csvfile.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         if not error:
+            #TODO: pass in stateset/git hash here
             error = validate_submission(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
         app.logger.info("Processed {}".format(csvfile.filename)            )

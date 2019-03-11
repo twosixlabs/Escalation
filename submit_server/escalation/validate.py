@@ -22,7 +22,7 @@ def arr2html(arr):
     out += "\n</ul>\n"
     return out
 
-def validate_submission(f,statespace=None):
+def validate_submission(f,stateset=None):
     
     arr = []
 
@@ -50,12 +50,18 @@ def validate_submission(f,statespace=None):
     csvreader = csv.DictReader(filter(lambda row:row[0] != '#', csvfile))
     rows=[]
     for row in csvreader:
+        stateset=row['dataset'] #FIXME: will need to remove and pass in stateset as top level param
         rows.append(row)
 
     names = [r['name'] for r in rows]
-    rxns = db.get_rxns(names)
+    rxns = db.get_rxns(stateset,names)
+            
     # validate each row
     num_errors = 0
+    if len(rxns) == 0:
+            app.logger.info("No reactions found for %s" % stateset)
+            arr.append("Stateset %s not found in database -- are you uploading the right data?" % stateset)
+            return arr2html(arr)
 
     for i, row in enumerate(rows):
         if num_errors > 10:
@@ -66,7 +72,7 @@ def validate_submission(f,statespace=None):
         if len(row) != len(COLUMNS):
             arr.append("Row %d, with %d columns, does not equal specified number (%d)" % ( i, len(row), len(COLUMNS)))
         
-        if statespace and row['dataset'] != statespace:
+        if stateset and row['dataset'] != stateset:
             num_errors+=1
             arr.append("Row %d 'dataset' column (%s) is not 11 chars. Is it the state set hash?" % (i, row['dataset']))
         try:
