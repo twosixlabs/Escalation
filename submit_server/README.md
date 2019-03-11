@@ -1,27 +1,85 @@
-# Build and push
+# Building the web server and mysql server locally
+
+
+## MYSQL
+
+1. Install mysql on your local machine
+
+2. Stand up a mysql server in a docker container.
+
 ```
+docker volume create db_volume
+
+docker run \
+    -e MYSQL_ROOT_PASSWORD=sd2 \
+    -e MYSQL_DATABASE=escalation \
+    -e MYSQL_USER=escalation \
+    -e MYSQL_PASSWORD=perovskites \
+    --mount type=volume,src=db_volume,dst=/var/lib/mysql \
+    -p 3306:3306 \
+    -d \
+    --name escalation-mysql \
+    mysql:latest
+```
+3. If desired, connect to the db directly with  ` mysql -h localhost -P 3306 --protocol=tcp -u escalation -pperovskites`
+
+## Build the web server container
+
+This assumes you have a public docker hub account. If not, go make one at https://hub.docker.com/
+
+```
+# select your version
 VERSION=0.2
-./build.sh
-docker tag escalation-server:latest snovotney/escalation:$VERSION
-docker push snovotney/escalation:$VERSION
+# change to your Docker user ID
+DOCKERUSER=snovotney
+docker build -t escalation-server 
+docker tag escalation-server:latest $DOCKERUSER/escalation:$VERSION
+docker push $DOCKERUSER/escalation:$VERSION
 ```
-# Run locally
-` docker run --name escalation  -p 8000:5000 --rm -e SECRET_KEY=perovskites escalation-server:$VERSION`
 
-Then go to `127.0.0.1:8000` in your brower
+## Run the web server locally in a docker container
+
+This will create the server on `127.0.0.1:8000` and connect to the mysql server you stood up before.
+
+```
+docker run --name escalation -d -p 8000:5000 --rm -e SECRET_KEY=perovskites-rule \
+    --link escalation-mysql:dbserver \
+    -e DATABASE_URL=mysql+pymysql://escalation:perovskites@dbserver/escalation \
+    escalation:latest
+```
+
+Go to `http://127.0.0.1:8000` in your brower
 
 
-# Upload submissions outputted from `make_perovskites_blank_submission.py`
-# Run `upload_submission.py --help` for custom options
-`python3 submit_server/scripts/upload_submission.py --csv submit_server/tests/0017_train_c4844e9_snovotney.csv --expname first --notes "These are my awesome notes"`
+## Debug with flask
 
-# Update stateset to checked in stateset from versioned repo
-# Run `upload_stateset.py --help` for custom options
+You can also run the web server outside of docker. There are a couple useful commands:
+
+1. setup the virtual environment venv (instructions incomplete, I know, I know)
+2. `source venv/bin/activate`
+3 `flask init-db` creates the tables in the database (run once)
+4. `flask run`
+
+Step 3 should use the environment variables in `.env`. If not, then source the variables inside there directly.
+
+There are two other useful commands:
+- `flask demo-data` loads fake demo data into the db.
+- `flask reset-db` deletes all data from the tables.
+
+
+
+# Upload submissions on the command line
+
+1. Run `make_perovskites_blank_submission.py`
+2. Run `python3 submit_server/scripts/upload_submission.py --csv submit_server/tests/0017_train_c4844e9_snovotney.csv --expname first --notes "These are my awesome notes"`
+
+# Update stateset from current perovskites versioned data manifest
+
 `python3 submit_server/scripts/upload_stateset.py  --data ../versioned-datasets/`
 
 Here's example output of running both
 ```
-ython3 submit_server/scripts/upload_stateset.py  --data ../versioned-datasets/
+python3 submit_server/scripts/upload_stateset.py  --data ../versioned-datasets/
 Filtering ../versioned-datasets/data/perovskite/stateset/0017.stateset.csv to /var/folders/08/cb19qzd92wsbhh3n4cz145v00000gp/T/tmpbx31mcn6
 Pushing filtered csv to http://escalation.sd2e.org/admin
 200 OK <Response [200]>
