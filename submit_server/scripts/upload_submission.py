@@ -18,7 +18,7 @@ regex=r'(\d{4})_train_([^-]{7})_([^\.]+)\.csv'
 crank = None
 commit = None
 user = None
-
+expname = None
 #print( re.match(regex2,args.csv))
 m = re.search(regex,args.csv)
 if m:
@@ -26,6 +26,7 @@ if m:
     commit = m.group(2)
     user = m.group(3)
     print(crank,commit,user)
+    expname = commit
     
 elif args.crank == None:
     print("Can't extract data from CSV, must pass in --crank")
@@ -41,7 +42,9 @@ if args.csv == None:
     exit()
 
 notes = args.notes or ""
-
+if expname is None:
+    expname = args.expname
+    
 if crank is None:
     crank = args.crank
 if user is None:
@@ -49,12 +52,12 @@ if user is None:
     
 print("crank",crank)
 print("username",user)
-print("expname",args.expname)
+print("expname",expname)
 print("notes",notes)
 print("csv",args.csv)
 
-r = requests.post(args.endpoint, headers={'User-Agent':'escalation'},data={'crank':crank,'username':user,'expname':args.expname,'notes':notes},
-                      files={'csvfile':open(args.csv,'rb')},timeout=600)    
+r = requests.post(args.endpoint, headers={'User-Agent':'escalation'},data={'crank':crank,'username':user,'expname':expname,'notes':notes},
+                      files={'csvfile':open(args.csv,'rb')},timeout=60*2)    
 print(r.status_code, r.reason,r)
 try:
     print(r.json())

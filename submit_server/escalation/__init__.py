@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import sql
 import click
@@ -137,6 +137,10 @@ def reset_db():
 @app.route('/hello')
 def hello():
     return 'Hello, World!'
+
+@app.route('/links')
+def links():
+    return render_template('links.html')
 
 from . import submission
 from . import view
