@@ -16,40 +16,39 @@ from . import database as db
 def isclose(a,b,rtol=1e-05,atol=1e-08):
         return abs(a - b) <= (atol + rtol * abs(b))
         
-def arr2html(arr):
-    out="<ul>\n"
-    out += "\n".join("<li>%s</li>" % x for x in arr)
-    out += "\n</ul>\n"
-    return out
-
-def validate_submission(f,stateset=None):
-    
+def validate_submission(contents,stateset=None):
     arr = []
+    contents = contents.split("\n")
+    app.logger.debug("Reading %d lines starting with %s" % (len(contents), contents[0]))
 
-    app.logger.debug("Reading " + f)
-    #make sure file is comma  delimited
-    with open(f, 'r') as fh:
-        for header in fh:
-            if header[0] != '#':
-                break
-    if any(d in header.split(DELIMITER)[0] for d in BAD_DELIMITERS):
+    if len(contents) == 1:
+        return ["Submission file appears empty"]
+
+    for line in contents:
+        if len(line)==0:
+                continue
+        if line[0] != '#':
+            break
+
+    if any(d in line.split(DELIMITER)[0] for d in BAD_DELIMITERS):
         arr.append("file does not appear to be comma delimited. No tabs or spaces allowed")
-        return arr2html(arr)
-    cols = header.strip().split(DELIMITER)
+        return arr
+    cols = line.strip().split(DELIMITER)
 
     if len(cols) != len(COLUMNS):
         arr.append(",".join(cols) + "Extra columns in uploaded CSV.<br/> expected: '%s'" % " , ".join(COLUMNS))
-        return arr2html(arr)
+        return arr
     
     for i, col in enumerate(cols):
          if COLUMNS[i] != col:
             arr.append( "Wrong columns uploaded.<br/>Received '%s'<br/>expected '%s'" % (",".join(cols), ",".join(COLUMNS)))
-            return arr2html(arr)
+            return arr
 
-    csvfile = open(f)
-    csvreader = csv.DictReader(filter(lambda row:row[0] != '#', csvfile))
     rows=[]
-    for row in csvreader:
+    reader = csv.DictReader(filter(lambda row:row[0] != '#', contents))
+    #FIXME: could this be sped up?
+
+    for row in reader:
         stateset=row['dataset'] #FIXME: will need to remove and pass in stateset as top level param
         rows.append(row)
 
@@ -58,20 +57,23 @@ def validate_submission(f,stateset=None):
             
     # validate each row
     num_errors = 0
-    if len(rxns) == 0:
-            app.logger.info("No reactions found for %s" % stateset)
-            arr.append("Stateset %s not found in database -- are you uploading the right data?" % stateset)
-            return arr2html(arr)
-
+    if len(rxns) != len(rows):
+        app.logger.info("Only found %d of %d submitted rows in current stateset -- maybe there is a typo in the dataset or name field?" % (len(rxns),len(rows)))
+        arr.append("Only found %d of %d submitted rows in current stateset -- maybe there is a typo in the dataset or name field?" % (len(rxns),len(rows)))
+        return arr
+    
     for i, row in enumerate(rows):
+
         if num_errors > 10:
             arr.append("Stopping checks due to more than 10 errors")
             break
-        app.logger.debug("VALIDATE: %5d:%s" % (i,row))
 
-        if len(row) != len(COLUMNS):
-            arr.append("Row %d, with %d columns, does not equal specified number (%d)" % ( i, len(row), len(COLUMNS)))
-        
+        if None in row.values():
+            num_errors+=1
+            arr.append("Row %d does not contain the right number of values" %i)
+            app.logger.debug("Skipping row %d" % i)
+            continue
+    
         if stateset and row['dataset'] != stateset:
             num_errors+=1
             arr.append("Row %d 'dataset' column (%s) is not 11 chars. Is it the state set hash?" % (i, row['dataset']))
@@ -89,10 +91,14 @@ def validate_submission(f,stateset=None):
             float(row['_rxn_M_organic'])
         except ValueError:
             num_errors+=1                
-            arr.append("Row %d '_rxn_M_organic' column (%s) is not a float. Did you use the values from the state set?" % (i, row['_rxn_M_organic']))                            
-        if int(row['predicted_out']) not in VALID_CATEGORIES:
-            num_errors+=1
-            arr.append("Row %d 'predicted_out' column (%s) is not in %s" %(i,row['predicted_out'],",".join([str(x) for x in VALID_CATEGORIES])))
+            arr.append("Row %d '_rxn_M_organic' column (%s) is not a float. Did you use the values from the state set?" % (i, row['_rxn_M_organic']))
+        try:
+            if int(row['predicted_out']) not in VALID_CATEGORIES:
+                num_errors+=1
+                arr.append("Row %d 'predicted_out' column (%s) is not in %s" %(i,row['predicted_out'],",".join([str(x) for x in VALID_CATEGORIES])))
+        except ValueError:
+            num_errors+=1                
+            arr.append("Row %d 'predicted_out' column (%s) is not an int. Did you use the values from the state set?" % (i, row['predicted_out']))            
         try:
             x=float(row['score'])
             if x < 0 or x > 1:
@@ -102,24 +108,19 @@ def validate_submission(f,stateset=None):
             num_errors+=1                
             arr.append("Row %d 'score' column (%s) is not a float. Did you use the values from the state set?" % (i, row['score']))                        
 
-        org, inorg = rxns[row['name']]['organic'], rxns[row['name']]['inorganic']
+        organic, inorganic = rxns[row['name']]['organic'], rxns[row['name']]['inorganic']
         
-        if not (isclose(float(row['_rxn_M_inorganic']),float(inorg),1e-03,1e-05)):
+        if not (isclose(float(row['_rxn_M_inorganic']),float(inorganic),1e-03,1e-05)):
             num_errors += 1
-            arr.append("Row %d '_rxn_M_inorganic' value %d does not match statespace value '%d' -- did you mix up rows?" % (i,row['_rxn_M_inorganic'],inorganic))
+            arr.append("Row %d '_rxn_M_inorganic' value %s does not match statespace value '%s' -- did you mix up rows?" % (i,row['_rxn_M_inorganic'],inorganic))
 
-        if not (isclose(float(row['_rxn_M_organic']),float(org),1e-03,1e-05)):
+        if not (isclose(float(row['_rxn_M_organic']),float(organic),1e-03,1e-05)):
             num_errors += 1
-            arr.append("Row %d '_rxn_M_organic' value %d does not match statespace value '%d' -- did you mix up rows?" % (i,row['_rxn_M_organic'],organic))
-                     
-#        except:
-#            app.logger.debug("rxns didn't work")
-#            num_errors +=1
-#            arr.append("Row %d is not in list of current stateset: %s" % (i,",".join([row['dataset'],row['name'],row['_rxn_M_organic'],row['_rxn_M_inorganic']])))
+            arr.append("Row %d '_rxn_M_organic' value %s does not match statespace value '%s' -- did you mix up rows?" % (i,row['_rxn_M_organic'],organic))
 
-    csvfile.close()
+    print(arr)
     if len(arr) > 0:
-        return arr2html(arr)
+        return arr
     else:
         return None
 

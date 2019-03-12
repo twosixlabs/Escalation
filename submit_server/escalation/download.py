@@ -1,25 +1,43 @@
+from flask import current_app as app
+
 import shutil
 from tempfile import mkdtemp
 import os
 import time
 import csv    
-    
-def download_zip(basedir,files,pfx="",metadata=[]):
-    tmpdir = mkdtemp()
 
-    fileids={}
+def filename(sub):
+    #id, crank, username, expname
+    return "%05d_%s_%s_%s.csv" %(sub.id,sub.crank,sub.username.replace(' ','-'),sub.expname.replace(' ','-'))
+
+def download_zip(basedir,submissions,pfx=""):
+    tmpdir = mkdtemp()
+    metadata=[]
+    for sub in submissions:
+        fname = filename(sub)
+        metadata.append({'user':sub.username,
+                         'id': sub.id,
+                         'crank':sub.crank,
+                         'created':sub.created,
+                         'expname':sub.expname,
+                         'notes':sub.notes,
+                         'filename':fname,
+        })
+        
+    app.logger.debug(metadata)
     with open(os.path.join(tmpdir,'metadata.csv'),'w') as csvfile:
-        fieldnames = ['id','Crank','Created','Expname','Filename','Notes','Username']
+        fieldnames = ['id','user','crank','created','expname','notes','filename']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         for elem in metadata:
             writer.writerow(elem)
-            fileids[elem['Filename']] = elem['id']
 
-    for f in files:
-        id = fileids[f]
-        shutil.copy(os.path.join(basedir,f), os.path.join(tmpdir,"%s_%s" % (id,f)))
-
+    for sub in submissions:
+        fname = filename(sub)
+        fh =  open(os.path.join(tmpdir,fname),'wb')
+        fh.write(sub.contents)
+        fh.close()
+            
     if pfx:
         curr = "escalation." + str(pfx) + "." + time.strftime("%Y%m%d-%H%M%S",time.localtime())
     else:

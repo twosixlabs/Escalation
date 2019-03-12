@@ -17,12 +17,14 @@ def view():
     if request.method == 'POST' and 'crank' in request.form:
         curr_crank = request.form['crank']
 
-    submissions = db.get_submissions(curr_crank)
+    submissions = db.get_submissions(curr_crank) #contains data
         
     if request.method == 'POST' and 'download' in request.form:
-        files=request.form.getlist('download')
-        metadata = [dict(sub) for sub in submissions if sub['filename'] in files]
-        zipfile = download_zip(app.config['UPLOAD_FOLDER'],files, curr_crank,metadata)
+        requested=[int(x) for x in request.form.getlist('download')]
+        submissions = [sub for sub in submissions if sub.id in requested]
+        for sub in submissions:
+            print(sub)
+        zipfile = download_zip(app.config['UPLOAD_FOLDER'],submissions, curr_crank)
         return send_file(os.path.join(app.config['UPLOAD_FOLDER'],zipfile),as_attachment=True)
     
     return render_template('index.html', submissions=submissions,cranks=cranks, crank=curr_crank)

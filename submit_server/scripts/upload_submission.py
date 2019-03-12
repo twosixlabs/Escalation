@@ -25,7 +25,6 @@ if m:
     crank = m.group(1)
     commit = m.group(2)
     user = m.group(3)
-    print(crank,commit,user)
     expname = commit
     
 elif args.crank == None:
@@ -49,12 +48,12 @@ if crank is None:
     crank = args.crank
 if user is None:
     user = args.user
-    
-print("crank",crank)
-print("username",user)
-print("expname",expname)
-print("notes",notes)
-print("csv",args.csv)
+
+print("crank:",crank)
+print("username:",user)
+print("expname:",expname)
+print("notes:",notes)
+print("csv:",args.csv)
 
 r = requests.post(args.endpoint, headers={'User-Agent':'escalation'},data={'crank':crank,'username':user,'expname':expname,'notes':notes},
                       files={'csvfile':open(args.csv,'rb')},timeout=60*2)    

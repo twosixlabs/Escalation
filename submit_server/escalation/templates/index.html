@@ -17,7 +17,7 @@
   </tr>
 {% for sub in submissions %}
   <tr>
-    <td> <input type="checkbox" name="download" value="{{ sub['filename'] }}" checked>
+    <td> <input type="checkbox" name="download" value="{{ sub['id'] }}" checked>
     <td> {{ sub['crank'] }} </td>  
     <td> {{ sub['username'] }} </td>
     <td> {{ sub['expname'] }} </td>

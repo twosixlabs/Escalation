@@ -43,7 +43,7 @@ def get_cranks():
     return Crank.query.order_by(Crank.created.asc()).all()
     
 def get_unique_cranks():
-    return [u.crank for u in Crank.query.distinct(Crank.crank).order_by(Crank.created.desc()).all()]
+    return [x[0] for x in db.session.query(Crank.crank).distinct()]
 
 def get_current_crank():
     return Crank.query.filter_by(current=True).first()
@@ -55,7 +55,6 @@ def get_crank(id=None):
         return Crank.query.order_by(Crank.created.desc()).all()
 
 def get_rxns(stateset,names):
-    current_app.logger.info("Getting %d runs for %s" %(len(names), stateset))
     res = Run.query.filter(and_(Run.stateset == stateset, Run.name.in_(names))).all()
     current_app.logger.info("Returned %d reactions from stateset" % (len(res)))
     d={}
@@ -63,8 +62,8 @@ def get_rxns(stateset,names):
         d[r.name] = {'organic':r._rxn_M_organic,'inorganic':r._rxn_M_inorganic}
     return d
 
-def add_submission(username,expname,crank,filename,notes):
-    db.session.add(Submission(username=username,expname=expname,crank=crank,filename=filename,notes=notes))
+def add_submission(username,expname,crank,content,notes):
+    db.session.add(Submission(username=username,expname=expname,crank=crank,content=content,notes=notes))
     db.session.commit()
 
 def get_submissions(crank='all'):

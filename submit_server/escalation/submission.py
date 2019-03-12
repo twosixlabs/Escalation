@@ -12,6 +12,14 @@ from werkzeug.utils import secure_filename
 from .  import database as db
 from .validate import validate_submission
 
+def arr2html(arr):
+    if type(arr) == str:
+        return arr
+    out="<ul>\n"
+    out += "\n".join("<li>%s</li>" % x for x in arr)
+    out += "\n</ul>\n"
+    return out
+
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -57,38 +65,33 @@ def submission():
             error = "Must upload a csv file"
         elif crank != curr_crank:
             error = "Entered crank number (%s) does not match the current crank (%s)" % (crank, curr_crank)
+        else:
+            contents = csvfile.read().decode('utf-8')           
+            app.logger.info(contents)
+            app.logger.info("Validating " + csvfile.filename)
+            error = validate_submission(contents)
+            if error == None:
+                error = db.add_submission(username,expname,crank,contents,notes)
 
-        #save temporary local copy
-        filename = secure_filename("_".join([crank,username,expname,csvfile.filename]))
-        csvfile.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        if not error:
-            #TODO: pass in stateset/git hash here
-            error = validate_submission(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-
-        app.logger.info("Processed {}".format(csvfile.filename)            )
         #custom check if POST from script instead of UI
-        if request.headers.get('User-Agent') == 'escalation':
-            if error:
-                app.logger.error(error)
+        if error:
+            #turn into array for downstream printing -- bleh I know
+            if type(error) == str:
+                error = [error]
+            app.logger.info("\n".join(error))
+            if request.headers.get('User-Agent') == 'escalation':
                 return jsonify({'error':error}), 400
             else:
-                db.add_submission(username,expname,crank,filename,notes)
-                app.logger.info("Added submission")                
-                return jsonify({'success':'Added submission'})
-
-        #case of web based user agent
-        if error:
-            app.logger.error(error)
-            flash(error)
+                flash(arr2html(error))
         else:
-            db.add_submission(username,expname,crank,filename,notes)
-            app.logger.info("Added submission")            
-
-            #clear out session
-            for key in ('username','expname','crank','notes'):
-                session.pop(key,None)
+            app.logger.info("Added submission")
+            if request.headers.get('User-Agent') == 'escalation':                
+                return jsonify({'success':'Added submission'})
+            else:
+                #clear out session
+                for key in ('username','expname','crank','notes'):
+                    session.pop(key,None)
                 
-            return render_template('success.html',username=username)
+                return render_template('success.html',username=username)
 
-        
     return render_template('submission.html',session=session,crank=curr_crank,stateset=curr_stateset)

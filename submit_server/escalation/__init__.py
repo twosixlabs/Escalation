@@ -2,6 +2,7 @@ import os
 from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import sql
+from sqlalchemy.orm import deferred
 import click
 import logging
 from logging.handlers import RotatingFileHandler
@@ -35,11 +36,11 @@ class Submission(db.Model):
     username = db.Column(db.String(64))
     expname = db.Column(db.String(64))
     crank = db.Column(db.String(64))
-    filename = db.Column(db.String(256))
+    contents = deferred(db.Column(db.LargeBinary))
     notes = db.Column(db.Text)
     created = db.Column(db.DateTime(timezone=True), server_default=sql.func.now())
     def __repr__(self):
-        return '<Submission {} {} {} {}>'.format(self.username,self.expname,self.crank,self.filename) 
+        return '<Submission {} {} {} {}>'.format(self.id,self.username,self.expname,self.crank,self.contents[0:10]) 
 
 class Crank(db.Model):
     id       = db.Column(db.Integer,primary_key=True)
@@ -84,13 +85,33 @@ def delete_db():
 
 def insert_demo_data():
     delete_db()
-
+    contents1= b"""# USERNAME: snovotney
+dataset,name,_rxn_M_inorganic,_rxn_M_organic,predicted_out,score
+12345678901,1,0,0,4,1
+12345678901,2,0,0,4,0.4
+12345678901,3,0,0,4,0.5
+12345678901,4,0,0,4,0.4
+"""
+    contents2=b"""# USERNAME: snovotney
+dataset,name,_rxn_M_inorganic,_rxn_M_organic,predicted_out,score
+bbbb5678901,1,0,0,4,1
+bbbb5678901,2,0,0,4,0.4
+bbbb5678901,3,0,0,4,0.5
+bbbb5678901,4,0,0,4,0.4
+"""
+    contents3=b"""# USERNAME: snovotney
+dataset,name,_rxn_M_inorganic,_rxn_M_organic,predicted_out,score
+bbbb5678901,1,0,0,4,1
+bbbb5678901,2,0,0,2,10
+bbbb5678901,4,0,0,4,0.4
+"""
+    
     db.session.add(Crank(crank='0002', stateset='bbbb5678901', githash='abc1236', num_runs=9,username='snovot', current=True))
     db.session.add(Crank(crank='0002', stateset='aaaa5678901', githash='abc1235', num_runs=9,username='snovot', current=False))    
     db.session.add(Crank(crank='0001', stateset='12345678901', githash='abc1234', num_runs=9,username='snovot', current=False))
-    db.session.add(Submission(username='snovot',expname='name',crank='0001',filename='file.csv',notes='test test test'))
-    db.session.add(Submission(username='snovot',expname='name1',crank='0002',filename='file.csv',notes='test test test'))
-    db.session.add(Submission(username='snovot',expname='name2',crank='0002',filename='file.csv',notes='test test test'))
+    db.session.add(Submission(username='snovot',expname='name',crank='0001',contents=contents1,notes='test test test'))
+    db.session.add(Submission(username='snovot',expname='name1',crank='0002',contents=contents2,notes='test test test'))
+    db.session.add(Submission(username='snovot',expname='name2',crank='0002',contents=contents3,notes='test test test'))
     db.session.add(Run(crank='0002',stateset='aaaa5678901',name='0',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
     db.session.add(Run(crank='0002',stateset='aaaa5678901',name='1',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
     db.session.add(Run(crank='0002',stateset='aaaa5678901',name='2',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
@@ -125,7 +146,7 @@ def insert_demo_data():
     db.session.commit()
     click.echo("Added demo data")
 
-@app.cli.command('demo-data')
+@app.cli.command('demo-db')
 def demo_data():
     insert_demo_data()
 
