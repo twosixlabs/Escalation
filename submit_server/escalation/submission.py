@@ -10,7 +10,7 @@ from flask import current_app as app
 from werkzeug.utils import secure_filename
 
 from .  import database as db
-from .validate import validate_submission
+from .files import *
 
 def arr2html(arr):
     if type(arr) == str:
@@ -34,6 +34,7 @@ def submission():
 
     curr_crank = db.get_current_crank()
     if curr_crank is None:
+        print("HERE")
         return render_template('submission.html')
     else:
         curr_crank = curr_crank.crank
@@ -64,11 +65,16 @@ def submission():
         elif crank != curr_crank:
             error = "Entered crank number (%s) does not match the current crank (%s)" % (crank, curr_crank)
         else:
-            contents = csvfile.read().decode('utf-8')           
-            app.logger.info("Validating " + csvfile.filename)
-            error = validate_submission(contents,curr_stateset)
+            
+            rows, comments = text2rows(csvfile.read().decode('utf-8'))
+            if rows == None:
+                error = "Could not extract rows from file %s" % csvfile.filename
             if error == None:
-                error = db.add_submission(username,expname,crank,contents,notes)
+                error = validate_submission(rows,curr_stateset)
+            if error == None:
+                if comments:
+                    notes = notes + "\nComments from file:" + comments
+                error = db.add_submission(username,expname,crank,rows,notes)
 
         #custom check if POST from script instead of UI
         if error:

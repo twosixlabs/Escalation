@@ -31,16 +31,23 @@ except OSError:
 
 db = SQLAlchemy(app)
 
+class Prediction(db.Model):
+    id              = db.Column(db.Integer,primary_key=True)
+    sub_id          = db.Column(db.Integer)
+    name            = db.Column(db.String(64))
+    dataset         = db.Column(db.String(64))    
+    predicted_out   = db.Column(db.Integer)
+    score           = db.Column(db.Float)
+    
 class Submission(db.Model):
-    id = db.Column(db.Integer,primary_key=True)
+    id       = db.Column(db.Integer,primary_key=True)
     username = db.Column(db.String(64))
-    expname = db.Column(db.String(64))
-    crank = db.Column(db.String(64))
-    content = deferred(db.Column(db.Text()))
-    notes = db.Column(db.Text)
-    created = db.Column(db.DateTime(timezone=True), server_default=sql.func.now())
+    expname  = db.Column(db.String(64))
+    crank    = db.Column(db.String(64))
+    notes    = db.Column(db.Text)
+    created  = db.Column(db.DateTime(timezone=True), server_default=sql.func.now())
     def __repr__(self):
-        return '<Submission {} {} {} {}>'.format(self.id,self.username,self.expname,self.crank,self.content[0:10]) 
+        return '<Submission {} {} {} {}>'.format(self.id,self.username,self.expname,self.crank,self.notes[:10]) 
 
 class Crank(db.Model):
     id       = db.Column(db.Integer,primary_key=True)
@@ -56,13 +63,13 @@ class Crank(db.Model):
         return '<Crank {} {} {} {}>'.format(self.crank,self.stateset,self.githash,self.current)
 
 class Run(db.Model):
-    id = db.Column(db.Integer,primary_key=True)
-    crank    = db.Column(db.String(64))    
-    stateset = db.Column(db.String(11))
-    dataset = db.Column(db.String(11))    
-    name = db.Column(db.String(256))
+    id               = db.Column(db.Integer,primary_key=True)
+    crank            = db.Column(db.String(64))    
+    stateset         = db.Column(db.String(11))
+    dataset          = db.Column(db.String(11))    
+    name             = db.Column(db.String(256))
     _rxn_M_inorganic = db.Column(db.Float)
-    _rxn_M_organic = db.Column(db.Float)           
+    _rxn_M_organic   = db.Column(db.Float)           
 
     def __repr__(self):
         return '<Run {} {} {} {}>'.format(self.stateset,self.name,self._rxn_M_inorganic,self._rxn_M_organic)
@@ -76,6 +83,7 @@ def init_db():
         Crank.__table__.drop(engine)
         Run.__table__.drop(engine)
         Submission.__table__.drop(engine)
+        Prediction.__table__.drop(engine)
     except:
         print("Problem deleting tables, may be ok?")
     db.create_all()
@@ -84,38 +92,31 @@ def init_db():
     
 def delete_db():
     Run.query.delete()
+    Prediction.query.delete()    
     Submission.query.delete()
     Crank.query.delete()    
 
 def insert_demo_data():
     delete_db()
-    content1= b"""# USERNAME: snovotney
-dataset,name,_rxn_M_inorganic,_rxn_M_organic,predicted_out,score
-12345678901,1,0,0,4,1
-12345678901,2,0,0,4,0.4
-12345678901,3,0,0,4,0.5
-12345678901,4,0,0,4,0.4
-"""
-    content2=b"""# USERNAME: snovotney
-dataset,name,_rxn_M_inorganic,_rxn_M_organic,predicted_out,score
-bbbb5678901,1,0,0,4,1
-bbbb5678901,2,0,0,4,0.4
-bbbb5678901,3,0,0,4,0.5
-bbbb5678901,4,0,0,4,0.4
-"""
-    content3=b"""# USERNAME: snovotney
-dataset,name,_rxn_M_inorganic,_rxn_M_organic,predicted_out,score
-bbbb5678901,1,0,0,4,1
-bbbb5678901,2,0,0,2,10
-bbbb5678901,4,0,0,4,0.4
-"""
-    
+
+    db.session.add(Prediction(id=1,sub_id=1,name=1,dataset='12345678901',predicted_out=1,score=0.5))
+    db.session.add(Prediction(id=2,sub_id=1,name=2,dataset='12345678901',predicted_out=2,score=0.5))
+    db.session.add(Prediction(id=3,sub_id=1,name=3,dataset='12345678901',predicted_out=2,score=0.5))
+    db.session.add(Prediction(id=4,sub_id=1,name=4,dataset='12345678901',predicted_out=4,score=0.5))
+    db.session.add(Prediction(id=5,sub_id=2,name=1,dataset='aaaa5678901',predicted_out=4,score=0.9))
+    db.session.add(Prediction(id=6,sub_id=2,name=2,dataset='aaaa5678901',predicted_out=4,score=0.1))
+    db.session.add(Prediction(id=7,sub_id=2,name=3,dataset='aaaa5678901',predicted_out=4,score=0.2))
+    db.session.add(Prediction(id=8,sub_id=2,name=4,dataset='aaaa5678901',predicted_out=4,score=0.4))
+    db.session.add(Prediction(id=9,sub_id=3,name=1,dataset='bbbb5678901',predicted_out=2,score=0.2))
+    db.session.add(Prediction(id=10,sub_id=3,name=2,dataset='bbbb5678901',predicted_out=2,score=0.5))
+    db.session.add(Prediction(id=11,sub_id=3,name=3,dataset='bbbb5678901',predicted_out=2,score=0.05))
+    db.session.add(Prediction(id=12,sub_id=3,name=4,dataset='bbbb5678901',predicted_out=2,score=1)) 
     db.session.add(Crank(crank='0002', stateset='bbbb5678901', githash='abc1236', num_runs=9,username='snovot', current=True))
     db.session.add(Crank(crank='0002', stateset='aaaa5678901', githash='abc1235', num_runs=9,username='snovot', current=False))    
     db.session.add(Crank(crank='0001', stateset='12345678901', githash='abc1234', num_runs=9,username='snovot', current=False))
-    db.session.add(Submission(username='snovot',expname='name',crank='0001',content=content1,notes='test test test'))
-    db.session.add(Submission(username='snovot',expname='name1',crank='0002',content=content2,notes='test test test'))
-    db.session.add(Submission(username='snovot',expname='name2',crank='0002',content=content3,notes='test test test'))
+    db.session.add(Submission(username='snovot',expname='name', crank='0001',notes='test test test'))
+    db.session.add(Submission(username='snovot',expname='name1',crank='0002',notes='test test test'))
+    db.session.add(Submission(username='snovot',expname='name2',crank='0002',notes='test test test'))
     db.session.add(Run(crank='0002',stateset='aaaa5678901',name='0',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
     db.session.add(Run(crank='0002',stateset='aaaa5678901',name='1',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
     db.session.add(Run(crank='0002',stateset='aaaa5678901',name='2',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))

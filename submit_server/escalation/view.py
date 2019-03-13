@@ -5,7 +5,7 @@ from flask import (
 )
 from flask import current_app as app
 from . import database as db
-from .download import download_zip
+from .files import download_zip
 
 bp = Blueprint('view', __name__)
 @bp.route('/', methods=('GET','POST'))
@@ -22,8 +22,6 @@ def view():
     if request.method == 'POST' and 'download' in request.form:
         requested=[int(x) for x in request.form.getlist('download')]
         submissions = [sub for sub in submissions if sub.id in requested]
-        for sub in submissions:
-            print(sub)
         zipfile = download_zip(app.config['UPLOAD_FOLDER'],submissions, curr_crank)
         return send_file(os.path.join(app.config['UPLOAD_FOLDER'],zipfile),as_attachment=True)
     

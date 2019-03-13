@@ -5,12 +5,48 @@
 {% endblock %}
 
  {% block content %}
+
+<h1> Ten most recent crank records </h1>
+<form method="post">   
+ <table style="min-width:720px">
+   <tr>
+     <th></th>
+   <th>Crank </th>
+   <th>Stateset Hash </th>
+   <th>Number Runs</th>
+   <th>Git commit </th>
+   <th>Uploader </th>
+   <th>Timestamp </th>
+  </tr>
+  {% for r in cranks[:10] %}
+   <tr>
+    <td> <input type="radio" name="new_stateset" value="{{ r['id'] }}" > </td>    
+   <td> {{ r['crank'] }} </td>
+   <td> {{ r['stateset'] }} </td>
+   <td> {{ r['num_runs'] }} </td>        
+   <td> {{ r['githash'] }} </td>
+   <td> {{ r['username'] }} </td>
+   <td> {{ r['created'].strftime("%Y-%m-%d %H:%M:%S") }} </td>
+   {% if r['current'] == True %}
+   <td> <b> Current </b> </td>
+   {% endif %}
+  </tr>
+
+  {% endfor %}
+ </table>
+  <label for="adminkey">Admin code</label>  
+  <input type="text" name="adminkey" required>
+  
+ <input type="submit" value="Roll back Stateset" name="submit">
+</form>
+
+<h1> Upload new stateset csv </h1>
+ 
 <p>Expected CSV format is </p>
 <pre>dataset,name,_rxn_M_inorganic,_rxn_M_organic</pre>
 <p>Instead of manually uploading here, you can also run</p>
 <pre>python3 escalation/submit_server/scripts/upload_stateset.py  path_to_versioned_repo </pre>
 
-<h1> Add new crank configuration </h1>
    <form method="post" enctype="multipart/form-data">
 
      {% if 'githash' in session %}
@@ -46,39 +82,6 @@
   <input type="submit" value="Update current crank" name="submit">
 
 </form>  
-<h1> Ten most recent crank records </h1>
-<form method="post">   
- <table style="min-width:720px">
-   <tr>
-     <th></th>
-   <th>Crank </th>
-   <th>Stateset Hash </th>
-   <th>Number Runs</th>
-   <th>Git commit </th>
-   <th>Uploader </th>
-   <th>Timestamp </th>
-  </tr>
-  {% for r in cranks[:10] %}
-   <tr>
-    <td> <input type="radio" name="new_stateset" value="{{ r['id'] }}" > </td>    
-   <td> {{ r['crank'] }} </td>
-   <td> {{ r['stateset'] }} </td>
-   <td> {{ r['num_runs'] }} </td>        
-   <td> {{ r['githash'] }} </td>
-   <td> {{ r['username'] }} </td>
-   <td> {{ r['created'].strftime("%Y-%m-%d %H:%M:%S") }} </td>
-   {% if r['current'] == True %}
-   <td> <b> Current </b> </td>
-   {% endif %}
-  </tr>
-
-  {% endfor %}
- </table>
-  <label for="adminkey">Admin code</label>  
-  <input type="text" name="adminkey" required>
-  
- <input type="submit" value="Roll back Stateset" name="submit">
-</form>
 
  <h1>Development commands for database</h1>
  <form method="post">

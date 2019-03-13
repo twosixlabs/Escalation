@@ -1,5 +1,5 @@
 from escalation import db
-from escalation import Submission, Crank, Run
+from escalation import Submission, Crank, Run, Prediction
 from sqlalchemy import and_
 from flask import current_app, g
 import csv
@@ -14,10 +14,9 @@ def read_in_stateset(filename,crank,stateset):
         for r in csvreader:
             num_rows+=1
             objs.append(Run(crank=crank,stateset=stateset,dataset=r['dataset'],name=r['name'],_rxn_M_inorganic=r['_rxn_M_inorganic'],_rxn_M_organic=r['_rxn_M_organic']))
-    current_app.logger.info("adding objects")        
     db.session.bulk_save_objects(objs)
     db.session.commit()
-    current_app.logger.info("Added objects")    
+    current_app.logger.info("Added %d runs" % len(objs))
     return num_rows
     
 def is_stateset_stored(stateset):
@@ -64,12 +63,27 @@ def get_rxns(stateset,names):
         d[r.name] = {'organic':r._rxn_M_organic,'inorganic':r._rxn_M_inorganic}
     return d
 
-def add_submission(username,expname,crank,content,notes):
-    db.session.add(Submission(username=username,expname=expname,crank=crank,content=content,notes=notes))
+def add_submission(username,expname,crank,rows,notes):
+    sub=Submission(username=username,expname=expname,crank=crank,notes=notes)
+    db.session.add(sub)
+    db.session.flush()
+    
+    objs=[]
+    for row in rows:
+        objs.append(Prediction(sub_id=sub.id,dataset=row['dataset'],name=row['name'],predicted_out=row['predicted_out'],score=row['score']))
+    db.session.bulk_save_objects(objs)
     db.session.commit()
-
+    current_app.logger.info("Added %d runs" % len(objs))
+    
 def get_submissions(crank='all'):
     if crank == 'all':
         return Submission.query.all()
     else:
         return Submission.query.filter_by(crank=crank).all()
+
+def get_predictions(id=None):
+    if id is None:
+        return Prediction.query.all()
+    else:
+        return [p.__dict__ for p in Prediction.query.filter_by(sub_id=id).all()]
+
