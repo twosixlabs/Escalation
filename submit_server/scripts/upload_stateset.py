@@ -47,7 +47,7 @@ df['dataset'] = md5(stateset)[:11]
 df.to_csv(csvfile,index=False)
 
 #TODO:manipulate stateset
-print("Pushing filtered csv to",args.endpoint)
+print("Pushing %d rows to %s. Could take a minute or two." % (len(df),args.endpoint))
 
 r = requests.post(args.endpoint, headers={'User-Agent':'escalation'},data={'crank':crank,'githash':git_sha[:7], 'username':git_username,'adminkey':args.key},
                   files={'csvfile':open(csvfile,'rb')},timeout=300)

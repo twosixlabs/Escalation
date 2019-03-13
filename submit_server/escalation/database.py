@@ -25,8 +25,10 @@ def is_stateset_stored(stateset):
 
 def add_stateset(crank,stateset,filename,githash,username):
     Crank.query.filter_by(current=True).update({'current':False})
-    db.session.add(Crank(crank=crank,stateset=stateset,filename=filename,githash=githash,username=username,current=True))
-    return read_in_stateset(filename,crank,stateset)
+    num_runs= read_in_stateset(filename,crank,stateset)
+    db.session.add(Crank(crank=crank,stateset=stateset,githash=githash,username=username,num_runs=num_runs,current=True))
+    db.session.commit()
+    return num_runs
 
 def set_stateset(id=None):
     Crank.query.filter_by(current=True).update({'current':False})
@@ -40,10 +42,10 @@ def get_stateset(id=None):
 
     
 def get_cranks():
-    return Crank.query.order_by(Crank.created.asc()).all()
+    return Crank.query.order_by(Crank.created.desc()).all()
     
 def get_unique_cranks():
-    return [x[0] for x in db.session.query(Crank.crank).distinct()]
+    return [x[0] for x in db.session.query(Crank.crank).distinct().order_by(Crank.created.desc())]
 
 def get_current_crank():
     return Crank.query.filter_by(current=True).first()

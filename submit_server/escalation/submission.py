@@ -32,9 +32,7 @@ bp = Blueprint('submission', __name__)
 @bp.route('/submission', methods=('GET', 'POST'))
 def submission():
 
-    
     curr_crank = db.get_current_crank()
-
     if curr_crank is None:
         return render_template('submission.html')
     else:
@@ -67,9 +65,8 @@ def submission():
             error = "Entered crank number (%s) does not match the current crank (%s)" % (crank, curr_crank)
         else:
             contents = csvfile.read().decode('utf-8')           
-            app.logger.info(contents)
             app.logger.info("Validating " + csvfile.filename)
-            error = validate_submission(contents)
+            error = validate_submission(contents,curr_stateset)
             if error == None:
                 error = db.add_submission(username,expname,crank,contents,notes)
 

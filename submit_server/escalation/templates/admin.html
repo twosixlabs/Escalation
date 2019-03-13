@@ -5,11 +5,12 @@
 {% endblock %}
 
  {% block content %}
-<h1> Add new crank configuration </h1>
 <p>Expected CSV format is </p>
 <pre>dataset,name,_rxn_M_inorganic,_rxn_M_organic</pre>
 <p>Instead of manually uploading here, you can also run</p>
 <pre>python3 escalation/submit_server/scripts/upload_stateset.py  path_to_versioned_repo </pre>
+
+<h1> Add new crank configuration </h1>
    <form method="post" enctype="multipart/form-data">
 
      {% if 'githash' in session %}
@@ -37,7 +38,10 @@
      
      <label for="githash">Git commit (7 chars)</label>  
      <input type="text" name="githash" maxlength="7" required>
-  
+
+     <label for="adminkey">Admin code</label>  
+     <input type="text" name="adminkey" required>
+     
      {% endif %}
   <input type="submit" value="Update current crank" name="submit">
 

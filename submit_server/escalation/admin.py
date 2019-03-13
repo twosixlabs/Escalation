@@ -20,6 +20,7 @@ def validate(adminkey,githash,filename):
     if len(githash) != 7:
         return "Git commit hash is not 7 characters (current length is %d)" % len(githash)
 
+    header=""
     #make sure file is comma  delimited
     with open(filename, 'r') as fh:
         for header in fh:

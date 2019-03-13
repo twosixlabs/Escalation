@@ -34,8 +34,8 @@ def download_zip(basedir,submissions,pfx=""):
 
     for sub in submissions:
         fname = filename(sub)
-        fh =  open(os.path.join(tmpdir,fname),'wb')
-        fh.write(sub.contents)
+        fh =  open(os.path.join(tmpdir,fname),'w')
+        fh.write(sub.content)
         fh.close()
             
     if pfx:

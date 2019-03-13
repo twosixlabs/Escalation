@@ -36,11 +36,11 @@ class Submission(db.Model):
     username = db.Column(db.String(64))
     expname = db.Column(db.String(64))
     crank = db.Column(db.String(64))
-    contents = deferred(db.Column(db.LargeBinary))
+    content = deferred(db.Column(db.Text()))
     notes = db.Column(db.Text)
     created = db.Column(db.DateTime(timezone=True), server_default=sql.func.now())
     def __repr__(self):
-        return '<Submission {} {} {} {}>'.format(self.id,self.username,self.expname,self.crank,self.contents[0:10]) 
+        return '<Submission {} {} {} {}>'.format(self.id,self.username,self.expname,self.crank,self.content[0:10]) 
 
 class Crank(db.Model):
     id       = db.Column(db.Integer,primary_key=True)
@@ -59,6 +59,7 @@ class Run(db.Model):
     id = db.Column(db.Integer,primary_key=True)
     crank    = db.Column(db.String(64))    
     stateset = db.Column(db.String(11))
+    dataset = db.Column(db.String(11))    
     name = db.Column(db.String(256))
     _rxn_M_inorganic = db.Column(db.Float)
     _rxn_M_organic = db.Column(db.Float)           
@@ -71,9 +72,12 @@ def init_db():
     from sqlalchemy import create_engine
     engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
     """Clear the existing data and create new tables."""
-    Crank.__table__.drop(engine)
-    Run.__table__.drop(engine)
-    Submission.__table__.drop(engine)
+    try:
+        Crank.__table__.drop(engine)
+        Run.__table__.drop(engine)
+        Submission.__table__.drop(engine)
+    except:
+        print("Problem deleting tables, may be ok?")
     db.create_all()
     click.echo('Initialized the database.')   
 
@@ -85,21 +89,21 @@ def delete_db():
 
 def insert_demo_data():
     delete_db()
-    contents1= b"""# USERNAME: snovotney
+    content1= b"""# USERNAME: snovotney
 dataset,name,_rxn_M_inorganic,_rxn_M_organic,predicted_out,score
 12345678901,1,0,0,4,1
 12345678901,2,0,0,4,0.4
 12345678901,3,0,0,4,0.5
 12345678901,4,0,0,4,0.4
 """
-    contents2=b"""# USERNAME: snovotney
+    content2=b"""# USERNAME: snovotney
 dataset,name,_rxn_M_inorganic,_rxn_M_organic,predicted_out,score
 bbbb5678901,1,0,0,4,1
 bbbb5678901,2,0,0,4,0.4
 bbbb5678901,3,0,0,4,0.5
 bbbb5678901,4,0,0,4,0.4
 """
-    contents3=b"""# USERNAME: snovotney
+    content3=b"""# USERNAME: snovotney
 dataset,name,_rxn_M_inorganic,_rxn_M_organic,predicted_out,score
 bbbb5678901,1,0,0,4,1
 bbbb5678901,2,0,0,2,10
@@ -109,9 +113,9 @@ bbbb5678901,4,0,0,4,0.4
     db.session.add(Crank(crank='0002', stateset='bbbb5678901', githash='abc1236', num_runs=9,username='snovot', current=True))
     db.session.add(Crank(crank='0002', stateset='aaaa5678901', githash='abc1235', num_runs=9,username='snovot', current=False))    
     db.session.add(Crank(crank='0001', stateset='12345678901', githash='abc1234', num_runs=9,username='snovot', current=False))
-    db.session.add(Submission(username='snovot',expname='name',crank='0001',contents=contents1,notes='test test test'))
-    db.session.add(Submission(username='snovot',expname='name1',crank='0002',contents=contents2,notes='test test test'))
-    db.session.add(Submission(username='snovot',expname='name2',crank='0002',contents=contents3,notes='test test test'))
+    db.session.add(Submission(username='snovot',expname='name',crank='0001',content=content1,notes='test test test'))
+    db.session.add(Submission(username='snovot',expname='name1',crank='0002',content=content2,notes='test test test'))
+    db.session.add(Submission(username='snovot',expname='name2',crank='0002',content=content3,notes='test test test'))
     db.session.add(Run(crank='0002',stateset='aaaa5678901',name='0',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
     db.session.add(Run(crank='0002',stateset='aaaa5678901',name='1',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
     db.session.add(Run(crank='0002',stateset='aaaa5678901',name='2',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))

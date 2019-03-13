@@ -45,15 +45,27 @@ def validate_submission(contents,stateset=None):
             return arr
 
     rows=[]
-    reader = csv.DictReader(filter(lambda row:row[0] != '#', contents))
-    #FIXME: could this be sped up?
+    for i, row in enumerate(contents):
+        if len(row) == 0:
+            continue
+        if '#' == row[0]:
+            continue
+        elem=row.split(DELIMITER)
+        if len(elem) != len(COLUMNS):
+            arr.append("Row %d does not have enough columns" % i)
+            continue
+        if elem[0] == 'dataset':
+            continue
+    
+        rows.append({'dataset':elem[0],'name':elem[1],'_rxn_M_inorganic':elem[2],'_rxn_M_organic':elem[3],'predicted_out':elem[4],'score':elem[5]})
 
-    for row in reader:
-        stateset=row['dataset'] #FIXME: will need to remove and pass in stateset as top level param
-        rows.append(row)
-
+    submission_stateset = rows[0]['dataset']
+    if submission_stateset != stateset and stateset is not None:
+            arr.append("Internal stateset %s does not match current stateset %s" % (submission_stateset,stateset))
+            return arr
+    
     names = [r['name'] for r in rows]
-    rxns = db.get_rxns(stateset,names)
+    rxns = db.get_rxns(rows[0]['dataset'],names) #fixme once we move to crank instead of stateset hash
             
     # validate each row
     num_errors = 0
@@ -118,7 +130,6 @@ def validate_submission(contents,stateset=None):
             num_errors += 1
             arr.append("Row %d '_rxn_M_organic' value %s does not match statespace value '%s' -- did you mix up rows?" % (i,row['_rxn_M_organic'],organic))
 
-    print(arr)
     if len(arr) > 0:
         return arr
     else:
