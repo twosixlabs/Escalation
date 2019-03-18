@@ -8,7 +8,6 @@ from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for, jsonify
 )
 from flask import current_app as app
-from werkzeug.utils import secure_filename
 from . import database as db
 
 session_vars= ('githash','adminkey','username','crank')

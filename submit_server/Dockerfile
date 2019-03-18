@@ -17,6 +17,7 @@ ENV FLASK_APP escalation
 ENV SECRET_KEY perovskite52cb883e323b48d
 
 COPY escalation escalation
+COPY migrations migrations
 RUN chown -R escalation:escalation ./
 
 COPY server.py server.py

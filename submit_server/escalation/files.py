@@ -155,16 +155,15 @@ def download_zip(basedir,submissions,pfx=""):
             writer.writerow(elem)
 
     for sub in submissions:
-        print(sub)
-        preds = db.get_predictions(sub.id)
-        print("preds",preds)
+        preds = [p.__dict__ for p in sub.rows] #map to dict for csv.dictwriter
+        app.logger.info("Writing %d predictions for %s" % (len(preds), sub))
+#        preds = db.get_predictions(sub.id)
         fname = filename(sub)
         fh =  open(os.path.join(tmpdir,fname),'w')
         fh.write("# " + sub.notes.replace("\n","\n# ") + "\n")
         writer = csv.DictWriter(fh, fieldnames=['dataset','name','predicted_out','score'],extrasaction='ignore',lineterminator='\n')
         writer.writeheader()
         for row in preds:
-            print(row)
             writer.writerow(row)
         fh.close()
             
