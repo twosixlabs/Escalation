@@ -24,6 +24,7 @@ def validate(adminkey,githash,filename):
     #make sure file is comma  delimited
     with open(filename, 'r') as fh:
         for header in fh:
+            print(header)
             if header[0] != '#':
                 break
 
@@ -44,41 +45,41 @@ def admin():
         for key in session_vars:
             session.pop(key,None)
                 
-    if request.method == 'POST' and (request.headers.get('User-Agent') == 'escalation' or request.form['submit'] == "Update current crank"):
+    if request.method == 'POST' and (request.headers.get('User-Agent') == 'escalation'):
         #save form values to pre-populate if there's an error so user saves time
         for key in session_vars:
             session[key] = request.form[key]
 
-        csvfile  = request.files['csvfile']
+        stateset  = request.files['stateset']
+        stateset_file  = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(stateset.filename))
+
+        training = request.files['perovskitedata']
+        training_file = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(training.filename))
+                
         username = request.form['username']
         crank = request.form['crank']                
-        filename = secure_filename(csvfile.filename)
-        outfile  = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         githash  = request.form['githash']
 
-        app.logger.info("request: {} {} {} {}".format(csvfile.filename,username,crank,githash))
 
-        csvfile.save(outfile)
-        error = validate(request.form['adminkey'],githash,outfile)
-        app.logger.info("Validated %s" % csvfile.filename)
+        app.logger.info("Received request: {} {} {} {} {}".format(stateset_file,training_file,username,crank,githash))
         
+        stateset.save(stateset_file)
+        error = validate(request.form['adminkey'],githash,stateset_file)
+        app.logger.info("Validated %s" % stateset.filename)
+
+        training.save(training_file)
+        stateset_id = None
         if error == None:
             #get statset from first element
-            with open(outfile) as csv_file:
+            with open(stateset_file) as csv_file:
                 csv_reader = csv.DictReader(filter(lambda row: row[0]!='#', csv_file))
                 for row in csv_reader:
-                    stateset = row['dataset']
+                    stateset_id = row['dataset']
                     break
-                
-            #check if stateset hash was already stored
-            error = db.is_stateset_stored(stateset)
-            error = None #TODO
-        if error:
-            app.logger.error("Stateset already in database")
-            flash("Stateset already in database")
-        else:
-            num_rows = db.add_stateset(crank,stateset,outfile,githash,username)
-            out="Successfully updated to crank %s and stateset %s with %d rows" % (crank, stateset,num_rows)
+
+            num_rows       = db.add_stateset(crank,stateset_id,stateset_file,githash,username)
+            num_train_rows = db.add_training(crank,stateset_id,training_file,githash,username)            
+            out="Successfully updated to crank %s and stateset %s with %d rows" % (crank, stateset_id,num_rows)
             app.logger.info(out)
             flash(out)
             for key in session_vars:
@@ -89,7 +90,7 @@ def admin():
             if error:
                 return jsonify({'error':error}), 400
             else:
-                return jsonify({'success':'updated to crank %s and stateset hash %s with %d rows' % (crank,stateset,num_rows)}), 200
+                return jsonify({'success':'updated to crank %s and stateset hash %s with %d rows' % (crank,stateset_id,num_rows)}), 200
 
     if request.method == 'POST' and request.form['submit'] == "Roll back Stateset":
         if request.form['adminkey'] != app.config['ADMIN_KEY']:

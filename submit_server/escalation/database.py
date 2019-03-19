@@ -1,9 +1,9 @@
 from escalation import db
-from sqlalchemy import and_, sql
+from sqlalchemy import and_, sql, create_engine
 from sqlalchemy.orm import deferred
 from flask import current_app, g
 import csv
-    
+
 class Submission(db.Model):
     id       = db.Column(db.Integer,primary_key=True)
     username = db.Column(db.String(64))
@@ -24,6 +24,18 @@ class Prediction(db.Model):
     predicted_out   = db.Column(db.Integer)
     score           = db.Column(db.Float)
 
+class TrainingRun(db.Model):
+    id                = db.Column(db.Integer,primary_key=True)
+    dataset           = db.Column(db.String(64))
+    name              = db.Column(db.String(64))    
+    _rxn_M_inorganic  = db.Column(db.Float)
+    _rxn_M_organic    = db.Column(db.Float)           
+    _out_crystalscore = db.Column(db.Integer)
+    inchikey          = db.Column(db.String(128))
+    
+    def __repr__(self):
+        return "<Training Run {} {} {} {}".format(self.id,self.name,self.dataset,self._out_crystalscore,self._rxn_M_inorganic,self._rxn_M_organic,self.inchikey)
+    
 class Crank(db.Model):
     id       = db.Column(db.Integer,primary_key=True)
     crank    = db.Column(db.String(64))    
@@ -123,21 +135,19 @@ def insert_demo_data():
 
 
 def read_in_stateset(filename,crank,stateset):
-    Run.query.filter_by(stateset=stateset).delete()    
-    current_app.logger.info("reading in csv")        
+    Run.query.filter_by(stateset=stateset).delete()
     with open(filename) as csvfile:
         csvreader = csv.DictReader(filter(lambda row: row[0]!='#', csvfile))
-        num_rows = 0
         objs=[]
         for r in csvreader:
-            num_rows+=1
             objs.append(Run(crank=crank,stateset=stateset,dataset=r['dataset'],name=r['name'],_rxn_M_inorganic=r['_rxn_M_inorganic'],_rxn_M_organic=r['_rxn_M_organic']))
     db.session.bulk_save_objects(objs)
     db.session.commit()
-    current_app.logger.info("Added %d runs" % len(objs))
-    return num_rows
+    current_app.logger.info(" Added %d runs for stateset" % len(objs))
+    return len(objs)
     
 def is_stateset_stored(stateset):
+    return False
     return Crank.query.filter_by(stateset=stateset).scalar() is not None
 
 def add_stateset(crank,stateset,filename,githash,username):
@@ -191,7 +201,7 @@ def add_submission(username,expname,crank,rows,notes):
         objs.append(Prediction(sub_id=sub.id,dataset=row['dataset'],name=row['name'],predicted_out=row['predicted_out'],score=row['score']))
     db.session.bulk_save_objects(objs)
     db.session.commit()
-    current_app.logger.info("Added %d runs" % len(objs))
+    current_app.logger.info("Added %d predictions for submission" % len(objs))
     
 def get_submissions(crank='all'):
     if crank == 'all':
@@ -205,3 +215,13 @@ def get_predictions(id=None):
     else:
         return [p.__dict__ for p in Prediction.query.filter_by(sub_id=id).all()]
 
+def add_training(crank,stateset,filename,githash,username):
+    with open(filename) as csvfile:
+        csvreader = csv.DictReader(filter(lambda row: row[0]!='#', csvfile))
+        objs=[]
+        for r in csvreader:
+            objs.append(TrainingRun(dataset=r['dataset'],name=r['name'],_rxn_M_inorganic=r['_rxn_M_inorganic'],_rxn_M_organic=r['_rxn_M_organic'],_out_crystalscore=r['_out_crystalscore'],inchikey=r['_rxn_organic-inchikey']))
+    db.session.bulk_save_objects(objs)
+    db.session.commit()
+    current_app.logger.info("Added %d training runs" % len(objs))    
+    return len(objs)

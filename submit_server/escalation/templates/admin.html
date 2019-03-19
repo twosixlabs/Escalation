@@ -42,45 +42,7 @@
 
 <h1> Upload new stateset csv </h1>
  
-<p>Expected CSV format is </p>
-<pre>dataset,name,_rxn_M_inorganic,_rxn_M_organic</pre>
-<p>Instead of manually uploading here, you can also run</p>
 <pre>python3 escalation/submit_server/scripts/upload_stateset.py  path_to_versioned_repo </pre>
-
-   <form method="post" enctype="multipart/form-data">
-
-     {% if 'githash' in session %}
-     <label for="csvfile">CSV file</label>
-     <input type="file" name="csvfile" accept="csv" required>
-     
-     <label for="username">User name</label>  
-     <input type="text" name="username" value="{{ session['username'] }}" required>
-
-     <label for="crank">Crank id</label>  
-     <input type="text" name="crank" value="{{ session['crank'] }}" required>
-
-     <label for="githash">Git commit (7 chars)</label>  
-     <input type="text" name="githash" value="{{ session['githash'] }}" maxlength="7" required>
-     
-     {% else %}
-     <label for="csvfile">CSV file</label>
-     <input type="file" name="csvfile" accept="csv" required>
-
-     <label for="username">User name</label>  
-     <input type="text" name="username" required>
-
-     <label for="crank">Crank id</label>  
-     <input type="text" name="crank" required>
-     
-     <label for="githash">Git commit (7 chars)</label>  
-     <input type="text" name="githash" maxlength="7" required>
-
-     <label for="adminkey">Admin code</label>  
-     <input type="text" name="adminkey" required>
-     
-     {% endif %}
-  <input type="submit" value="Update current crank" name="submit">
-
 </form>  
 
  <h1>Development commands for database</h1>

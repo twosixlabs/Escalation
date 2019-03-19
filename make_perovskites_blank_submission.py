@@ -5,10 +5,14 @@ The path to the versioned datasets repo is cached in local_versioned_data_repo_p
 """
 
 import os
-
 from configparser import NoOptionError
+import argparse
 # handles python 2/3 compatibility
 from builtins import input
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--debug',help="Use debug manifest and dev endpoint",action='store_true')
+args=parser.parse_args()
 
 import utils
 
@@ -17,7 +21,7 @@ def get_submission_template_info():
     versioned_datasets_repo_path = utils.get_versioned_data_repo_directory()
     print("Using {} as versioned-datasets path.  Getting git commit from data there.".format(
         versioned_datasets_repo_path))
-    file_types = utils.get_files_of_necessary_types(versioned_datasets_repo_path)
+    file_types = utils.get_files_of_necessary_types(versioned_datasets_repo_path,args.debug)
     git_sha, git_username = utils.get_git_info(versioned_datasets_repo_path)
     training_data_git_hash = git_sha[:7]
     # NB: they could have checked this code out without pulling the most recent dataset using the pull script,
