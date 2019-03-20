@@ -8,13 +8,17 @@
 
   <form method="post">
     <h1>Science</h1>
+    {{ science_table }}
     <input type="submit" value="Refresh" name="update_science">
   
     <h1>Automation</h1>
+    {{ auto_table }}    
     <input type="submit" value="Refresh" name="update_auto">
 
     <h1>Machine Learning</h1>
+    {{ ml_table }}
     <input type="submit" value="Refresh" name="update_ml">
+    
   </form>
   
 {% endblock %}

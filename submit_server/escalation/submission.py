@@ -34,7 +34,6 @@ def submission():
 
     curr_crank = db.get_current_crank()
     if curr_crank is None:
-        print("HERE")
         return render_template('submission.html')
     else:
         curr_crank = curr_crank.crank
