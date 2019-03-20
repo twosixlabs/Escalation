@@ -2,7 +2,9 @@ import os
 from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_apscheduler import APScheduler
 
+import atexit
 import click
 import logging
 from logging.handlers import RotatingFileHandler
@@ -23,6 +25,9 @@ app.config.from_mapping(
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+scheduler = APScheduler()
+scheduler.init_app(app)
+scheduler.start()
 
 # ensure the instance folder exists
 try:
@@ -45,10 +50,12 @@ def links():
 from . import submission
 from . import view
 from . import admin
+from . import dashboard
+
 app.register_blueprint(submission.bp)
 app.register_blueprint(view.bp)
 app.register_blueprint(admin.bp)            
-
+app.register_blueprint(dashboard.bp)
 
 if not app.debug:
     if not os.path.exists('logs'):
@@ -66,15 +73,12 @@ if not app.debug:
 app.logger.info("Writing to %s" % app.config['SQLALCHEMY_DATABASE_URI'])
 
 
-@app.shell_context_processor
-def make_shell_context():
-    return {'db': db, 'Run':database}
+#@app.shell_context_processor
+#def make_shell_context():
+#    return {'db': db, 'Run':database}
 
 from .database import insert_demo_data, delete_db, create_db, Run, Submission, Crank, Prediction
-@app.cli.command('init-db')
-def init_db():
-    create_db()
-    click.echo('Initialized the database.')       
+
 @app.cli.command('reset-db')
 def reset_db():
     delete_db()
@@ -85,3 +89,6 @@ def demo_data():
     insert_demo_data()
     click.echo("Added demo data")    
 
+
+# Shut down the scheduler when exiting the app
+atexit.register(lambda: scheduler.shutdown())

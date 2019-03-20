@@ -6,7 +6,14 @@
 
 {% block content %}
 <form method="post">
-<table style="min-width:500px">
+  <table style="min-width:600px">
+	<col style="width:3%">
+	<col style="width:7%">
+	<col style="width:15%">
+	<col style="width:15%">
+	<col style="width:20%">
+	<col style="width:40%">    
+  <thead>
   <tr>
     <th></th>
     <th>Crank</th>    
@@ -15,6 +22,7 @@
     <th>Timestamp</th>                
     <th>Notes</th>
   </tr>
+  </thead>
 {% for sub in submissions %}
   <tr>
     <td> <input type="checkbox" name="download" value="{{ sub['id'] }}" checked>
@@ -22,7 +30,7 @@
     <td> {{ sub['username'] }} </td>
     <td> {{ sub['expname'] }} </td>
     <td> {{ sub['created'].strftime('%Y-%m-%d %H:%M:%S') }} </td>
-    <td> {{ sub['notes'][:50] + "..." }} </td>
+    <td> {{ sub['notes'][:100] + "..." }} </td>
   </tr>
 {% endfor %}
 </table>

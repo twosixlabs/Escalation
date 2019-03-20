@@ -1,14 +1,15 @@
 <!doctype html>
 <title>{% block title %}{% endblock %} - ESCALATion</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-<nav>
-  <h1>ESCALATion submission server</h1>
-    <h4> <a class="action" href="{{ url_for('view.view') }}">View</a>  </h4>  
-    <h4> <a class="action" href="{{ url_for('submission.submission') }}">Upload</a> </h4>
-    <h4> <a class="action" href="{{ url_for('admin.admin') }}">Admin</a> </h4>
-    <h4> <a class="action" href="{{ url_for('links') }}">Links</a> </h4>    
-</nav>
-
+<div class="topnav">
+  <img src="/static/Escalate_B-04.png" width="180px">
+  <div class="topnav-right">
+    <a href="{{ url_for('view.view') }}">View</a>
+    <a href="{{ url_for('submission.submission') }}">Submit</a>   
+    <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
+    <a href="{{ url_for('admin.admin') }}">Admin</a>     
+  </div>
+</div>
 <section class="content">
   <header>
     {% block header %}{% endblock %}

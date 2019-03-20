@@ -26,35 +26,36 @@ hr {
   border-top: 1px solid lightgray;
 }
 
-nav {
-  background: lightgray;
-  display: flex;
-  align-items: center;
-  padding: 0 0.5rem;
+/* new code */
+/* Add a black background color to the top navigation */
+.topnav {
+    background-color: lightgray;
+    overflow: hidden;
 }
 
-nav h1 {
-  flex: auto;
-  margin: 0;
-}
-
-nav h1 a {
+/* Style the links inside the navigation bar */
+.topnav a {
+  font-weight:bold;
+  float: left;
+  color: #377ba8;
+  text-align: center;
+  padding: 14px 16px 14px 14px;
   text-decoration: none;
-  padding: 0.25rem 0.5rem;
+  font-size: 16px;
 }
 
-nav ul  {
-  display: flex;
-  list-style: none;
-  margin: 0;
-  padding: 0;
+/* Change the color of links on hover */
+.topnav a:hover {
+  background-color: #adadad;
+  color: black;
 }
 
-nav ul li a, nav ul li span, header .action {
-  display: block;
-  padding: 0.5rem;
+/* Right-aligned section inside the top navigation */
+.topnav-right {
+    float: right;
+    padding: 0;
+    margin: 0;
 }
-
 .content {
   padding: 0 1rem 1rem;
 }
@@ -84,8 +85,9 @@ nav ul li a, nav ul li span, header .action {
   margin: 1em 0;
   display: flex;
   flex-direction: column;
-  max-width: 500px;  
+  max-width: 960px;  
 }
+
 
 .content form input[type=text]{
   margin: 1em 0;
@@ -101,6 +103,7 @@ nav ul li a, nav ul li span, header .action {
 
 .content input, .content textarea {
   margin-bottom: 1em;
+  max-width: 400px;
 }
 
 .content textarea {
@@ -142,3 +145,4 @@ pre {
     display: block;
     word-wrap: break-word;
 }
+
