@@ -6,10 +6,15 @@
 
 {% block content %}
 
-  <h1>Science</h1>
+  <form method="post">
+    <h1>Science</h1>
+    <input type="submit" value="Refresh" name="update_science">
+  
+    <h1>Automation</h1>
+    <input type="submit" value="Refresh" name="update_auto">
 
-  <h1>Automation</h1>
-
-
-  <h1>Machine Learning</h1>
+    <h1>Machine Learning</h1>
+    <input type="submit" value="Refresh" name="update_ml">
+  </form>
+  
 {% endblock %}
