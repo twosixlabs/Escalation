@@ -25,6 +25,8 @@ COPY boot.sh boot.sh
 
 RUN chmod +x boot.sh
 
+RUN echo "America/New_York" > /etc/timezone
+
 USER escalation
 
 EXPOSE 5000

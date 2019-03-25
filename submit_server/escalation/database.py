@@ -218,9 +218,9 @@ def add_submission(username,expname,crank,rows,notes):
     
 def get_submissions(crank='all'):
     if crank == 'all':
-        return Submission.query.all()
+        return Submission.query.order_by(Submission.created.desc()).limit(10).all()
     else:
-        return Submission.query.filter_by(crank=crank).all()
+        return Submission.query.filter_by(crank=crank).order_by(Submission.created.desc()).all()
 
 def get_predictions(id=None):
     if id is None:
