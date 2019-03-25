@@ -241,7 +241,7 @@ def get_cranks():
     return Crank.query.order_by(Crank.created.desc()).all()
     
 def get_unique_cranks():
-    return [x[0] for x in db.session.query(Crank.crank).distinct().order_by(Crank.created.desc())]
+    return sorted([x[0] for x in db.session.query(Crank.crank).distinct().all()],reverse=True)
 
 def get_current_crank():
     return Crank.query.filter_by(current=True).first()
