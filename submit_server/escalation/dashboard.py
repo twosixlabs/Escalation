@@ -81,6 +81,7 @@ def update_ml():
                 for r in sub.rows:
                     name = "%s/%s" % (crank.crank,r.name)
                     smoothed_score = r.score * r.predicted_out + (1 - r.score) * train_crystal_score_mean
+                    smoothed_score = r.predicted_out #overwriting since for now, model posteriors are heavily skewed #FIXME
                     runs[name].append((smoothed_score,r))
                     
 

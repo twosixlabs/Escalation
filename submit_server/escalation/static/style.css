@@ -152,3 +152,7 @@ pre {
 #images {
     display: block;
 }
+
+.leaderboard table {
+    text-align: left;
+}

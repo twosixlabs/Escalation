@@ -1,9 +1,65 @@
 from escalation import db
 from sqlalchemy import and_, sql, create_engine
 from sqlalchemy.orm import deferred
-from flask import current_app, g
+from flask import current_app, g, url_for
 from flask_table import Table, Col, DateCol
 import csv
+
+# Leaderboard statistics
+
+class LeaderBoardTable(Table):
+    allow_sort = True
+    def sort_url(self, col_key, reverse=False):
+        if reverse:
+            direction =  'desc'
+        else:
+            direction = 'asc'
+        return url_for('leaderboard.leaderboard', sort=col_key, direction=direction)
+    
+    dataset_name                = Col("Dataset")
+    gitcommit                   = Col("Git commit")
+    created                     = DateCol("Created",date_format='short')
+    model_name                  = Col("Model name")
+    model_author                = Col("Model author")
+    accuracy                    = Col("Accuracy")
+    auc_score                   = Col("AUC")
+    average_precision           = Col("Avg. Prec.")
+    f1_score                    = Col("F1 Score")
+    precision                   = Col("Precision")
+    recall                      = Col("Recall")
+    samples_in_test             = Col("#Samples in Test")
+    model_description           = Col("Description")
+    data_and_split_description  = Col("Data split")
+
+class LeaderBoard(db.Model):
+    id                          = db.Column(db.Integer,primary_key=True)
+    dataset_name                = db.Column(db.String(64))
+    gitcommit                   = db.Column(db.String(64))    
+    run_id                      = db.Column(db.String(64))
+    created                     = db.Column(db.DateTime(timezone=True), server_default=sql.func.now())
+    model_name                  = db.Column(db.String(64))
+    model_author                = db.Column(db.String(64))
+    accuracy                    = db.Column(db.Float)
+    balanced_accuracy           = db.Column(db.Float)
+    auc_score                   = db.Column(db.Float)
+    average_precision           = db.Column(db.Float)
+    f1_score                    = db.Column(db.Float)
+    precision                   = db.Column(db.Float)
+    recall                      = db.Column(db.Float)
+    samples_in_train            = db.Column(db.Integer)
+    samples_in_test             = db.Column(db.Integer)
+    model_description           = db.Column(db.Text)
+    column_predicted            = db.Column(db.String(64))
+    num_features_used           = db.Column(db.Integer)
+    data_and_split_description  = db.Column(db.Text)
+    normalized                  = db.Column(db.Boolean)
+    num_features_normalized     = db.Column(db.Integer)
+    feature_extraction          = db.Column(db.Boolean)
+    was_untested_data_predicted = db.Column(db.Boolean)
+
+#####################
+# Dashboard classes #
+#####################
 
 class AutomationStat(db.Model):
     id          = db.Column(db.Integer,primary_key=True)
@@ -239,8 +295,76 @@ def add_training(crank,stateset,filename,githash,username):
         csvreader = csv.DictReader(filter(lambda row: row[0]!='#', csvfile))
         objs=[]
         for r in csvreader:
+            try:
+                float(row['_out_crystalscore'])
+            except ValueError:
+                app.logger.info("Skipping %s/%s due to non-float for %s" % (r['dataset'],r['name'],r['_out_crystalscore']))
+                continue
+            
             objs.append(TrainingRun(dataset=r['dataset'],name=r['name'],_rxn_M_inorganic=r['_rxn_M_inorganic'],_rxn_M_organic=r['_rxn_M_organic'],_out_crystalscore=r['_out_crystalscore'],inchikey=r['_rxn_organic-inchikey']))
+                                
     db.session.bulk_save_objects(objs)
     db.session.commit()
-    current_app.logger.info("Added %d training runs" % len(objs))    
+    current_app.logger.info("Added %d training runs" % len(objs))
     return len(objs)
+
+def get_leaderboard(dataset='all'):
+    if dataset == 'all':
+        return LeaderBoardTable(LeaderBoard.query.order_by(LeaderBoard.accuracy.desc()).limit(25).all())
+    else:
+        return LeaderBoardTable(LeaderBoard.query.filter_by(dataset=dataset).order_by(LeaderBoard.accuracy.desc()).all())
+    
+def add_leaderboard(form):
+    for row in 'dataset','gitcommit','run_id','model_name','model_author','accuracy','balanced_accuracy','auc_score','average_precision','f1_score','precision','recall','samples_in_train','samples_in_test','model_description','column_predicted','num_features_used','data_and_split_description','normalized','num_features_normalized','feature_extraction','was_untested_data_predicted':
+        if row not in form:
+            return "Row '%s' not in form" % row
+    try:
+        for row in ('accuracy','balanced_accuracy','auc_score','average_precision','f1_score','precision','recall'):
+            try:
+                float(form[row])
+            except:
+                return "Row '%s' with value '%s' does not look like a float" % (row, form[row])
+
+        for row in ('samples_in_train','samples_in_test','num_features_used','num_features_normalized'):
+            try:
+                int(form[row])
+            except:
+                return "Row '%s' with value '%s' does not look like an int" % (row, form[row])
+
+        if len(form['gitcommit']) != 7:
+            return "git commit '%s' must be 7 chars" % form['gitcommit']
+    
+        row = LeaderBoard(
+            dataset_name                = form['dataset'],
+            gitcommit                   = form['gitcommit'],        
+            run_id                      = form['run_id'],                     
+            model_name                  = form['model_name'],                 
+            model_author                = form['model_author'],               
+            accuracy                    = float(form['accuracy']),                  
+            balanced_accuracy           = float(form['balanced_accuracy']),          
+            auc_score                   = float(form['auc_score']),                  
+            average_precision           = float(form['average_precision']),          
+            f1_score                    = float(form['f1_score']),                   
+            precision                   = float(form['precision']),                 
+            recall                      = float(form['recall']),                    
+            samples_in_train            = int(form['samples_in_train']),           
+            samples_in_test             = int(form['samples_in_test']),            
+            model_description           = form['model_description'],          
+            column_predicted            = form['column_predicted'],           
+            num_features_used           = form['num_features_used'],        
+            data_and_split_description  = form['data_and_split_description'], 
+            normalized                  = form['normalized'] == 'True',                 
+            num_features_normalized     = int(form['num_features_normalized']),    
+            feature_extraction          = form['feature_extraction'] == 'True',         
+            was_untested_data_predicted = form['was_untested_data_predicted'] == 'True'
+        )
+        db.session.add(row)
+        db.session.commit()
+    except Exception as ex:
+        print(ex)
+        
+        current_app.logger.error("Error submitting leaderboard :(")
+        return "Uknown error loading db"
+    
+    return None
+    

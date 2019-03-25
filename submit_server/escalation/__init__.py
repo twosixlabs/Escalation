@@ -50,12 +50,17 @@ def create_app():
     app.register_blueprint(sub_bp)
     
     from .view import bp as view_bp
-    app.register_blueprint(view_bp)    
+    app.register_blueprint(view_bp)
+    
     from .admin import bp as admin_bp
     app.register_blueprint(admin_bp)
 
     from . import dashboard    
     app.register_blueprint(dashboard.bp)
+
+    from . import leaderboard
+    app.register_blueprint(leaderboard.bp)
+    
     
     if not app.debug:
         if not os.path.exists('logs'):
