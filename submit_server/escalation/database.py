@@ -295,12 +295,6 @@ def add_training(crank,stateset,filename,githash,username):
         csvreader = csv.DictReader(filter(lambda row: row[0]!='#', csvfile))
         objs=[]
         for r in csvreader:
-            try:
-                float(row['_out_crystalscore'])
-            except ValueError:
-                app.logger.info("Skipping %s/%s due to non-float for %s" % (r['dataset'],r['name'],r['_out_crystalscore']))
-                continue
-            
             objs.append(TrainingRun(dataset=r['dataset'],name=r['name'],_rxn_M_inorganic=r['_rxn_M_inorganic'],_rxn_M_organic=r['_rxn_M_organic'],_out_crystalscore=r['_out_crystalscore'],inchikey=r['_rxn_organic-inchikey']))
                                 
     db.session.bulk_save_objects(objs)
