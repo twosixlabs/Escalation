@@ -1,6 +1,6 @@
 # USERNAME: snovotney
-dataset,name,_rxn_M_inorganic,_rxn_M_organic,predicted_out,score
-b42e8dc9e0f,0,0.0,0.0,4,0.5
-b42e8dc9e0f,1,0.0,0.0,4,0.5
-b42e8dc9e0f,2,0.0,0.0,4,0.5
-b42e8dc9e0f,3,0.0,0.0,4,0.5
+dataset,name,_rxn_M_inorganic,_rxn_M_organic,_rxn_M_acid,predicted_out,score
+0001,0,0.0,0.0,0.0000,4,0.9
+0001,1,0.0,0.0,0.5196,3,0.9
+0001,2,0.0,0.0,1.0194,2,0.9
+0001,3,0.0,0.0,1.5002,1,0.9

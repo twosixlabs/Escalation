@@ -29,7 +29,7 @@ def update_auto():
             seen[crank.crank] = 1
 
             num_uploads = Submission.query.filter_by(crank=crank.crank).count()
-            num_distinct_entries = db.session.query(Prediction.dataset,Prediction.name).filter_by(dataset=crank.stateset).group_by(Prediction.dataset, Prediction.name).count()
+            num_distinct_entries = db.session.query(Prediction.dataset,Prediction.name).filter_by(dataset=crank.crank).group_by(Prediction.dataset, Prediction.name).count()
 
             db.session.add(AutomationStat(crank=crank.crank,
                                           upload_date=crank.created,
@@ -38,6 +38,7 @@ def update_auto():
                                           num_distinct=num_distinct_entries
             )
             )
+        print("HERE!")
         db.session.commit()
 
 def update_science():
@@ -66,8 +67,11 @@ def update_ml():
             train_length = float(db.session.query(func.count(TrainingRun._out_crystalscore)).filter_by(dataset=crank.crank).scalar())
 
             # do more training stuff
-            pred_crystal_score_mean = float(db.session.query(func.avg(Prediction.predicted_out)).filter_by(dataset=crank.stateset).scalar())
-
+            try:
+                pred_crystal_score_mean = float(db.session.query(func.avg(Prediction.predicted_out)).filter_by(dataset=crank.crank).scalar())
+            except:
+                pred_crystal_score_mean = 0
+                
             #statistics about submissions
             subs = get_submissions(crank.crank)            
             runs = defaultdict(list)
@@ -87,7 +91,7 @@ def update_ml():
 
             # compute smoothed prediction by taking
             h = []
-            DISCOUNT = 1 # picked out of a hat, a weight of 1 would give equal weight to training mean for only one entry
+            DISCOUNT = 0.005 # picked out of a hat, a weight of 1 would give equal weight to training mean for only one entry
             TOP_PREDICTION_LIMIT = 25
             
             for name in runs:

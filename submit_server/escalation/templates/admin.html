@@ -11,20 +11,18 @@
  <table style="min-width:720px">
    <tr>
      <th></th>
-   <th>Crank </th>
-   <th>Stateset Hash </th>
-   <th>Number Runs</th>
-   <th>Git commit </th>
-   <th>Uploader </th>
-   <th>Timestamp </th>
-  </tr>
+     <th>Crank </th>
+     <th>Git commit </th>     
+     <th>Number Runs</th>
+     <th>Uploader </th>
+     <th>Timestamp </th>
+   </tr>
   {% for r in cranks[:10] %}
    <tr>
     <td> <input type="radio" name="new_stateset" value="{{ r['id'] }}" > </td>    
-   <td> {{ r['crank'] }} </td>
-   <td> {{ r['stateset'] }} </td>
+    <td> {{ r['crank'] }} </td>
+   <td> {{ r['githash'] }} </td>    
    <td> {{ r['num_runs'] }} </td>        
-   <td> {{ r['githash'] }} </td>
    <td> {{ r['username'] }} </td>
    <td> {{ r['created'].strftime("%Y-%m-%d %H:%M:%S") }} </td>
    {% if r['current'] == True %}

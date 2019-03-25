@@ -10,6 +10,7 @@
 	<col style="width:3%">
 	<col style="width:7%">
 	<col style="width:15%">
+	<col style="width:15%">    
 	<col style="width:15%">
 	<col style="width:20%">
 	<col style="width:40%">    
@@ -18,7 +19,8 @@
     <th></th>
     <th>Crank</th>    
     <th>User Name</th>
-    <th>Name</th>    
+    <th>Name</th>
+    <th>Versioned Repo Hash</th>        
     <th>Timestamp</th>                
     <th>Notes</th>
   </tr>
@@ -29,7 +31,8 @@
     <td> {{ sub['crank'] }} </td>  
     <td> {{ sub['username'] }} </td>
     <td> {{ sub['expname'] }} </td>
-    <td> {{ sub['created'].strftime('%Y-%m-%d %H:%M:%S') }} </td>
+    <td> {{ sub['githash'] }} </td>    
+    <td> {{ sub['created'].strftime('%m-%d-%y / %H:%M') }} </td>
     <td> {{ sub['notes'][:100] + "..." }} </td>
   </tr>
 {% endfor %}

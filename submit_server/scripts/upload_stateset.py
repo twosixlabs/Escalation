@@ -48,10 +48,8 @@ stateset_csv=tempfile.mkstemp()[1]
 print("Filtering",stateset,"to",stateset_csv)
 
 #TODO: turn into a file and reduce I/O
-df = pd.read_csv(stateset,comment='#')
-df = df[['dataset','name','_rxn_M_inorganic','_rxn_M_organic']]
-df['dataset'] = md5(stateset)[:11]
-df.to_csv(stateset_csv,index=False)
+df = pd.read_csv(stateset,comment='#',dtype={'dataset': 'str'})
+df[['dataset','name','_rxn_M_inorganic','_rxn_M_organic','_rxn_M_acid']].to_csv(stateset_csv,index=False)
 
 perovskite_csv=tempfile.mkstemp()[1]
 print("Filtering",perovskitedata,"to",perovskite_csv)
@@ -68,6 +66,9 @@ df2.to_csv(perovskite_csv,index=False)
 
 print("Pushing %d rows from %s and %d rows from %s to %s . Could take a minute or two." % (len(df),stateset_csv, len(df2),perovskite_csv,args.endpoint))
 
+print("crank:",crank)
+print("githash:", git_sha[:7])
+print("username:",git_username)
 r = requests.post(args.endpoint, headers={'User-Agent':'escalation'},data={'crank':crank,'githash':git_sha[:7], 'username':git_username,'adminkey':args.key},
                   files={'stateset':open(stateset_csv,'rb'), 'perovskitedata':open(perovskite_csv,'rb')},timeout=300)
 print(r.status_code, r.reason,r)

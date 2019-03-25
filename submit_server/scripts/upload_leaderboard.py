@@ -5,7 +5,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--endpoint',help="REST endpoint",default='http://escalation.sd2e.org/leaderboard')
 parser.add_argument('--csv',help="csv file")
-parser.add_argument('--gitcommit',help="7 digit git commit of versioned data repo")
+parser.add_argument('--githash',help="7 digit git commit of versioned data repo")
 args=parser.parse_args()
 
 def mapping(name):
@@ -13,15 +13,15 @@ def mapping(name):
 if args.csv is None:
     print("Must pass in csv")
     exit()
-if args.gitcommit is None or len(args.gitcommit) != 7:
-    print("Must pass in 7 digit gitcommit hash")
+if args.githash is None or len(args.githash) != 7:
+    print("Must pass in 7 digit hash of your versioned-data repo head")
     exit()
 fh = open(args.csv)
 csvreader = csv.DictReader(filter(lambda row: row[0]!='#', fh))
 
 for row in csvreader:
     d = {}
-    d['gitcommit'] = args.gitcommit
+    d['githash'] = args.githash
     for k in row:
         d[k.lower().replace(' ','_')] = row[k]
         

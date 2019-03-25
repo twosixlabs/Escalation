@@ -9,7 +9,6 @@
   {% block content %}
 
   <h3>Current crank: {{ crank }}</h3>
-  <h3>Current stateset: {{ stateset }}</h3>
   
   <form method="post" enctype="multipart/form-data">
 
@@ -22,10 +21,14 @@
 
     <label for="expname">Experiment Name</label>
     <input type="text" name="expname" value="{{ session['expname'] }}" required>
+
+    <label for="githash">Versioned data githash</label>
+    <input type="text" name="githash" value="{{ session['githash'] }}" required>
     
     <label for="csvfile">CSV file</label>
     <input type="file" name="csvfile" accept="csv" required>
 
+    
     <label for="notes">Notes</label>    
     <textarea placeholder="Enter notes about your submission" name="notes" rows="10" cols="30" value="{{ session['notes'] }}" ></textarea>
 
@@ -38,6 +41,9 @@
 
     <label for="expname">Experiment Name</label>
     <input type="text" name="expname" required>
+
+    <label for="githash">Versioned data 7-char git hash</label>
+    <input type="text" name="githash" required>
     
     <label for="csvfile">CSV file</label>
     <input type="file" name="csvfile" accept="csv" required>

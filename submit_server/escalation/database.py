@@ -17,7 +17,7 @@ class LeaderBoardTable(Table):
         return url_for('leaderboard.leaderboard', sort=col_key, direction=direction)
     
     dataset_name                = Col("Dataset")
-    gitcommit                   = Col("Git commit")
+    githash                   = Col("Git commit")
     created                     = DateCol("Created",date_format='short')
     model_name                  = Col("Model name")
     model_author                = Col("Model author")
@@ -34,7 +34,7 @@ class LeaderBoardTable(Table):
 class LeaderBoard(db.Model):
     id                          = db.Column(db.Integer,primary_key=True)
     dataset_name                = db.Column(db.String(64))
-    gitcommit                   = db.Column(db.String(64))    
+    githash                     = db.Column(db.String(64))    
     run_id                      = db.Column(db.String(64))
     created                     = db.Column(db.DateTime(timezone=True), server_default=sql.func.now())
     model_name                  = db.Column(db.String(64))
@@ -100,7 +100,7 @@ class TopPredictionTable(Table):
     dataset       = Col('Crank')
     name          = Col('Run ID')    
     predicted_out = Col('Predicted Score')
-    num_subs      = Col('Confidence')
+    num_subs      = Col('# Model Predictions')
     
 class MLStat(db.Model):
     id             = db.Column(db.Integer,primary_key=True)
@@ -125,6 +125,7 @@ class Submission(db.Model):
     username = db.Column(db.String(64))
     expname  = db.Column(db.String(64))
     crank    = db.Column(db.String(64))
+    githash  = db.Column(db.String(7))
     notes    = db.Column(db.Text)
     created  = db.Column(db.DateTime(timezone=True), server_default=sql.func.now())
     rows     = db.relationship('Prediction', backref='entry', lazy='dynamic')
@@ -149,36 +150,36 @@ class TrainingRun(db.Model):
     name              = db.Column(db.String(64))    
     _rxn_M_inorganic  = db.Column(db.Float)
     _rxn_M_organic    = db.Column(db.Float)
+    _rxn_M_acid    = db.Column(db.Float)    
     _out_crystalscore = db.Column(db.Integer)
     inchikey          = db.Column(db.String(128))
     
     def __repr__(self):
-        return "<Training Run {} {} {} {}".format(self.id,self.name,self.dataset,self._out_crystalscore,self._rxn_M_inorganic,self._rxn_M_organic,self.inchikey)
+        return "<Training Run {} {} {} {} {}".format(self.id,self.name,self.dataset,self._out_crystalscore,self._rxn_M_inorganic,self._rxn_M_organic,self._rxn_M_acid, self.inchikey)
     
 class Crank(db.Model):
     id       = db.Column(db.Integer,primary_key=True)
     crank    = db.Column(db.String(64))    
-    stateset = db.Column(db.String(11))
-    githash  = db.Column(db.String(7))    #git commit of stateset file
+    githash  = db.Column(db.String(7))    #git commit of stateset file in versioned-data
     username = db.Column(db.String(64))
     num_runs = db.Column(db.Integer)    
     current  = db.Column(db.Boolean)
     created  = db.Column(db.DateTime(timezone=True), server_default=sql.func.now())
 
     def  __repr__(self):
-        return '<Crank {} {} {} {}>'.format(self.crank,self.stateset,self.githash,self.current)
+        return '<Crank {} {} {} {}>'.format(self.crank,self.githash,self.current,self.created)
 
 class Run(db.Model):
     id               = db.Column(db.Integer,primary_key=True)
-    crank            = db.Column(db.String(64))    
-    stateset         = db.Column(db.String(11))
-    dataset          = db.Column(db.String(11))    
+    githash          = db.Column(db.String(7))
+    dataset          = db.Column(db.String(11))
     name             = db.Column(db.String(256))
     _rxn_M_inorganic = db.Column(db.Float)
-    _rxn_M_organic   = db.Column(db.Float)           
+    _rxn_M_organic   = db.Column(db.Float)
+    _rxn_M_acid   = db.Column(db.Float)               
 
     def __repr__(self):
-        return '<Run {} {} {} {}>'.format(self.stateset,self.name,self._rxn_M_inorganic,self._rxn_M_organic)
+        return '<Run {} {} {} {} {}>'.format(self.dataset,self.name,self._rxn_M_inorganic,self._rxn_M_organic, self._rxn_M_acid)
 
 def create_db():
     from sqlalchemy import create_engine
@@ -196,32 +197,38 @@ def create_db():
 
 def delete_db():
     Run.query.delete()
-    Prediction.query.delete()    
+    TrainingRun.query.delete()    
+
+    Prediction.query.delete()
+    TopPrediction.query.delete()    
+
     Submission.query.delete()
     Crank.query.delete()
+
+    LeaderBoard.query.delete()
+    
+    AutomationStat.query.delete()
+    MLStat.query.delete()
+    ScienceStat.query.delete()
     db.session.commit()
 
 
-def read_in_stateset(filename,crank,stateset):
-    Run.query.filter_by(stateset=stateset).delete()
+def read_in_stateset(filename,crank,githash):
+    Run.query.filter(and_(Run.dataset == crank, Run.githash == githash)).delete()
     with open(filename) as csvfile:
         csvreader = csv.DictReader(filter(lambda row: row[0]!='#', csvfile))
         objs=[]
         for r in csvreader:
-            objs.append(Run(crank=crank,stateset=stateset,dataset=r['dataset'],name=r['name'],_rxn_M_inorganic=r['_rxn_M_inorganic'],_rxn_M_organic=r['_rxn_M_organic']))
+            objs.append(Run(githash=githash,dataset=r['dataset'],name=r['name'],_rxn_M_inorganic=r['_rxn_M_inorganic'],_rxn_M_organic=r['_rxn_M_organic'],_rxn_M_acid=r['_rxn_M_acid'])) #TODO
     db.session.bulk_save_objects(objs)
     db.session.commit()
     current_app.logger.info(" Added %d runs for stateset" % len(objs))
     return len(objs)
     
-def is_stateset_stored(stateset):
-    return False
-    return Crank.query.filter_by(stateset=stateset).scalar() is not None
-
-def add_stateset(crank,stateset,filename,githash,username):
-    Crank.query.filter_by(current=True).update({'current':False})
-    num_runs= read_in_stateset(filename,crank,stateset)
-    db.session.add(Crank(crank=crank,stateset=stateset,githash=githash,username=username,num_runs=num_runs,current=True))
+def add_stateset(filename,crank,githash,username):
+    Crank.query.filter_by(current=True).update({'current':False}) #TODO
+    num_runs= read_in_stateset(filename,crank,githash)
+    db.session.add(Crank(crank=crank,githash=githash,username=username,num_runs=num_runs,current=True))
     db.session.commit()
     return num_runs
 
@@ -229,6 +236,9 @@ def set_stateset(id=None):
     Crank.query.filter_by(current=True).update({'current':False})
     Crank.query.filter_by(id=id).update({'current':True})
     db.session.commit()
+
+def is_stateset_stored(crank, githash):
+    return db.session.query(Crank.query.filter(and_(Crank.crank == crank,Crank.githash == githash)).exists()).scalar()
     
 def get_stateset(id=None):
     if id:
@@ -236,7 +246,6 @@ def get_stateset(id=None):
     else:
         return [u.__dict__ for u in Crank.query.filter_by(current=True).all()]
 
-    
 def get_cranks():
     return Crank.query.order_by(Crank.created.desc()).all()
     
@@ -252,16 +261,16 @@ def get_crank(id=None):
     else:
         return Crank.query.order_by(Crank.created.desc()).all()
 
-def get_rxns(stateset,names):
-    res = Run.query.filter(and_(Run.stateset == stateset, Run.name.in_(names))).all()
+def get_rxns(crank,names):
+    res = Run.query.filter(and_(Run.dataset == crank, Run.name.in_(names))).all()
     current_app.logger.info("Returned %d reactions from stateset" % (len(res)))
     d={}
     for r in res:
-        d[r.name] = {'organic':r._rxn_M_organic,'inorganic':r._rxn_M_inorganic}
+        d[r.name] = {'organic':r._rxn_M_organic,'inorganic':r._rxn_M_inorganic,'acid' : r._rxn_M_acid}
     return d
 
-def add_submission(username,expname,crank,rows,notes):
-    sub=Submission(username=username,expname=expname,crank=crank,notes=notes)
+def add_submission(username,expname,crank,githash,rows,notes):
+    sub=Submission(username=username,expname=expname,crank=crank,notes=notes,githash=githash)
     db.session.add(sub)
     db.session.flush()
     
@@ -290,7 +299,7 @@ def get_training(dataset='all'):
     else:
         return TrainingRun.query.filter_by(dataset=dataset).all()
     
-def add_training(crank,stateset,filename,githash,username):
+def add_training(filename):
     with open(filename) as csvfile:
         csvreader = csv.DictReader(filter(lambda row: row[0]!='#', csvfile))
         objs=[]
@@ -309,7 +318,7 @@ def get_leaderboard(dataset='all'):
         return LeaderBoardTable(LeaderBoard.query.filter_by(dataset=dataset).order_by(LeaderBoard.accuracy.desc()).all())
     
 def add_leaderboard(form):
-    for row in 'dataset','gitcommit','run_id','model_name','model_author','accuracy','balanced_accuracy','auc_score','average_precision','f1_score','precision','recall','samples_in_train','samples_in_test','model_description','column_predicted','num_features_used','data_and_split_description','normalized','num_features_normalized','feature_extraction','was_untested_data_predicted':
+    for row in 'dataset','githash','run_id','model_name','model_author','accuracy','balanced_accuracy','auc_score','average_precision','f1_score','precision','recall','samples_in_train','samples_in_test','model_description','column_predicted','num_features_used','data_and_split_description','normalized','num_features_normalized','feature_extraction','was_untested_data_predicted':
         if row not in form:
             return "Row '%s' not in form" % row
     try:
@@ -325,12 +334,12 @@ def add_leaderboard(form):
             except:
                 return "Row '%s' with value '%s' does not look like an int" % (row, form[row])
 
-        if len(form['gitcommit']) != 7:
-            return "git commit '%s' must be 7 chars" % form['gitcommit']
+        if len(form['githash']) != 7:
+            return "git commit '%s' must be 7 chars" % form['githash']
     
         row = LeaderBoard(
             dataset_name                = form['dataset'],
-            gitcommit                   = form['gitcommit'],        
+            githash                     = form['githash'],        
             run_id                      = form['run_id'],                     
             model_name                  = form['model_name'],                 
             model_author                = form['model_author'],               

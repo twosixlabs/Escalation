@@ -38,16 +38,15 @@ def submission():
     else:
         curr_crank = curr_crank.crank
         
-    curr_stateset = db.get_stateset()[0]['stateset']
-    
     if request.method == 'POST':
-        for key in ('username','expname','crank','notes'):
+        for key in ('username','expname','crank','notes','githash'):
             session[key] = request.form[key]
 
         username = request.form['username']
         expname  = request.form['expname']        
         crank    = request.form['crank']
-        notes    = request.form['notes']        
+        notes    = request.form['notes']
+        githash    = request.form['githash']                
         csvfile  = request.files['csvfile']
 
         app.logger.info("POST {} {} {} {} {}".format(username,expname,crank,notes,csvfile.filename))
@@ -59,21 +58,22 @@ def submission():
             error = 'Experiment name is required.'            
         elif not crank:
             error = 'Crank number is required (e.g. 0015)'
+        elif not githash or len(githash) != 7:
+            error = '7 char git hash is required (e.g. abc1234)'            
         elif not csvfile or not allowed_file(csvfile.filename):
             error = "Must upload a csv file"
         elif crank != curr_crank:
             error = "Entered crank number (%s) does not match the current crank (%s)" % (crank, curr_crank)
         else:
-            
             rows, comments = text2rows(csvfile.read().decode('utf-8'))
             if rows == None:
                 error = "Could not extract rows from file %s" % csvfile.filename
             if error == None:
-                error = validate_submission(rows,curr_stateset)
+                error = validate_submission(rows,crank)
             if error == None:
                 if comments:
                     notes = notes + "\nComments from file:" + comments
-                error = db.add_submission(username,expname,crank,rows,notes)
+                error = db.add_submission(username,expname,crank,githash,rows,notes)
 
         #custom check if POST from script instead of UI
         if error:
@@ -91,9 +91,9 @@ def submission():
                 return jsonify({'success':'Added submission'})
             else:
                 #clear out session
-                for key in ('username','expname','crank','notes'):
+                for key in ('username','expname','crank','notes','githash'):
                     session.pop(key,None)
                 
                 return render_template('success.html',username=username)
 
-    return render_template('submission.html',session=session,crank=curr_crank,stateset=curr_stateset)
+    return render_template('submission.html',session=session,crank=curr_crank)

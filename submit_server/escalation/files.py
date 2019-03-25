@@ -12,7 +12,7 @@ import csv
 DELIMITER = ','
 VALID_CATEGORIES = set([1,2,3,4])
 BAD_DELIMITERS = set('\t, |.') - set(DELIMITER)  # common delimiters that are disallowed
-COLUMNS = ['dataset','name','_rxn_M_inorganic','_rxn_M_organic','predicted_out','score']
+COLUMNS = ['dataset','name','_rxn_M_inorganic','_rxn_M_organic','_rxn_M_acid','predicted_out','score']
 
 def filename(sub):
     #id, crank, username, expname
@@ -40,7 +40,7 @@ def text2rows(text):
 
     return data, comments
     
-def validate_submission(rows,stateset=None):
+def validate_submission(rows,crank):
     arr = []
     app.logger.info("Validating %d lines" % len(rows))
 
@@ -48,17 +48,8 @@ def validate_submission(rows,stateset=None):
         return ["Submission file appears empty"]
 
     try:
-        submission_stateset = rows[0]['dataset']
-        if submission_stateset != stateset and stateset is not None:
-            arr.append("Internal stateset %s does not match current stateset %s" % (submission_stateset,stateset))
-            return arr
-    except:
-        return ["Could not extract 'dataset' from first row"]
-
-    try:
         names = [r['name'] for r in rows]
-        rxns = db.get_rxns(submission_stateset,names) #fixme once we move to crank instead of stateset hash
-
+        rxns = db.get_rxns(crank,names)
         # validate each row
         if len(rxns) != len(rows):
             app.logger.info("Only found %d of %d submitted rows in current stateset -- maybe there is a typo in the dataset or name field?" % (len(rxns),len(rows)))
@@ -84,9 +75,9 @@ def validate_submission(rows,stateset=None):
             app.logger.debug("Skipping row %d" % i)
             continue
     
-        if stateset and row['dataset'] != stateset:
+        if row['dataset'] != crank:
             num_errors+=1
-            arr.append("Row %d 'dataset' column (%s) is not 11 chars. Is it the state set hash?" % (i, row['dataset']))
+            arr.append("Row %d 'dataset' column (%s) does not match expected crank '%s' ?" % (i, row['dataset'],crank))
         try:
             int(row['name'])
         except ValueError:
@@ -103,6 +94,12 @@ def validate_submission(rows,stateset=None):
             num_errors+=1                
             arr.append("Row %d '_rxn_M_organic' column (%s) is not a float. Did you use the values from the state set?" % (i, row['_rxn_M_organic']))
         try:
+            float(row['_rxn_M_acid'])
+        except ValueError:
+            num_errors+=1                
+            arr.append("Row %d '_rxn_M_acid' column (%s) is not a float. Did you use the values from the state set?" % (i, row['_rxn_M_acid']))                            
+            
+        try:
             if int(row['predicted_out']) not in VALID_CATEGORIES:
                 num_errors+=1
                 arr.append("Row %d 'predicted_out' column (%s) is not in %s" %(i,row['predicted_out'],",".join([str(x) for x in VALID_CATEGORIES])))
@@ -118,7 +115,9 @@ def validate_submission(rows,stateset=None):
             num_errors+=1                
             arr.append("Row %d 'score' column (%s) is not a float. Did you use the values from the state set?" % (i, row['score']))                        
 
-        organic, inorganic = rxns[row['name']]['organic'], rxns[row['name']]['inorganic']
+        organic   = rxns[row['name']]['organic']
+        inorganic = rxns[row['name']]['inorganic']
+        acid      = rxns[row['name']]['acid']
         
         if not (isclose(float(row['_rxn_M_inorganic']),float(inorganic),1e-03,1e-05)):
             num_errors += 1
@@ -127,6 +126,10 @@ def validate_submission(rows,stateset=None):
         if not (isclose(float(row['_rxn_M_organic']),float(organic),1e-03,1e-05)):
             num_errors += 1
             arr.append("Row %d '_rxn_M_organic' value %s does not match statespace value '%s' -- did you mix up rows?" % (i,row['_rxn_M_organic'],organic))
+
+        if not (isclose(float(row['_rxn_M_acid']),float(acid),1e-03,1e-05)):
+            num_errors += 1
+            arr.append("Row %d '_rxn_M_acid' value %s does not match statespace value '%s' -- did you mix up rows?" % (i,row['_rxn_M_acid'],acid))
 
     if len(arr) > 0:
         return arr
@@ -157,7 +160,6 @@ def download_zip(basedir,submissions,pfx=""):
     for sub in submissions:
         preds = [p.__dict__ for p in sub.rows] #map to dict for csv.dictwriter
         app.logger.info("Writing %d predictions for %s" % (len(preds), sub))
-#        preds = db.get_predictions(sub.id)
         fname = filename(sub)
         fh =  open(os.path.join(tmpdir,fname),'w')
         fh.write("# " + sub.notes.replace("\n","\n# ") + "\n")
