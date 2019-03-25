@@ -5,20 +5,38 @@
 {% endblock %}
 
 {% block content %}
-
+  <meta http-equiv="refresh" content="60">
   <form method="post">
     <h1>Science</h1>
     {{ science_table }}
-    <input type="submit" value="Refresh" name="update_science">
-  
+
+    <div id="images">
+      <div class="inline-block">    
+        <img src="/static/demo0.png" width="250px">
+      </div>
+      <div class="inline-block">
+        <img src="/static/demo1.png" width="250px">
+      </div>
+    </div>
     <h1>Automation</h1>
     {{ auto_table }}    
-    <input type="submit" value="Refresh" name="update_auto">
 
     <h1>Machine Learning</h1>
-    {{ ml_table }}
-    <input type="submit" value="Refresh" name="update_ml">
     
+    {{ ml_table }}
+    
+    <h3>Top {{ top_n }} Most Likely Runs</h3>
+    {{ top_table }}    
+
+    <div id="images">
+      <div class="inline-block">    
+        <img src="/static/demo3.png" width="250px">
+      </div>
+      <div class="inline-block">
+        <img src="/static/demo2.png" width="250px">
+      </div>
+    </div>
+    <input type="submit" value="Refresh" name="update">
   </form>
   
 {% endblock %}

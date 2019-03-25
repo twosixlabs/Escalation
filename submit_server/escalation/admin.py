@@ -110,7 +110,7 @@ def admin():
         if request.form['adminkey'] != app.config['ADMIN_KEY']:
             flash("Incorrect admin code")
         else:
-            from . import insert_demo_data, delete_db
+            from .database import insert_demo_data, delete_db
             if request.form['db'] == 'demo':
                 insert_demo_data()
                 app.logger.info("Reset database to demo data")

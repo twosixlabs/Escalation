@@ -2,8 +2,68 @@ from escalation import db
 from sqlalchemy import and_, sql, create_engine
 from sqlalchemy.orm import deferred
 from flask import current_app, g
+from flask_table import Table, Col, DateCol
 import csv
 
+class AutomationStat(db.Model):
+    id          = db.Column(db.Integer,primary_key=True)
+    crank       = db.Column(db.String(64))
+    upload_date = db.Column(db.DateTime(timezone=True))
+    num_runs    = db.Column(db.Integer,default=0)
+    num_uploads = db.Column(db.Integer,default=0)
+    num_distinct= db.Column(db.Integer,default=0)
+    
+class AutomationTable(Table):
+    crank       = Col('Crank')
+    upload_date = DateCol('Upload Date',date_format='short')
+    num_runs    = Col('Number of Runs')
+    num_uploads = Col('Number of Uploads')
+    num_distinct= Col('Number of Unique Entries')
+    
+
+class ScienceStat(db.Model):
+    id          = db.Column(db.Integer,primary_key=True)
+    crank       = db.Column(db.String(64))
+    upload_date = db.Column(db.DateTime(timezone=True))
+    
+class ScienceTable(Table):
+    crank       = Col('Crank')
+        
+
+class TopPrediction(db.Model):
+    id               = db.Column(db.Integer,primary_key=True)
+    name             = db.Column(db.String(64))
+    dataset          = db.Column(db.String(64))
+    predicted_out    = db.Column(db.Float)
+    num_subs         = db.Column(db.Integer)
+    
+    def __repr__(self):
+        return "<TopPrediction {0} {1} {2} {3:.2f} {4}".format(self.id, self.dataset,self.name,self.predicted_out,self.num_subs)
+
+class TopPredictionTable(Table):
+    dataset       = Col('Crank')
+    name          = Col('Run ID')    
+    predicted_out = Col('Predicted Score')
+    num_subs      = Col('Confidence')
+    
+class MLStat(db.Model):
+    id             = db.Column(db.Integer,primary_key=True)
+    crank          = db.Column(db.String(64))
+    upload_date    = db.Column(db.DateTime(timezone=True))
+    train_mean     = db.Column(db.Float, default=0)
+    num_train_rows = db.Column(db.Integer,default=0)
+    pred_mean      = db.Column(db.Float,default=0)
+
+class MLTable(Table):
+    crank       = Col('Crank')
+    upload_date = DateCol('Upload Date',date_format='short')
+    train_mean  = Col('Avg. Training Crystal Score')
+    num_train_rows = Col('Number of Rows in Training')
+    pred_mean = Col('Avg. Predicted Crystal Score')
+
+    
+
+    
 class Submission(db.Model):
     id       = db.Column(db.Integer,primary_key=True)
     username = db.Column(db.String(64))
@@ -24,12 +84,15 @@ class Prediction(db.Model):
     predicted_out   = db.Column(db.Integer)
     score           = db.Column(db.Float)
 
+    def __repr__(self):
+        return '<Prediction {} {} name={} out={}>'.format(self.id, self.dataset, self.name, self.predicted_out)
+
 class TrainingRun(db.Model):
     id                = db.Column(db.Integer,primary_key=True)
     dataset           = db.Column(db.String(64))
     name              = db.Column(db.String(64))    
     _rxn_M_inorganic  = db.Column(db.Float)
-    _rxn_M_organic    = db.Column(db.Float)           
+    _rxn_M_organic    = db.Column(db.Float)
     _out_crystalscore = db.Column(db.Integer)
     inchikey          = db.Column(db.String(128))
     
@@ -70,6 +133,7 @@ def create_db():
         Run.__table__.drop(engine)
         Submission.__table__.drop(engine)
         Prediction.__table__.drop(engine)
+        TrainingRun.__table__.drop(engine)
     except:
         print("Problem deleting tables, may be ok?")
     db.create_all()
@@ -78,59 +142,7 @@ def delete_db():
     Run.query.delete()
     Prediction.query.delete()    
     Submission.query.delete()
-    Crank.query.delete()    
-
-def insert_demo_data():
-    delete_db()
-    db.session.add(Submission(username='snovot',expname='name', crank='0001',notes='test test test',id=1))
-    db.session.add(Submission(username='snovot',expname='name1',crank='0002',notes='test test test',id=2))
-    db.session.add(Submission(username='snovot',expname='name2',crank='0002',notes='test test test',id=3))
-    
-    db.session.add(Prediction(id=1,sub_id=1,name=1,dataset='12345678901',predicted_out=1,score=0.5))
-    db.session.add(Prediction(id=2,sub_id=1,name=2,dataset='12345678901',predicted_out=2,score=0.5))
-    db.session.add(Prediction(id=3,sub_id=1,name=3,dataset='12345678901',predicted_out=2,score=0.5))
-    db.session.add(Prediction(id=4,sub_id=1,name=4,dataset='12345678901',predicted_out=4,score=0.5))
-    db.session.add(Prediction(id=5,sub_id=2,name=1,dataset='aaaa5678901',predicted_out=4,score=0.9))
-    db.session.add(Prediction(id=6,sub_id=2,name=2,dataset='aaaa5678901',predicted_out=4,score=0.1))
-    db.session.add(Prediction(id=7,sub_id=2,name=3,dataset='aaaa5678901',predicted_out=4,score=0.2))
-    db.session.add(Prediction(id=8,sub_id=2,name=4,dataset='aaaa5678901',predicted_out=4,score=0.4))
-    db.session.add(Prediction(id=9,sub_id=3,name=1,dataset='bbbb5678901',predicted_out=2,score=0.2))
-    db.session.add(Prediction(id=10,sub_id=3,name=2,dataset='bbbb5678901',predicted_out=2,score=0.5))
-    db.session.add(Prediction(id=11,sub_id=3,name=3,dataset='bbbb5678901',predicted_out=2,score=0.05))
-    db.session.add(Prediction(id=12,sub_id=3,name=4,dataset='bbbb5678901',predicted_out=2,score=1))
-    db.session.add(Crank(crank='0002', stateset='bbbb5678901', githash='abc1236', num_runs=9,username='snovot', current=True))
-    db.session.add(Crank(crank='0002', stateset='aaaa5678901', githash='abc1235', num_runs=9,username='snovot', current=False))    
-    db.session.add(Crank(crank='0001', stateset='12345678901', githash='abc1234', num_runs=9,username='snovot', current=False))
-    db.session.add(Run(crank='0002',stateset='aaaa5678901',name='0',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0002',stateset='aaaa5678901',name='1',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0002',stateset='aaaa5678901',name='2',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0002',stateset='aaaa5678901',name='3',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0002',stateset='aaaa5678901',name='4',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0002',stateset='aaaa5678901',name='5',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0002',stateset='aaaa5678901',name='6',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0002',stateset='aaaa5678901',name='7',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0002',stateset='aaaa5678901',name='8',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0002',stateset='aaaa5678901',name='9',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0002',stateset='bbbb5678901',name='0',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0002',stateset='bbbb5678901',name='1',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0002',stateset='bbbb5678901',name='2',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0002',stateset='bbbb5678901',name='3',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0002',stateset='bbbb5678901',name='4',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0002',stateset='bbbb5678901',name='5',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0002',stateset='bbbb5678901',name='6',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0002',stateset='bbbb5678901',name='7',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0002',stateset='bbbb5678901',name='8',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0002',stateset='bbbb5678901',name='9',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0001',stateset='bbbb5678901',name='0',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0001',stateset='12345678901',name='1',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0001',stateset='12345678901',name='2',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0001',stateset='12345678901',name='3',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0001',stateset='12345678901',name='4',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0001',stateset='12345678901',name='5',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0001',stateset='12345678901',name='6',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0001',stateset='12345678901',name='7',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0001',stateset='12345678901',name='8',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))
-    db.session.add(Run(crank='0001',stateset='12345678901',name='9',_rxn_M_inorganic=0.0,_rxn_M_organic=0.0))    
+    Crank.query.delete()
     db.session.commit()
 
 
@@ -160,6 +172,7 @@ def add_stateset(crank,stateset,filename,githash,username):
 def set_stateset(id=None):
     Crank.query.filter_by(current=True).update({'current':False})
     Crank.query.filter_by(id=id).update({'current':True})
+    db.session.commit()
     
 def get_stateset(id=None):
     if id:
@@ -215,6 +228,12 @@ def get_predictions(id=None):
     else:
         return [p.__dict__ for p in Prediction.query.filter_by(sub_id=id).all()]
 
+def get_training(dataset='all'):
+    if dataset == 'all':
+        return TrainingRun.query.all()
+    else:
+        return TrainingRun.query.filter_by(dataset=dataset).all()
+    
 def add_training(crank,stateset,filename,githash,username):
     with open(filename) as csvfile:
         csvreader = csv.DictReader(filter(lambda row: row[0]!='#', csvfile))

@@ -73,17 +73,17 @@ def create_app():
         app.logger.info("Writing to %s" % app.config['SQLALCHEMY_DATABASE_URI'])
 
 
-    from .database import insert_demo_data, delete_db, create_db, Run, Submission, Crank, Prediction
+    from .database import delete_db, create_db, Run, Submission, Crank, Prediction
 
     @app.cli.command('reset-db')
     def reset_db():
         delete_db()
         click.echo("Deleted db entries")
 
-    @app.cli.command('demo-db')
-    def demo_data():
-        insert_demo_data()
-        click.echo("Added demo data")    
+    @app.cli.command('update-ml')
+    def update_ml_cli():
+        from .dashboard import update_ml
+        update_ml()
 
         
     # Shut down the scheduler when exiting the app

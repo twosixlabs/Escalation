@@ -55,7 +55,7 @@ print("expname:",expname)
 print("notes:",notes)
 print("csv:",args.csv)
 
-r = requests.post(args.endpoint, headers={'User-Agent':'escalation'},data={'crank':crank,'username':user,'expname':expname,'notes':notes},
+r = requests.post(args.endpoint, headers={'User-Agent':'escalation'},data={'crank':crank,'username':user,'expname':expname,'notes':notes, 'gitcommit':},
                       files={'csvfile':open(args.csv,'rb')},timeout=60*2)    
 print(r.status_code, r.reason,r)
 try:
