@@ -64,7 +64,7 @@ def submission():
         elif not csvfile or not allowed_file(csvfile.filename):
             error = "Must upload a csv file"
         elif not db.is_stateset_active(crank,githash):
-            error = "Entered crank number and githash (%s,%s) is not active" % (crank,githash)
+            error = "Entered crank number %s is not active" % (crank)
         else:
             rows, comments = text2rows(csvfile.read().decode('utf-8'))
             if rows == None:

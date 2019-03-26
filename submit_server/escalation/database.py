@@ -240,7 +240,9 @@ def update_crank_status(id=None,value=False):
     db.session.commit()
 
 def is_stateset_stored(crank, githash):
-    return db.session.query(Crank.query.filter(and_(Crank.crank == crank,Crank.githash == githash)).exists()).scalar()
+    # we are disabling githash checking since the logic is not thought through
+#TODO    return db.session.query(Crank.query.filter(and_(Crank.crank == crank,Crank.githash == githash)).exists()).scalar()
+    return db.session.query(Crank.query.filter(Crank.crank == crank).exists()).scalar()
     
 def get_stateset(id=None):
     if id:
@@ -269,7 +271,8 @@ def get_crank(id=None):
         return Crank.query.order_by(Crank.created.desc()).all()
 
 def get_rxns(crank,githash,names):
-    res = Run.query.filter(and_(Run.githash==githash,Run.dataset == crank, Run.name.in_(names))).all() #todo add githash check
+#TODO    res = Run.query.filter(and_(Run.githash==githash,Run.dataset == crank, Run.name.in_(names))).all() #disabled for now since the githash logic is not thought through
+    res = Run.query.filter(and_(Run.dataset == crank, Run.name.in_(names))).all() #todo add githash check    
     current_app.logger.info("Returned %d reactions from stateset" % (len(res)))
     d={}
     for r in res:
