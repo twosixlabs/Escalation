@@ -6,48 +6,44 @@
 
  {% block content %}
 
-<h1> Ten most recent crank records </h1>
+<h1> Twenty most recent crank records </h1>
 <form method="post">   
  <table style="min-width:720px">
    <tr>
-     <th></th>
      <th>Crank </th>
      <th>Git commit </th>     
      <th>Number Runs</th>
      <th>Uploader </th>
      <th>Timestamp </th>
+     <th>Active / Inactive</th>     
    </tr>
-  {% for r in cranks[:10] %}
+  {% for r in cranks[:20] %}
    <tr>
-    <td> <input type="radio" name="new_stateset" value="{{ r['id'] }}" > </td>    
-    <td> {{ r['crank'] }} </td>
-   <td> {{ r['githash'] }} </td>    
-   <td> {{ r['num_runs'] }} </td>        
-   <td> {{ r['username'] }} </td>
-   <td> {{ r['created'].strftime("%Y-%m-%d %H:%M:%S") }} </td>
-   {% if r['current'] == True %}
-   <td> <b> Current </b> </td>
-   {% endif %}
+     <td> {{ r['crank'] }} </td>
+     <td> {{ r['githash'] }} </td>    
+     <td> {{ r['num_runs'] }} </td>        
+     <td> {{ r['username'] }} </td>
+     <td> {{ r['created'].strftime("%Y-%m-%d %H:%M:%S") }} </td>
+     <td>
+       <input type="radio" name="{{ r['id']}}" value="active" {% if r['active'] == True %} checked="checked"{% endif %}>
+       <input type="radio" name="{{ r['id']}}" value="not_active" {% if r['active'] != True %} checked="checked"{% endif %}>
+     </td>         
   </tr>
-
   {% endfor %}
  </table>
   <label for="adminkey">Admin code</label>  
   <input type="text" name="adminkey" required>
   
- <input type="submit" value="Roll back Stateset" name="submit">
+ <input type="submit" value="Update active cranks" name="submit">
 </form>
 
 <h1> Upload new stateset csv </h1>
  
-<pre>python3 escalation/submit_server/scripts/upload_stateset.py  path_to_versioned_repo </pre>
+<pre>python3 escalation/submit_server/scripts/upload_stateset.py</pre>
 </form>  
 
  <h1>Development commands for database</h1>
  <form method="post">
-  <label>
-    <input type="radio" name="db" value="demo">Reset DB with test data
-  </label>
   <label>
     <input type="radio" name="db" value="reset">Clear DB
   </label>

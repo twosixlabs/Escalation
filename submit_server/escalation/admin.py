@@ -52,9 +52,7 @@ def admin():
 
         app.logger.info("Received request: {} {} {} {} {}".format(stateset_file,training_file,username,crank,githash))
 
-        r = db.is_stateset_stored(crank,githash)
-        print(r)
-        if r:
+        if db.is_stateset_stored(crank,githash):
             error = 'Crank and githash already stored in database'
         else:
             stateset.save(stateset_file)
@@ -72,18 +70,36 @@ def admin():
             app.logger.error(error)            
             return jsonify({'error':error}), 400
 
-    if request.method == 'POST' and request.form['submit'] == "Roll back Stateset":
+    if request.method == 'POST' and request.form['submit'] == "Update active cranks":
         if request.form['adminkey'] != app.config['ADMIN_KEY']:
             flash("Incorrect admin code")
         else:
-            res = db.get_stateset(request.form['new_stateset'])
-            if res is None:
-                flash("Something went wrong getting stateset",request.form['new_stateset'])
-            else:
-                flash("Updating stateset to crank %s and hash %s" % (res['crank'], res['githash']))
-                db.set_stateset(res['id'])
-                app.logger.info("Updating stateset to crank %s and hash %s" % (res['crank'], res['githash']))
-                
+
+            # check that only one crank has been set to active
+            seen={}
+            cranks = db.get_cranks()
+            for crank in cranks:
+                id = str(crank.id)
+                if id in request.form and request.form[id] == 'active':
+                    if crank.crank in seen:
+                        flash("Can only have one active row for crank %s" % crank.crank)
+                        cranks=[] #cute way to prevent updating any cranks below
+                        break
+                    seen[crank.crank] = 1
+
+            # now update cranks
+            for crank in cranks:
+                id = str(crank.id)
+                if id not in request.form:
+                    continue
+
+                new_status = request.form[id] == 'active'
+                if new_status != crank.active:
+                    db.update_crank_status(crank.id,new_status)
+                    out="Updating crank %s to %s" % (crank.crank,  'active' if new_status else 'inactive')
+                    flash(out)
+                    app.logger.info(out)
+                    
     if request.method == 'POST' and  request.form['submit'] == 'Update Database' :
         for k in request.form:
             app.logger.info(k)
@@ -91,11 +107,7 @@ def admin():
             flash("Incorrect admin code")
         else:
             from .database import delete_db
-            if request.form['db'] == 'demo':
-                insert_demo_data()
-                app.logger.info("Reset database to demo data")
-                flash("Reset statespace to demo data")
-            elif request.form['db'] == 'reset':
+            if request.form['db'] == 'reset':
                 delete_db()
                 app.logger.info("Deleted all data")
                 flash("Deleted all data")

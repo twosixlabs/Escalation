@@ -40,7 +40,7 @@ def text2rows(text):
 
     return data, comments
     
-def validate_submission(rows,crank):
+def validate_submission(rows,crank,githash):
     arr = []
     app.logger.info("Validating %d lines" % len(rows))
 
@@ -49,7 +49,7 @@ def validate_submission(rows,crank):
 
     try:
         names = [r['name'] for r in rows]
-        rxns = db.get_rxns(crank,names)
+        rxns = db.get_rxns(crank,githash,names)
         # validate each row
         if len(rxns) != len(rows):
             app.logger.info("Only found %d of %d submitted rows in current stateset -- maybe there is a typo in the dataset or name field?" % (len(rxns),len(rows)))

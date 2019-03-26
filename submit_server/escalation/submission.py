@@ -32,18 +32,12 @@ bp = Blueprint('submission', __name__)
 @bp.route('/submission', methods=('GET', 'POST'))
 def submission():
 
-    curr_crank = db.get_current_crank()
-    if curr_crank is None:
-        return render_template('submission.html')
-    else:
-        curr_crank = curr_crank.crank
-        
     if request.method == 'POST':
         for key in ('username','expname','crank','notes','githash'):
             session[key] = request.form[key]
 
         username = request.form['username']
-        expname  = request.form['expname']        
+        expname  = request.form['expname']       
         crank    = request.form['crank']
         notes    = request.form['notes']
         githash    = request.form['githash']                
@@ -59,17 +53,17 @@ def submission():
         elif not crank:
             error = 'Crank number is required (e.g. 0015)'
         elif not githash or len(githash) != 7:
-            error = '7 char git hash is required (e.g. abc1234)'            
+            error = '7 char git hash is required (e.g. abc1234)'
         elif not csvfile or not allowed_file(csvfile.filename):
             error = "Must upload a csv file"
-        elif crank != curr_crank:
-            error = "Entered crank number (%s) does not match the current crank (%s)" % (crank, curr_crank)
+        elif not db.is_stateset_active(crank,githash):
+            error = "Entered crank number and githash (%s,%s) is not active" % (crank,githash)
         else:
             rows, comments = text2rows(csvfile.read().decode('utf-8'))
             if rows == None:
                 error = "Could not extract rows from file %s" % csvfile.filename
             if error == None:
-                error = validate_submission(rows,crank)
+                error = validate_submission(rows,crank,githash)
             if error == None:
                 if comments:
                     notes = notes + "\nComments from file:" + comments
@@ -96,4 +90,5 @@ def submission():
                 
                 return render_template('success.html',username=username)
 
-    return render_template('submission.html',session=session,crank=curr_crank)
+    curr_cranks = " ".join(sorted(x.crank for x in db.get_active_cranks()))
+    return render_template('submission.html',session=session,curr_cranks=curr_cranks)

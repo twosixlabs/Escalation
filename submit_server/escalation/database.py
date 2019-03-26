@@ -163,11 +163,11 @@ class Crank(db.Model):
     githash  = db.Column(db.String(7))    #git commit of stateset file in versioned-data
     username = db.Column(db.String(64))
     num_runs = db.Column(db.Integer)    
-    current  = db.Column(db.Boolean)
+    active  = db.Column(db.Boolean)
     created  = db.Column(db.DateTime(timezone=True), server_default=sql.func.now())
 
     def  __repr__(self):
-        return '<Crank {} {} {} {}>'.format(self.crank,self.githash,self.current,self.created)
+        return '<Crank {} {} {} {}>'.format(self.crank,self.githash,self.active,self.created)
 
 class Run(db.Model):
     id               = db.Column(db.Integer,primary_key=True)
@@ -226,15 +226,17 @@ def read_in_stateset(filename,crank,githash):
     return len(objs)
     
 def add_stateset(filename,crank,githash,username):
-    Crank.query.filter_by(current=True).update({'current':False}) #TODO
     num_runs= read_in_stateset(filename,crank,githash)
-    db.session.add(Crank(crank=crank,githash=githash,username=username,num_runs=num_runs,current=True))
+
+    #retire other entries that have the same crank
+    Crank.query.filter_by(crank=crank).update({'active':False})
+    
+    db.session.add(Crank(crank=crank,githash=githash,username=username,num_runs=num_runs,active=True))
     db.session.commit()
     return num_runs
 
-def set_stateset(id=None):
-    Crank.query.filter_by(current=True).update({'current':False})
-    Crank.query.filter_by(id=id).update({'current':True})
+def update_crank_status(id=None,value=False):
+    Crank.query.filter_by(id=id).update({'active':value})
     db.session.commit()
 
 def is_stateset_stored(crank, githash):
@@ -244,7 +246,7 @@ def get_stateset(id=None):
     if id:
         return Crank.query.filter_by(id=id).first().__dict__
     else:
-        return [u.__dict__ for u in Crank.query.filter_by(current=True).all()]
+        return [u.__dict__ for u in Crank.query.filter_by(active=True).all()]
 
 def get_cranks():
     return Crank.query.order_by(Crank.created.desc()).all()
@@ -252,8 +254,13 @@ def get_cranks():
 def get_unique_cranks():
     return sorted([x[0] for x in db.session.query(Crank.crank).distinct().all()],reverse=True)
 
-def get_current_crank():
-    return Crank.query.filter_by(current=True).first()
+def get_active_cranks():
+    return Crank.query.filter_by(active=True).all()
+
+def is_stateset_active(crank,githash):
+    res = Crank.query.filter(Crank.githash==githash).filter(Crank.crank==crank).filter(Crank.active==True).first()
+    print(crank,res)
+    return res != None
 
 def get_crank(id=None):
     if id:
@@ -261,8 +268,8 @@ def get_crank(id=None):
     else:
         return Crank.query.order_by(Crank.created.desc()).all()
 
-def get_rxns(crank,names):
-    res = Run.query.filter(and_(Run.dataset == crank, Run.name.in_(names))).all()
+def get_rxns(crank,githash,names):
+    res = Run.query.filter(and_(Run.githash==githash,Run.dataset == crank, Run.name.in_(names))).all() #todo add githash check
     current_app.logger.info("Returned %d reactions from stateset" % (len(res)))
     d={}
     for r in res:

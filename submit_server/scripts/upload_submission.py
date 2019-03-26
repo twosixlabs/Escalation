@@ -41,8 +41,9 @@ elif args.csv == None:
     print("Must pass in csv file")
     exit()
 elif args.githash == None:
-    print("Mut pass in 7 char githash")
-
+    print("Mut pass in 7 char githash from versioned-data")
+    exit()
+    
 notes = args.notes or ""
 if expname is None:
     expname = args.expname
@@ -63,6 +64,8 @@ print("notes:",notes)
 print("csv:",args.csv)
 print("githash:",githash)
 
+
+        
 r = requests.post(args.endpoint, headers={'User-Agent':'escalation'},data={'crank':crank,'username':user,'expname':expname,'notes':notes, 'githash':githash},
                       files={'csvfile':open(args.csv,'rb')},timeout=60*2)    
 print(r.status_code, r.reason,r)

@@ -16,28 +16,36 @@ import utils
 parser = argparse.ArgumentParser()
 parser.add_argument('--endpoint',help="Rest endpoint",default='http://escalation.sd2e.org/admin')
 parser.add_argument('--debug',help="Use debug manifest and dev endpoint",action='store_true')
+parser.add_argument('--githash',help="FOR DEBUG ONLY")
 parser.add_argument('--key',help="admin secret key",default='secret')
 args=parser.parse_args()
 
+if args.githash and not args.debug:
+    print("Can only pass in custom githash in debug mode")
+    exit()
+    
 if args.debug and args.endpoint == 'http://escalation.sd2e.org/admin':
     args.endpoint = 'http://127.0.0.1:5000/admin'
 
 print("POSTing to",args.endpoint)    
-# compute md5 hash using small chunks
-def md5(fname):
-    hash_md5 = hashlib.md5()
-    with open(fname, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            hash_md5.update(chunk)
-    return hash_md5.hexdigest()
 
+
+if not args.debug:
+    while True:
+        a = input("Do you want to upload to the production server? [yes/no]:")
+        if a == "yes":
+            break
+        elif a == "no":
+            exit()
 
 versioned_datasets_repo_path = utils.get_versioned_data_repo_directory()
 git_sha, git_username = utils.get_git_info(versioned_datasets_repo_path)
 files = utils.get_files_of_necessary_types(versioned_datasets_repo_path,args.debug)
 
-#TODO: check if manifest is clean or dirty!
 
+if args.githash:
+    git_sha = args.githash
+#TODO: check if manifest is clean or dirty!
 
 # very hardcoded pths
 stateset       = os.path.join(versioned_datasets_repo_path,'data','perovskite',files['stateset'])
