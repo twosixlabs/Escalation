@@ -240,9 +240,7 @@ def update_crank_status(id=None,value=False):
     db.session.commit()
 
 def is_stateset_stored(crank, githash):
-    # we are disabling githash checking since the logic is not thought through
-#TODO    return db.session.query(Crank.query.filter(and_(Crank.crank == crank,Crank.githash == githash)).exists()).scalar()
-    return db.session.query(Crank.query.filter(Crank.crank == crank).exists()).scalar()
+    return Crank.query.filter(Crank.crank==crank).filter(Crank.githash == githash).scalar() is not None
     
 def get_stateset(id=None):
     if id:
@@ -260,9 +258,9 @@ def get_active_cranks():
     return Crank.query.filter_by(active=True).all()
 
 def is_stateset_active(crank,githash):
-    res = Crank.query.filter(Crank.githash==githash).filter(Crank.crank==crank).filter(Crank.active==True).first()
-    print(crank,res)
-    return res != None
+    # we are disabling githash checking since the logic is not thought through
+#TODO    return db.session.query(Crank.query.filter(and_(Crank.crank == crank,Crank.githash == githash)).exists()).scalar()
+    return Crank.query.filter(Crank.crank==crank).filter(Crank.active==True).scalar() is not None
 
 def get_crank(id=None):
     if id:

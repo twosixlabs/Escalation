@@ -39,7 +39,7 @@ bp = Blueprint('admin',__name__)
 def admin():
     error = None
                 
-    if request.method == 'POST' and request.headers.get('User-Agent') == 'escalation':x
+    if request.method == 'POST' and request.headers.get('User-Agent') == 'escalation':
         stateset  = request.files['stateset']
         stateset_file  = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(stateset.filename))
 
