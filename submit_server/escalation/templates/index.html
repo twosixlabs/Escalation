@@ -4,7 +4,19 @@
   <h1>{% block title %}Submissions{% endblock %}</h1>
 {% endblock %}
 
-{% block content %}
+  {% block content %}
+
+<form method="post">
+  <label for="crank">Select specific crank</label>
+  <select name="crank">
+    <option value="all">All</option>
+    {% for crank in cranks %}
+    <option value="{{ crank }}">{{ crank }} </option>
+    {% endfor %}
+  </select>
+  <input type="submit" value="Select">
+</form>
+
 <form method="post">
   <table style="min-width:600px">
 	<col style="width:3%">
@@ -40,14 +52,5 @@
   <input type="hidden" value="{{ crank }}" name="crank">
   <input type="submit" value="Download files">
 </form>  
-<form method="post">
-  <label for="crank">Select specific crank</label>
-  <select name="crank">
-    <option value="all">All</option>
-    {% for crank in cranks %}
-    <option value="{{ crank }}">{{ crank }} </option>
-    {% endfor %}
-  </select>
-  <input type="submit" value="Select">
-</form>
+
 {% endblock %}

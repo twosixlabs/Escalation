@@ -33,9 +33,16 @@ bp = Blueprint('submission', __name__)
 def submission():
 
     if request.method == 'POST':
-        for key in ('username','expname','crank','notes','githash'):
-            session[key] = request.form[key]
 
+
+        if request.headers.get('User-Agent') != 'escalation':        
+            for key in ('username','expname','crank','notes','githash'):
+                session[key] = request.form[key]
+        else:
+            for key in ('username','expname','crank','notes','githash'):
+                if key not in request.form:
+                    return jsonify({'error':"Key %s not presente in POST" % key}), 400
+                
         username = request.form['username']
         expname  = request.form['expname']       
         crank    = request.form['crank']

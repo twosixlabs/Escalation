@@ -38,7 +38,6 @@ def update_auto():
                                           num_distinct=num_distinct_entries
             )
             )
-        print("HERE!")
         db.session.commit()
 
 def update_science():
