@@ -324,7 +324,7 @@ def add_training(filename):
 
 def get_leaderboard(dataset='all'):
     if dataset == 'all':
-        return LeaderBoardTable(LeaderBoard.query.order_by(LeaderBoard.accuracy.desc()).limit(25).all())
+        return LeaderBoardTable(LeaderBoard.query.order_by(LeaderBoard.created.desc()).all())
     else:
         return LeaderBoardTable(LeaderBoard.query.filter_by(dataset=dataset).order_by(LeaderBoard.accuracy.desc()).all())
     
