@@ -14,7 +14,6 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-family: serif;
   color: #377ba8;
-  margin: 1rem 0.5rem 1rem 0.5rem;
 }
 
 a {
@@ -167,4 +166,11 @@ pre {
 
 .ml_table {
     max-width:800px;
+}
+
+h1 {
+    font-size: 40px;
+}
+h2 {
+    font-size: 36px;
 }

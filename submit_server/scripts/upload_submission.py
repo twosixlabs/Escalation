@@ -26,7 +26,7 @@ if m:
     crank = m.group(1)
     githash = m.group(2)
     user = m.group(3)
-    expname = commit
+    expname = githash
     
 elif args.crank == None:
     print("Can't extract data from CSV, must pass in --crank")

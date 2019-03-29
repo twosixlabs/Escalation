@@ -11,6 +11,8 @@ from werkzeug.utils import secure_filename
 
 from .  import database as db
 from .files import *
+from .dashboard import update_ml, update_auto, update_science
+from escalation import scheduler
 
 def arr2html(arr):
     if type(arr) == str:
@@ -88,13 +90,17 @@ def submission():
                 flash(arr2html(error))
         else:
             app.logger.info("Added submission")
-            if request.headers.get('User-Agent') == 'escalation':                
+            # kick off stats refresh
+            job1 = scheduler.add_job(func=update_science, args=[], id = 'update_science')
+            job2 = scheduler.add_job(func=update_auto, args=[], id = 'update_auto')
+            job3 = scheduler.add_job(func=update_ml, args=[], id = 'update_ml')                    
+            
+            if request.headers.get('User-Agent') == 'escalation':
                 return jsonify({'success':'Added submission'})
             else:
                 #clear out session
                 for key in ('username','expname','crank','notes','githash'):
                     session.pop(key,None)
-                
                 return render_template('success.html',username=username)
 
     curr_cranks = " ".join(sorted(x.crank for x in db.get_active_cranks()))

@@ -6,19 +6,10 @@
 
 {% block content %}
   <meta http-equiv="refresh" content="60">
-  <form method="post">
-    <h1>Science</h1>
-    {{ science_table }}
+    <h2>Science</h2>
 
-    <div id="images">
-      <div class="inline-block">    
-        <img src="/static/demo0.png" width="250px">
-      </div>
-      <div class="inline-block">
-        <img src="/static/demo1.png" width="250px">
-      </div>
-    </div>
-    <h1>Automation</h1>
+    <p>Plots are coming</p>
+    <h2>Automation</h2>
 
     <div class="auto_table">
     <table id="auto_table" class="compact hover order-column row-border" style="width:100%">
@@ -26,7 +17,7 @@
         <th>Crank</th>
         <th>Upload Date</th>
         <th>Number of Runs</th>
-        <th>Number of Uploads</th>
+        <th>Number of Submissions</th>
       </thead>
       <tbody>
         {% for r in auto_table %}
@@ -34,7 +25,7 @@
           <td> {{ r['crank'] }} </td>
           <td> {{ r['upload_date'] }} </td>
           <td> {{ r['num_runs'] }} </td>                    
-          <td> {{ r['num_distinct'] }} </td>                    
+          <td> {{ r['num_uploads'] }} </td>                    
         </tr>
         {% endfor %}
       </tbody>
@@ -51,7 +42,7 @@ $('#auto_table').DataTable( {
 </script>
 
 </div>
-    <h1>Machine Learning</h1>
+    <h2>Machine Learning</h2>
 
     <h3>Training Data Statistics</h3>
     <div class="ml_table">
@@ -85,7 +76,9 @@ $('#ml_table').DataTable( {
 
 </script>
 
-  <h3>Leaderboard summary</h3>
+<h3>Leaderboard summary</h3>
+
+<a href="{{ url_for('leaderboard.leaderboard') }}">View full leaderboard</a>
   <table id="leaderboard_table" class="compact hover order-column row-border" style="width:100%">
     <thead>
       <th>Dataset</th>      
@@ -121,20 +114,7 @@ $('#leaderboard_table').DataTable( {
   );
   } );
 </script>
-    <a href="{{ url_for('leaderboard.leaderboard') }}">View full leaderboard</a>
-
-    
-    <h3>Top {{ top_n }} Most Likely Runs</h3>
-    
-
-    <div id="images">
-      <div class="inline-block">    
-        <img src="/static/demo3.png" width="250px">
-      </div>
-      <div class="inline-block">
-        <img src="/static/demo2.png" width="250px">
-      </div>
-    </div>
+  <form method="post">
     <input type="submit" value="Refresh" name="update">
   </form>
 

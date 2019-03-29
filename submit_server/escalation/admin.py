@@ -10,6 +10,8 @@ from flask import (
 from werkzeug.utils import secure_filename
 from flask import current_app as app
 from . import database as db
+from .dashboard import update_ml, update_auto, update_science
+from escalation import scheduler
 
 session_vars= ('githash','adminkey','username','crank')
 # check that admin key is correct, git commit is 7 digits and csv file is the right format
@@ -65,6 +67,11 @@ def admin():
 
             out="Successfully updated to crank %s and stateset %s with %d rows" % (crank, githash,num_rows)
             app.logger.info(out)
+
+            # kick off stats refresh
+            job1 = scheduler.add_job(func=update_science, args=[], id = 'update_science')
+            job2 = scheduler.add_job(func=update_auto, args=[], id = 'update_auto')
+            job3 = scheduler.add_job(func=update_ml, args=[], id = 'update_ml')                    
             return jsonify({'success':'updated to crank %s and commit hash %s with %d rows' % (crank,githash,num_rows)}), 200        
         else:
             app.logger.error(error)            
