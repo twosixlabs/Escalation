@@ -7,33 +7,6 @@ import csv
 
 # Leaderboard statistics
 
-class LeaderBoardTable(Table):
-    allow_sort = True
-    def sort_url(self, col_key, reverse=False):
-        if reverse:
-            direction =  'desc'
-        else:
-            direction = 'asc'
-        return url_for('leaderboard.leaderboard', sort=col_key, direction=direction)
-    
-    dataset_name                = Col("Dataset")
-    githash                     = Col("Git commit")
-    run_id                      = Col("Run ID")
-    created                     = DateCol("Created",date_format='short')
-    model_name                  = Col("Model name")
-    model_author                = Col("Model author")
-    accuracy                    = Col("Accuracy")
-    balanced_accuracy           = Col("Balanced Accuracy")
-    samples_in_train            = Col("#Samples in Training")
-    auc_score                   = Col("AUC")
-    average_precision           = Col("Avg. Prec.")
-    f1_score                    = Col("F1 Score")
-    precision                   = Col("Precision")
-    recall                      = Col("Recall")
-    samples_in_test             = Col("#Samples in Test")
-    model_description           = Col("Description")
-    data_and_split_description  = Col("Data split")
-
 class LeaderBoard(db.Model):
     id                          = db.Column(db.Integer,primary_key=True)
     dataset_name                = db.Column(db.String(64))
@@ -324,9 +297,9 @@ def add_training(filename):
 
 def get_leaderboard(dataset='all'):
     if dataset == 'all':
-        return LeaderBoardTable(LeaderBoard.query.order_by(LeaderBoard.created.desc()).all())
+        return LeaderBoard.query.all()
     else:
-        return LeaderBoardTable(LeaderBoard.query.filter_by(dataset=dataset).order_by(LeaderBoard.accuracy.desc()).all())
+        return LeaderBoard.query.filter_by(dataset=dataset).all()
     
 def add_leaderboard(form):
     for row in 'dataset','githash','run_id','model_name','model_author','accuracy','balanced_accuracy','auc_score','average_precision','f1_score','precision','recall','samples_in_train','samples_in_test','model_description','column_predicted','num_features_used','data_and_split_description','normalized','num_features_normalized','feature_extraction','was_untested_data_predicted':

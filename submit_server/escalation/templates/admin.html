@@ -6,9 +6,11 @@
 
  {% block content %}
 
-<h1> Twenty most recent crank records </h1>
-<form method="post">   
- <table style="min-width:720px">
+<h1> Crank records </h1>
+<form method="post">
+  <div style="max-width:800px;">
+  <table id="crank_table" class="compact hover order-column row-border" style="width:100%;">
+    <thead>
    <tr>
      <th>Crank </th>
      <th>Git commit </th>     
@@ -17,24 +19,40 @@
      <th>Timestamp </th>
      <th>Active / Inactive</th>     
    </tr>
-  {% for r in cranks[:20] %}
+    </thead>
+    <tbody>
+  {% for r in cranks %}
    <tr>
      <td> {{ r['crank'] }} </td>
      <td> {{ r['githash'] }} </td>    
      <td> {{ r['num_runs'] }} </td>        
      <td> {{ r['username'] }} </td>
      <td> {{ r['created'].strftime("%Y-%m-%d %H:%M:%S") }} </td>
-     <td>
-       <input type="radio" name="{{ r['id']}}" value="active" {% if r['active'] == True %} checked="checked"{% endif %}>
-       <input type="radio" name="{{ r['id']}}" value="not_active" {% if r['active'] != True %} checked="checked"{% endif %}>
+     <td data-order="{{ r['active'] }}">
+       <input type="radio" name="{{ r['id']}}" value="active" {% if r['active'] %} checked="checked"{% endif %}>
+       <input type="radio" name="{{ r['id']}}" value="not_active" {% if not r['active']  %} checked="checked"{% endif %}>
      </td>         
-  </tr>
-  {% endfor %}
- </table>
+   </tr>
+   {% endfor %}
+    </tbody>   
+  </table>
+  
+<script>
+$(document).ready(function() {
+$('#crank_table').DataTable( {
+        "order": [[ 0, "desc" ]],
+  }
+  );
+  } );
+
+</script>
+  
+  
   <label for="adminkey">Admin code</label>  
   <input type="text" name="adminkey" required>
   
- <input type="submit" value="Update active cranks" name="submit">
+  <input type="submit" value="Update active cranks" name="submit">
+  </div>
 </form>
 
 <h1> Upload new stateset csv </h1>
@@ -57,5 +75,5 @@
  <p><a href="https://gitlab.sd2e.org/sd2program/versioned-datasets">Versioned Data Repo</a></p> 
  <p><a href="https://gitlab.sd2e.org/sd2program/test-harness/tree/master/harness">Test Harness Repository</a></p>
  <p><a href="http://jenkins.sd2e.org/job/versioned_data_pipeline">Jenkins Versioned Data</a></p>
- 
+
 {% endblock %}

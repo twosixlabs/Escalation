@@ -5,7 +5,7 @@
 {% endblock %}
 
   {% block content %}
-
+<div style="max-width:1000px;">
 <form method="post">
   <label for="crank">Select specific crank</label>
   <select name="crank">
@@ -17,8 +17,9 @@
   <input type="submit" value="Select">
 </form>
 
+
 <form method="post">
-  <table  id="submission_table" class="compact hover order-column row-border">
+  <table  id="submission_table" class="compact hover order-column row-border" style="width:100%">
   <thead>
   <tr>
     <th></th>
@@ -62,5 +63,5 @@ $('#submission_table').DataTable( {
   <input type="hidden" value="{{ crank }}" name="crank">
   <input type="submit" value="Download files">
 </form>  
-
+</div>
 {% endblock %}

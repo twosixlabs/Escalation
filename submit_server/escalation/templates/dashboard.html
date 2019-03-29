@@ -22,6 +22,8 @@
     {{ auto_table }}    
 
     <h1>Machine Learning</h1>
+
+    <a href="{{ url_for('leaderboard.leaderboard') }}">View full leaderboard</a>
     
     {{ ml_table }}
     
@@ -38,5 +40,7 @@
     </div>
     <input type="submit" value="Refresh" name="update">
   </form>
+
+  
   
 {% endblock %}
