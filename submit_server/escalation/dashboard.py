@@ -140,9 +140,9 @@ def dashboard():
         flash("Kicked off job {}.Sleeping for {} seconds to refresh".format(job1,seconds))
         time.sleep(seconds)
 
-    auto_table    = AutomationTable(AutomationStat.query.order_by(AutomationStat.upload_date.desc()).all())
-    science_table      = ScienceTable(ScienceStat.query.order_by(ScienceStat.upload_date.desc()).all())
-    ml_table = MLTable(MLStat.query.order_by(MLStat.upload_date.desc()).all())
-    top_table = TopPredictionTable(TopPrediction.query.order_by(TopPrediction.predicted_out.desc()).limit(TOP_PREDICTION_LIMIT).all())
-    return render_template('dashboard.html',science_table=science_table,auto_table=auto_table,ml_table=ml_table, top_table=top_table, top_n=TOP_PREDICTION_LIMIT)
+    auto_table    = AutomationStat.query.order_by(AutomationStat.upload_date.desc()).all()
+    science_table = ScienceStat.query.order_by(ScienceStat.upload_date.desc()).all()
+    ml_table      = MLStat.query.order_by(MLStat.upload_date.desc()).all()
+    top_table     = TopPrediction.query.order_by(TopPrediction.predicted_out.desc()).limit(TOP_PREDICTION_LIMIT).all()
+    return render_template('dashboard.html',science_table=science_table,auto_table=auto_table,ml_table=ml_table, top_table=top_table, top_n=TOP_PREDICTION_LIMIT,leaderboard=get_leaderboard())
 

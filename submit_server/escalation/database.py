@@ -2,7 +2,6 @@ from escalation import db
 from sqlalchemy import and_, sql, create_engine
 from sqlalchemy.orm import deferred
 from flask import current_app, g, url_for
-from flask_table import Table, Col, DateCol
 import csv
 
 # Leaderboard statistics
@@ -44,23 +43,12 @@ class AutomationStat(db.Model):
     num_runs    = db.Column(db.Integer,default=0)
     num_uploads = db.Column(db.Integer,default=0)
     num_distinct= db.Column(db.Integer,default=0)
-    
-class AutomationTable(Table):
-    crank       = Col('Crank')
-    upload_date = DateCol('Upload Date',date_format='short')
-    num_runs    = Col('Number of Runs')
-    num_uploads = Col('Number of Uploads')
-    num_distinct= Col('Number of Unique Entries')
-    
 
 class ScienceStat(db.Model):
     id          = db.Column(db.Integer,primary_key=True)
     crank       = db.Column(db.String(64))
     upload_date = db.Column(db.DateTime(timezone=True))
     
-class ScienceTable(Table):
-    crank       = Col('Crank')
-        
 
 class TopPrediction(db.Model):
     id               = db.Column(db.Integer,primary_key=True)
@@ -72,12 +60,6 @@ class TopPrediction(db.Model):
     def __repr__(self):
         return "<TopPrediction {0} {1} {2} {3:.2f} {4}".format(self.id, self.dataset,self.name,self.predicted_out,self.num_subs)
 
-class TopPredictionTable(Table):
-    dataset       = Col('Crank')
-    name          = Col('Run ID')    
-    predicted_out = Col('Predicted Score')
-    num_subs      = Col('# Model Predictions')
-    
 class MLStat(db.Model):
     id             = db.Column(db.Integer,primary_key=True)
     crank          = db.Column(db.String(64))
@@ -85,16 +67,6 @@ class MLStat(db.Model):
     train_mean     = db.Column(db.Float, default=0)
     num_train_rows = db.Column(db.Integer,default=0)
     pred_mean      = db.Column(db.Float,default=0)
-
-class MLTable(Table):
-    crank       = Col('Crank')
-    upload_date = DateCol('Upload Date',date_format='short')
-    train_mean  = Col('Avg. Training Crystal Score')
-    num_train_rows = Col('Number of Rows in Training')
-    pred_mean = Col('Avg. Predicted Crystal Score')
-
-    
-
     
 class Submission(db.Model):
     id       = db.Column(db.Integer,primary_key=True)

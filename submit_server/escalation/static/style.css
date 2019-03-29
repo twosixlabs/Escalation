@@ -160,3 +160,11 @@ pre {
 .leaderboard th {
     font-size: 12px;
 }
+
+.auto_table {
+    max-width:600px;
+}
+
+.ml_table {
+    max-width:800px;
+}
