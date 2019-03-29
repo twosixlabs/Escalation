@@ -1,6 +1,12 @@
 <!doctype html>
-<title>{% block title %}{% endblock %} - ESCALATion</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<head>
+  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css">  
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">  
+  <script type="text/javascript" language="javascript" src="https://code.jquery.com/jquery-3.3.1.js"></script>
+  <script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+
+  <title>{% block title %}{% endblock %} - ESCALATion</title>
+</head>
 <div class="topnav">
   <img src="/static/Escalate_B-04.png" width="180px">
   <div class="topnav-right">

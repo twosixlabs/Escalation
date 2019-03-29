@@ -18,14 +18,7 @@
 </form>
 
 <form method="post">
-  <table style="min-width:600px">
-	<col style="width:3%">
-	<col style="width:7%">
-	<col style="width:15%">
-	<col style="width:15%">    
-	<col style="width:15%">
-	<col style="width:20%">
-	<col style="width:40%">    
+  <table  id="submission_table" class="compact hover order-column row-border">
   <thead>
   <tr>
     <th></th>
@@ -37,6 +30,7 @@
     <th>Notes</th>
   </tr>
   </thead>
+  <tbody>
 {% for sub in submissions %}
   <tr>
     <td> <input type="checkbox" name="download" value="{{ sub['id'] }}" checked>
@@ -44,11 +38,27 @@
     <td> {{ sub['username'] }} </td>
     <td> {{ sub['expname'] }} </td>
     <td> {{ sub['githash'] }} </td>    
-    <td> {{ sub['created'].strftime('%m-%d-%y / %H:%M') }} </td>
-    <td> {{ sub['notes'][:100] + "..." }} </td>
+    <td> {{ sub['created'].strftime('%m-%d-%y %H:%M') }} </td>
+    <td> {{ sub['notes'][:50] + "..." }} </td>
   </tr>
-{% endfor %}
-</table>
+  {% endfor %}
+  </tbody>
+  </table>
+
+  <script type="text/javascript">
+	
+$(document).ready(function() {
+$('#submission_table').DataTable( {
+        "order": [[ 5, "desc" ]],
+"columnDefs": [
+    { "orderable": false, "targets": 0 }
+  ]
+}
+);
+} );
+
+	</script>
+  
   <input type="hidden" value="{{ crank }}" name="crank">
   <input type="submit" value="Download files">
 </form>  

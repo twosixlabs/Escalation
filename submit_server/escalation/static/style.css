@@ -6,7 +6,7 @@ html {
 }
 
 body {
-  max-width: 960px;
+  max-width: 1200px;
   margin: 0 auto;
   background: white;
 }
@@ -85,7 +85,7 @@ hr {
   margin: 1em 0;
   display: flex;
   flex-direction: column;
-  max-width: 960px;  
+  max-width: 1200px;  
 }
 
 
@@ -153,6 +153,3 @@ pre {
     display: block;
 }
 
-.leaderboard table {
-    text-align: left;
-}
