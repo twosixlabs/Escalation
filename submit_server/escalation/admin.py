@@ -41,7 +41,7 @@ bp = Blueprint('admin',__name__)
 def admin():
     error = None
                 
-    if request.method == 'POST' and request.headers.get('User-Agent') == 'escalation':
+    if request.method == 'POST' and request.headers.get('User-Agent') == 'escalation' and 'stateset' in request.form:
         stateset  = request.files['stateset']
         stateset_file  = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(stateset.filename))
 
@@ -121,6 +121,47 @@ def admin():
             else:
                 flash("Unknown command, doing nothing")
             
+    if request.method == 'POST' and  request.form['submit'] == "Update Chemical Names":
+        if request.form['adminkey'] != app.config['ADMIN_KEY']:
+            flash("Incorrect admin code")
+
+        id_arr     = request.form.getlist('id')
+        inchi_arr  = request.form.getlist('inchi')
+        name_arr   = request.form.getlist('common_name')
+        abbrev_arr = request.form.getlist('abbrev')
+        delete_arr = request.form.getlist('delete')
+        
+        print(inchi_arr)
+        print(id_arr)
+        print(name_arr)
+        print(abbrev_arr)
+        print(delete_arr)
+        
+        if (len(abbrev_arr) != len(inchi_arr)) or (len(abbrev_arr) != len(name_arr)):
+            if request.headers.get('User-Agent') == 'escalation':
+                return jsonify({'error':"missing a field somehow:inchi len=%d, name len=%d, abbrev len=%d" % (len(inchi_arr), len(name_arr),len(abbrev_arr))}), 400
+            else:
+                flash("Missing a field somehow:inchi len=%d, name len=%d, abbrev len=%d" % (len(inchi_arr), len(name_arr),len(abbrev_arr)))
+                app.logger.error("Missing a field somehow:inchi len=%d, name len=%d, abbrev len=%d" % (len(inchi_arr), len(name_arr),len(abbrev_arr)))
+                
+        for i, id in enumerate(id_arr):
+            if id in delete_arr:
+                db.remove_chemical(id)
+                flash("Removed chemical %s" % inchi_arr[i])
+                app.logger.info("Removed chemical %s" % inchi_arr[i])
+                continue
+
+            app.logger.info("Setting chemical %s %s %s" % (inchi_arr[i], name_arr[i], abbrev_arr[i]))
+            if inchi_arr[i] == None or name_arr[i] == None or abbrev_arr[i] == None:
+                flash("Error: Row %d has a blank value" % i)
+            else:
+                db.set_chemical(inchi_arr[i], name_arr[i], abbrev_arr[i])
+
+        if request.headers.get('User-Agent') == 'escalation':
+            return jsonify({'success':"Added %d chemicals" % len(inchi_arr)})
+            app.logger.info("Updated chemical set")        
+        else:
+            flash("Success. Updated Chemical set")
+            app.logger.info("Updated chemical set")
             
-    cranks = db.get_cranks()
-    return render_template('admin.html',cranks=cranks,session=session)
+    return render_template('admin.html',cranks=db.get_cranks(),session=session,chem_table=db.get_chemicals())

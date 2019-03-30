@@ -1,4 +1,4 @@
-
+;
 html {
   font-family: sans-serif;
   background: #eee;
@@ -173,4 +173,14 @@ h1 {
 }
 h2 {
     font-size: 36px;
+}
+
+#chem_form {
+    max-width:500px !important;
+}
+
+.chem_text {
+    font-family: "Lucida Console", Monaco, monospace;
+    max-width:500px !important;
+    margin-right:20px !important;
 }

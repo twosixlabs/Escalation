@@ -129,6 +129,16 @@ class Run(db.Model):
     def __repr__(self):
         return '<Run {} {} {} {} {}>'.format(self.dataset,self.name,self._rxn_M_inorganic,self._rxn_M_organic, self._rxn_M_acid)
 
+class Chemical(db.Model):
+    id = db.Column(db.Integer,primary_key=True)
+    created  = db.Column(db.DateTime(timezone=True), server_default=sql.func.now())    
+    inchi = db.Column(db.String(512))
+    common_name = db.Column(db.String(512))
+    abbrev = db.Column(db.String(128))
+
+    def __repr__(self):
+        return "<Chemical {} {} {}>".format(self.inchi,self.common_name,self.abbrev)
+    
 def create_db():
     from sqlalchemy import create_engine
     engine = create_engine(current_app.config['SQLALCHEMY_DATABASE_URI'])
@@ -327,3 +337,16 @@ def add_leaderboard(form):
     
     return None
     
+def get_chemicals():
+    return Chemical.query.order_by(Chemical.created.desc()).all()
+
+def remove_chemical(id):
+    Chemical.query.filter(Chemical.id==id).delete()
+
+def is_inchi_stored(inchi):
+    return Crank.query.filter(Chemical.inchi==inchi).scalar() is not None
+
+def set_chemical(inchi,common_name,abbrev):
+    Chemical.query.filter(Chemical.inchi==inchi).delete()
+    db.session.add(Chemical(inchi=inchi,common_name=common_name,abbrev=abbrev))
+    db.session.commit()

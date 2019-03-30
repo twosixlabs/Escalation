@@ -6,7 +6,7 @@
 
  {% block content %}
 
-<h2> Crank records </h2>
+<h2>Crank records</h2>
 <form method="post">
   <div style="max-width:800px;">
   <table id="crank_table" class="compact hover order-column row-border" style="width:100%;">
@@ -55,11 +55,46 @@ $('#crank_table').DataTable( {
   </div>
 </form>
 
-<h2> Upload new stateset csv </h2>
+<h2>Upload new stateset csv </h2>
  
 <pre>python3 escalation/submit_server/scripts/upload_stateset.py</pre>
 </form>  
 
+<h2>Chemical Database</h2>
+
+<form method="post" id="chem_form">
+  <table id="chem_table">
+    <thead>
+      <th>Delete</th>
+      <th>INCHI key</th>
+      <th>Chemical Name</th>
+      <th>Abbreviation</th>
+    </thead>
+    <tbody>
+      {% for chem in chem_table %}
+      <input type="hidden" name="id" value="{{ chem['id'] }}">
+      <tr>
+        <td> <input type="checkbox" name="delete" value="{{ chem['id'] }}"></td>
+        <td> <input class="chem_text" size="40" type="text" name="inchi" value="{{ chem['inchi'] }}" required></td>
+        <td> <input class="chem_text" size="30" type="text" name="common_name" value="{{ chem['common_name'] }}" required> </td>
+        <td> <input class="chem_text" size="20" type="text" name="abbrev" value="{{ chem['abbrev'] }}" required> </td>
+      </tr>
+      {% endfor %}
+      <tr>
+        <td></td>        
+        <td> <input class="chem_text" size="40" type="text" name="inchi" placeholder="New INCHI key"></td>
+        <td> <input class="chem_text" size="30" type="text" name="common_name" placeholder="Common Name"> </td>
+        <td> <input class="chem_text" size="20" type="text" name="abbrev" placeholder="Abbreviation"> </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <label for="adminkey">Admin code</label>  
+  <input type="text" name="adminkey" required>
+  
+  <input type="submit" value="Update Chemical Names" name="submit">
+    
+</form>  
  <h2>Development commands for database</h2>
  <form method="post">
   <label>
