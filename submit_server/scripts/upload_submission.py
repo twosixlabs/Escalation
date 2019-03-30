@@ -70,6 +70,11 @@ r = requests.post(args.endpoint, headers={'User-Agent':'escalation'},data={'cran
                       files={'csvfile':open(args.csv,'rb')},timeout=60*2)    
 print(r.status_code, r.reason,r)
 try:
-    print(r.json())
+    out = r.json()
+    if 'error' in out:
+        if type(out['error']) == list:
+            print( "\n".join(out['error']))
+        else:
+            print(out['error'])
 except:
     pass

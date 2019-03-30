@@ -64,9 +64,17 @@ def validate_submission(rows,crank,githash):
             arr.append("Stopping checks due to more than 10 errors")
             break
 
+        if len(row.keys()) != len(COLUMNS):
+               arr.append("Row %d: Number of columns (%d) does not match expected number of %d. Maybe you are missing a comma in this row or the header?" % len(row.keys()), len(COLUMNS))
+               continue
         if set (row.keys()) != set(COLUMNS):
             num_errors+=1
-            arr.append("Row %d columns do not match expected columns '%s'" % (i,",".join(COLUMNS)))
+            not_found = []
+            for key in row.keys():
+                if key not in COLUMNS and key is not None:
+                    print(key)
+                    not_found.append(key)
+            arr.append("Row %d: columns '%s' not in expected set of columns: '%s'" % (i,",".join(not_found),",".join(COLUMNS)))
             continue
         
         if None in row.values() or '' in row.values():
