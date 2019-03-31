@@ -1,3 +1,6 @@
+import dash
+import dash_html_components as html
+
 import os
 from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
@@ -18,6 +21,7 @@ atexit.register(lambda: scheduler.shutdown())
 def create_app():
     app = Flask(__name__, instance_relative_config=True)
 
+    
     app.config.from_mapping(
         SECRET_KEY='dev',
         #        DATABASE=os.path.join(app.instance_path, 'escalation.sqlite'),
@@ -36,7 +40,8 @@ def create_app():
     if not scheduler.running:
         scheduler.init_app(app)        
         scheduler.start()
-    
+
+        
     # ensure the instance folder exists
     try:
         if not os.path.exists(app.config['UPLOAD_FOLDER']):
@@ -60,8 +65,7 @@ def create_app():
 
     from . import leaderboard
     app.register_blueprint(leaderboard.bp)
-    
-    
+
     if not app.debug:
         if not os.path.exists('logs'):
             os.mkdir('logs')

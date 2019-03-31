@@ -3,8 +3,6 @@ from flask import (
 )
 from flask import current_app
 from escalation import scheduler, db
-from . import database
-from .database import *
 from collections import defaultdict
 from sqlalchemy.sql import func
 
@@ -12,10 +10,14 @@ import time
 import random
 import heapq
 
+#ugh, I know
+from . import database
+from .database import *
+from . import plot
+
 TOP_PREDICTION_LIMIT=10
 
 bp = Blueprint('dashboard', __name__)
-
 def update_auto():
     app = scheduler.app
     app.logger.info("Updating automation stats")
@@ -39,6 +41,7 @@ def update_auto():
             )
             )
         db.session.commit()
+        plot.update_uploads_per_crank()
 
 def update_science():
     app = scheduler.app
@@ -125,6 +128,10 @@ def update_ml():
         db.session.commit()
 
 
+    
+    
+
+    
 @bp.route('/dashboard', methods=('GET','POST'))
 def dashboard():
     if request.method == 'POST':
@@ -143,6 +150,13 @@ def dashboard():
     auto_table    = AutomationStat.query.order_by(AutomationStat.upload_date.desc()).all()
     science_table = ScienceStat.query.order_by(ScienceStat.upload_date.desc()).all()
     ml_table      = MLStat.query.order_by(MLStat.upload_date.desc()).all()
-    top_table     = TopPrediction.query.order_by(TopPrediction.predicted_out.desc()).limit(TOP_PREDICTION_LIMIT).all()
-    return render_template('dashboard.html',science_table=science_table,auto_table=auto_table,ml_table=ml_table, top_table=top_table, top_n=TOP_PREDICTION_LIMIT,leaderboard=get_leaderboard())
+
+    return render_template('dashboard.html',
+                           science_table=science_table,
+                           auto_table=auto_table,
+                           ml_table=ml_table,
+                           leaderboard=get_leaderboard(),
+                           uploads_per_crank = plot.uploads_per_crank()
+    )
+
 
