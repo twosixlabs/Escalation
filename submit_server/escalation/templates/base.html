@@ -1,5 +1,6 @@
 <!doctype html>
 <head>
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">  
   <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css">  
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">  
   <script type="text/javascript" language="javascript" src="https://code.jquery.com/jquery-3.3.1.js"></script>
@@ -12,11 +13,26 @@
   <div class="topnav-right">
     <a href="{{ url_for('view.view') }}">View</a>
     <a href="{{ url_for('submission.submission') }}">Submit</a>   
-    <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
-    <a href="{{ url_for('admin.admin') }}">Admin</a>     
+    <a href="{{ url_for('admin.admin') }}">Admin</a>
+  <div class="dropdown">
+    <a id="top" href="{{ url_for('dashboard.dashboard') }}">Dashboard
+      <i class="fa fa-caret-down"></i>
+    </a>
+    <div class="dropdown-content">
+      <a href="{{ url_for('dashboard.dashboard') }}#science">Science</a>
+      <a href="{{ url_for('dashboard.dashboard') }}#auto">Automation</a>
+      <a href="{{ url_for('dashboard.dashboard') }}#ml">ML</a>        
+    </div>
+  </div>
+  
+    
   </div>
 </div>
+
 <section class="content">
+  
+
+  
   <header>
     {% block header %}{% endblock %}
   </header>

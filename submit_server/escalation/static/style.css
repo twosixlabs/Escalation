@@ -25,22 +25,58 @@ hr {
   border-top: 1px solid lightgray;
 }
 
+
+/* The container <div> - needed to position the dropdown content */
+.dropdown {
+    display: inline-block;
+}
+
+.dropdown i {
+    padding-right: 14px;
+}
+
+
+/* Dropdown Content (Hidden by Default) */
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f1f1f1;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 1;
+  margin-top: 14px;
+}
+
+/* Links inside the dropdown */
+.dropdown-content a {
+    color: black;
+  display: block;
+  padding: 14px 22px 14px 14px !important;
+  background-color: #f9f9f9;
+}
+
+.dropdown:hover #top {
+    background-color: #adadad;
+    color: black;
+}
+.dropdown-content a:hover {background-color: #ddd !important;}
+.dropdown:hover .dropdown-content {display: block;}
+
+
 /* new code */
 /* Add a black background color to the top navigation */
 .topnav {
     background-color: lightgray;
-    overflow: hidden;
 }
 
 /* Style the links inside the navigation bar */
 .topnav a {
   font-weight:bold;
-  float: left;
   color: #377ba8;
-  text-align: center;
-  padding: 14px 16px 14px 14px;
+  text-align: left; 
+  padding: 14px 14px 14px 14px;
   text-decoration: none;
-  font-size: 16px;
+  font-size: 18px;
+  
 }
 
 /* Change the color of links on hover */
@@ -52,7 +88,7 @@ hr {
 /* Right-aligned section inside the top navigation */
 .topnav-right {
     float: right;
-    padding: 0;
+    padding: 6px 6px 6px 6px;
     margin: 0;
 }
 .content {
@@ -184,3 +220,4 @@ h2 {
     max-width:500px !important;
     margin-right:20px !important;
 }
+
