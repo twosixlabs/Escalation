@@ -150,6 +150,7 @@ def dashboard():
                            leaderboard=get_leaderboard(),
                            uploads_per_crank = plot.uploads_per_crank(),
                            runs_per_crank = plot.runs_per_crank(),
+                           runs_per_month = plot.runs_per_month(),                           
                            success_by_amine = plot.success_by_amine(),
     )
 

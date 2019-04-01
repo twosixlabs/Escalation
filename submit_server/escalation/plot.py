@@ -143,7 +143,6 @@ def runs_per_crank():
     if name not in plot_data:
         update_runs_per_crank()
 
-    print(plot_data[name])        
     trace1 = go.Scatter(
         x = plot_data[name]['xs'],
         y = plot_data[name]['ys_total'],
@@ -174,6 +173,75 @@ def runs_per_crank():
         title = "Total Number of Experiments over Time",
     )
     graph = {'data': [trace1, trace2],
+             'layout': layout
+    }
+    return json.dumps(graph,cls=plotly.utils.PlotlyJSONEncoder)
+
+
+def update_runs_per_month():
+    global plot_data    
+    name = 'runs_per_month'
+
+    total = defaultdict(int)
+    success = defaultdict(int)
+    
+    sql = text('select distinct name,inchikey from training_run')
+    rows = list(db.engine.execute(sql))
+
+    xs = set()
+    by_inchi = defaultdict(lambda: defaultdict(int))
+    totals = defaultdict(int)
+    for row in rows:
+        by_inchi[row[1]][row[0][:7]] += 1
+        xs.add(row[0][:7])
+        totals[row[1]] += 1
+
+    xs = sorted(list(xs))
+    ys_dict = {}
+    sorted_inchis = [x[0] for x in sorted(totals.items(),key=operator.itemgetter(1),reverse=True)]
+    for inchi in sorted_inchis:
+        ys = []
+        for month in xs:
+            ys.append(by_inchi[inchi][month])
+        ys_dict[inchi] = ys
+        print(inchi,ys)
+    
+    plot_data[name]['xs'] = xs
+    plot_data[name]['ys'] = ys_dict
+    
+def runs_per_month():
+    global plot_data
+    name = 'runs_per_month'
+
+    chemicals={}
+    res = get_chemicals()
+    for r in res:
+        chemicals[r.inchi] = r.common_name
+    
+    if name not in plot_data:
+        update_runs_per_month()
+
+    trace = []
+    for inchi,ys in plot_data[name]['ys'].items():
+        trace.append(go.Bar(
+            x = plot_data[name]['xs'],
+            y = ys,
+            name = chemicals[inchi] if inchi in chemicals else inchi,
+        ))
+        
+    layout = go.Layout(
+        xaxis = {'title':"Progress By Month",
+                 'automargin':True,
+                 'showgrid':False,
+        },
+        yaxis = {'title':"Number of Experiments",
+                 'range': [0,1000],
+                 'showgrid':False,
+        },
+        title = "Number of Experiments per Month",
+        barmode='stack'
+    )
+    graph = {'data': trace,
              'layout': layout
     }
     return json.dumps(graph,cls=plotly.utils.PlotlyJSONEncoder)

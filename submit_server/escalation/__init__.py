@@ -92,6 +92,10 @@ def create_app():
         from .dashboard import update_ml
         update_ml()
 
+    @app.cli.command('job')
+    def do_job():
+        from .plot import update_runs_per_crank2
+        update_runs_per_crank2()
         
     # Shut down the scheduler when exiting the app
     return app

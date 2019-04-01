@@ -84,6 +84,12 @@
   Plotly.newPlot("runs_per_crank",graph.data,graph.layout, {responsive: true});        
 </script>
 
+<div id="runs_per_month" class="chart" style="max-width:800px; max-height:500px;"></div>
+<script type="text/javascript">
+  var graph = {{runs_per_month | safe}};
+  Plotly.newPlot("runs_per_month",graph.data,graph.layout, {responsive: true});        
+</script>
+
 <!-- Datatables uploads per crank -->
   <div id="uploads_per_crank" class="chart" style="max-width:800px; max-height:400px;"></div>
   <script type="text/javascript">
