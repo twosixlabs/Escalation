@@ -1,9 +1,42 @@
 Chemical Name,Chemical Abbreviation,InChI Key (ID)
-Methylammonium ,MeNH3I,LLWRXQXPJMPHLR-UHFFFAOYSA-N
-Imidazolium ,Imidazolium,JBOIAZWJIACNJF-UHFFFAOYSA-N
-Acetamidinium ,AcNH3I,GGYGJCFIYJVWIP-UHFFFAOYSA-N
-Formamidinium ,Formamidinium,QHJPGANWSLEMTI-UHFFFAOYSA-N
-Phenethylammonium ,PhEtNH3I,UPHCENSIMPJEIS-UHFFFAOYSA-N
-Guanidinium ,GnNH3I,UUDRLGYROXTISK-UHFFFAOYSA-N
-n-Butylammonium ,n-BuNH3I,CALQKRVFTWDYDG-UHFFFAOYSA-N
-Ethylammonium ,EtNH3I,XFYICZOIWSBQSK-UHFFFAOYSA-N
+Ethylammonium,EtNH3I,XFYICZOIWSBQSK-UHFFFAOYSA-N
+Formic Acid,FAH,2
+Gamma-Butyrolactone,GBL,C1CC(=O)OC1
+Lead Diiodide,PbI2,I[Pb]I
+n-Butylammonium,n-BuNH3I,CALQKRVFTWDYDG-UHFFFAOYSA-N
+Phenethylammonium,PhEtNH3I,9H2;1H"
+Acetamidinium,AcNH3I,3
+Methylammonium,MeNH3I,LLWRXQXPJMPHLR-UHFFFAOYSA-N
+Guanidinium,GnNH3I,3
+Formamidinium,FormamidiniumIodide,2
+Imidazolium,ImidazoliumIodide,4
+Benzylammonium,BenzylammoniumIodide,8H2;1H"
+neo-Pentylammonium,neoPentylammoniumIodide,6H2
+i-Propylammonium,iPropylammoniumIodide,1-2H3;1H"
+iso-Butylammonium,iButylammoniumIodide,5H2
+Dimethylammonium,Me2NH2I,JMXLWMIFDJCGBV-UHFFFAOYSA-N
+n-Dodecylammonium,nDodecylammoniumIodide,PXWSKGXEHZHFJA-UHFFFAOYSA-N
+Pyrrolidinium,PyrrolidiniumIodide,DMFMZFFIQRMJQZ-UHFFFAOYSA-N
+"Ethane-1,2-diammonium",IWNWLPUNKAYUAW-UHFFFAOYSA-N
+Cesium,CsI,[I-].[Cs+]
+Bismuth,BiI3,I[Bi](I)I
+Beta Alanine Hydroiodide,betaAlanineHydroiodide,(H
+"Piperazine-1,4-diium",1-4H2;2*1H"
+Pralidoxime,PralidoximeIodide,QNBVYCDYFJUNLO-UHDJGPCESA-N
+Quinuclidin-1-ium,QuinuclidiniumIodide,LYHPZBKXSHVBDW-UHFFFAOYSA-N
+Dimethylformamide,DMF,ZMXDDKWLCZADIW-UHFFFAOYSA-N
+Methylammonium bromide,Methylammoniumbromide,ISWNAMNOYHCTSB-UHFFFAOYSA-N
+Lead(II) bromide,PbBr2,Br[Pb]Br
+Phenethylammonium bromide,Phenethylammoniumbromide,9H2;1H"
+Formamidinium bromide,FABr,
+4-Fluoro-Benzylammonium,4FluoroBenzylammoniumIodide,9H2;1H"
+4-Fluoro-Phenethylammonium,4FluoroPhenethylammoniumIodide,10H2;1H"
+4-Fluoro-Phenylammonium,4FluoroPhenylammoniumIodide,FJFIJIDZQADKEE-UHFFFAOYSA-N
+4-Methoxy-Phenylammonium,4MethoxyPhenylammoniumIodide,1H3;1H"
+4-Trifluoromethyl-Benzylammonium,4TrifluoromethylBenzylammoniumIodide,5
+4-Trifluoromethyl-Phenylammonium,4TrifluoromethylPhenylammoniumIodide,11H2;1H"
+iso-Pentylammonium,IPentylammoniumIodide,6H2
+n-Hexylammonium,nHexylammoniumIodide,VNAAUNTYIONOHR-UHFFFAOYSA-N
+"Propane-1,3-diammonium",UMDDLGMCNFAZDX-UHFFFAOYSA-O
+tert-Octylammonium,TertOctylammoniumIodide,5)9;/h6
+N-propylammonium,NPropylammoniumIodide,GIAPQOZCVIEHNY-UHFFFAOYSA-N

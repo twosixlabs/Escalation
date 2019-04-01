@@ -26,7 +26,6 @@ def validate(adminkey,githash,filename):
     #make sure file is comma  delimited
     with open(filename, 'r') as fh:
         for header in fh:
-            print(header)
             if header[0] != '#':
                 break
 
@@ -41,7 +40,7 @@ bp = Blueprint('admin',__name__)
 def admin():
     error = None
                 
-    if request.method == 'POST' and request.headers.get('User-Agent') == 'escalation' and 'stateset' in request.form:
+    if request.method == 'POST' and request.headers.get('User-Agent') == 'escalation' and request.form['submit'] == 'stateset':
         stateset  = request.files['stateset']
         stateset_file  = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(stateset.filename))
 
@@ -63,7 +62,7 @@ def admin():
 
         if error == None:
             num_rows       = db.add_stateset(stateset_file,crank,githash,username)
-            num_train_rows = db.add_training(training_file)
+            num_train_rows = db.add_training(training_file,githash)
 
             out="Successfully updated to crank %s and stateset %s with %d rows" % (crank, githash,num_rows)
             app.logger.info(out)
@@ -152,7 +151,7 @@ def admin():
                 continue
 
             app.logger.info("Setting chemical %s %s %s" % (inchi_arr[i], name_arr[i], abbrev_arr[i]))
-            if inchi_arr[i] == None or name_arr[i] == None or abbrev_arr[i] == None:
+            if inchi_arr[i] == "" or name_arr[i] == "" or abbrev_arr[i] == "":
                 flash("Error: Row %d has a blank value" % i)
             else:
                 db.set_chemical(inchi_arr[i], name_arr[i], abbrev_arr[i])

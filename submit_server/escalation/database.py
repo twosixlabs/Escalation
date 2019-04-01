@@ -1,7 +1,7 @@
 from escalation import db
-from sqlalchemy import and_, sql, create_engine
-from sqlalchemy.orm import deferred
-from flask import current_app, g, url_for
+from sqlalchemy import and_, sql, create_engine, text
+from sqlalchemy.orm import deferred, column_property
+from flask import current_app as app
 import csv
 
 # Leaderboard statistics
@@ -46,19 +46,10 @@ class AutomationStat(db.Model):
 
 class ScienceStat(db.Model):
     id          = db.Column(db.Integer,primary_key=True)
-    crank       = db.Column(db.String(64))
-    upload_date = db.Column(db.DateTime(timezone=True))
-    
-
-class TopPrediction(db.Model):
-    id               = db.Column(db.Integer,primary_key=True)
-    name             = db.Column(db.String(64))
-    dataset          = db.Column(db.String(64))
-    predicted_out    = db.Column(db.Float)
-    num_subs         = db.Column(db.Integer)
-    
-    def __repr__(self):
-        return "<TopPrediction {0} {1} {2} {3:.2f} {4}".format(self.id, self.dataset,self.name,self.predicted_out,self.num_subs)
+    amine       = db.Column(db.String(256))
+    success     = db.Column(db.Integer,default=0)
+    total       = db.Column(db.Integer,default=1)
+    ratio       = column_property(success / total)
 
 class MLStat(db.Model):
     id             = db.Column(db.Integer,primary_key=True)
@@ -98,10 +89,10 @@ class TrainingRun(db.Model):
     name              = db.Column(db.String(64))    
     _rxn_M_inorganic  = db.Column(db.Float)
     _rxn_M_organic    = db.Column(db.Float)
-    _rxn_M_acid    = db.Column(db.Float)    
+    _rxn_M_acid       = db.Column(db.Float)    
     _out_crystalscore = db.Column(db.Integer)
     inchikey          = db.Column(db.String(128))
-    
+    githash           = db.Column(db.String(7))
     def __repr__(self):
         return "<Training Run {} {} {} {} {}".format(self.id,self.name,self.dataset,self._out_crystalscore,self._rxn_M_inorganic,self._rxn_M_organic,self._rxn_M_acid, self.inchikey)
     
@@ -141,7 +132,7 @@ class Chemical(db.Model):
     
 def create_db():
     from sqlalchemy import create_engine
-    engine = create_engine(current_app.config['SQLALCHEMY_DATABASE_URI'])
+    engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
     """Clear the existing data and create new tables."""
     try:
         Crank.__table__.drop(engine)
@@ -158,7 +149,6 @@ def delete_db():
     TrainingRun.query.delete()    
 
     Prediction.query.delete()
-    TopPrediction.query.delete()    
 
     Submission.query.delete()
     Crank.query.delete()
@@ -180,7 +170,7 @@ def read_in_stateset(filename,crank,githash):
             objs.append(Run(githash=githash,dataset=r['dataset'],name=r['name'],_rxn_M_inorganic=r['_rxn_M_inorganic'],_rxn_M_organic=r['_rxn_M_organic'],_rxn_M_acid=r['_rxn_M_acid'])) #TODO
     db.session.bulk_save_objects(objs)
     db.session.commit()
-    current_app.logger.info(" Added %d runs for stateset" % len(objs))
+    app.logger.info("Added %d runs for stateset" % len(objs))
     return len(objs)
     
 def add_stateset(filename,crank,githash,username):
@@ -229,7 +219,7 @@ def get_crank(id=None):
 def get_rxns(crank,githash,names):
 #TODO    res = Run.query.filter(and_(Run.githash==githash,Run.dataset == crank, Run.name.in_(names))).all() #disabled for now since the githash logic is not thought through
     res = Run.query.filter(and_(Run.dataset == crank, Run.name.in_(names))).all() #todo add githash check    
-    current_app.logger.info("Returned %d reactions from stateset" % (len(res)))
+    app.logger.info("Returned %d reactions from stateset" % (len(res)))
     d={}
     for r in res:
         d[r.name] = {'organic':r._rxn_M_organic,'inorganic':r._rxn_M_inorganic,'acid' : r._rxn_M_acid}
@@ -245,7 +235,7 @@ def add_submission(username,expname,crank,githash,rows,notes):
         objs.append(Prediction(sub_id=sub.id,dataset=row['dataset'],name=row['name'],predicted_out=row['predicted_out'],score=row['score']))
     db.session.bulk_save_objects(objs)
     db.session.commit()
-    current_app.logger.info("Added %d predictions for submission" % len(objs))
+    app.logger.info("Added %d predictions for submission" % len(objs))
     
 def get_submissions(crank='all'):
     if crank == 'all':
@@ -265,16 +255,19 @@ def get_training(dataset='all'):
     else:
         return TrainingRun.query.filter_by(dataset=dataset).all()
     
-def add_training(filename):
+def add_training(filename,githash):
+    app.logger.info("Adding training runs")
     with open(filename) as csvfile:
         csvreader = csv.DictReader(filter(lambda row: row[0]!='#', csvfile))
         objs=[]
         for r in csvreader:
-            objs.append(TrainingRun(dataset=r['dataset'],name=r['name'],_rxn_M_inorganic=r['_rxn_M_inorganic'],_rxn_M_organic=r['_rxn_M_organic'],_out_crystalscore=r['_out_crystalscore'],inchikey=r['_rxn_organic-inchikey']))
-                                
-    db.session.bulk_save_objects(objs)
-    db.session.commit()
-    current_app.logger.info("Added %d training runs" % len(objs))
+            objs.append(TrainingRun(dataset=r['dataset'],name=r['name'],githash=githash,
+                                    _rxn_M_inorganic=r['_rxn_M_inorganic'],_rxn_M_organic=r['_rxn_M_organic'],_rxn_M_acid=r['_rxn_M_acid'],
+                                    _out_crystalscore=r['_out_crystalscore'],inchikey=r['_rxn_organic-inchikey'])
+            )
+        db.session.bulk_save_objects(objs)
+        db.session.commit()
+    app.logger.info("Added %d training runs" % len(objs))
     return len(objs)
 
 def get_leaderboard(dataset='all'):
@@ -332,13 +325,13 @@ def add_leaderboard(form):
     except Exception as ex:
         print(ex)
         
-        current_app.logger.error("Error submitting leaderboard :(")
+        app.logger.error("Error submitting leaderboard :(")
         return "Uknown error loading db"
     
     return None
     
 def get_chemicals():
-    return Chemical.query.order_by(Chemical.created.desc()).all()
+    return Chemical.query.order_by(Chemical.inchi.desc()).all()
 
 def remove_chemical(id):
     Chemical.query.filter(Chemical.id==id).delete()
@@ -350,3 +343,10 @@ def set_chemical(inchi,common_name,abbrev):
     Chemical.query.filter(Chemical.inchi==inchi).delete()
     db.session.add(Chemical(inchi=inchi,common_name=common_name,abbrev=abbrev))
     db.session.commit()
+
+def get_unique_training_runs():
+    sql = text('select distinct name,inchikey,_out_crystalscore,_rxn_M_organic,_rxn_M_inorganic,_rxn_M_acid from training_run')
+    result = list(db.engine.execute(sql))
+    app.logger.info("Returned %d unique training runs" % len(result))
+    return result
+

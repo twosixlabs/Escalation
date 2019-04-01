@@ -1,5 +1,3 @@
-import dash
-import dash_html_components as html
 
 import os
 from flask import Flask, render_template

@@ -14,10 +14,12 @@ if args.csv is None:
     exit()
     
 csvfile = open(args.csv)
-reader = csv.DictReader(filter(lambda row: row[0]!='#',csvfile))
+reader = csv.DictReader(filter(lambda row: row[0]!='#',csvfile),delimiter="\t")
 inchi_arr=[]
 name_arr=[]
 abbrev_arr=[]
+id_arr=[]
+i=0
 names= ('Chemical Name','Chemical Abbreviation','InChI Key (ID)')
 for row in reader:
     
@@ -27,8 +29,10 @@ for row in reader:
     inchi_arr.append(row['InChI Key (ID)'])
     name_arr.append(row['Chemical Name'])
     abbrev_arr.append(row['Chemical Abbreviation'])
+    i+=1
+    id_arr.append(i)
 
-r = requests.post(args.endpoint, headers={'User-Agent':'escalation'},data={"inchi":inchi_arr, "common_name":name_arr,"abbrev":abbrev_arr,
+r = requests.post(args.endpoint, headers={'User-Agent':'escalation'},data={"inchi":inchi_arr, "common_name":name_arr,"abbrev":abbrev_arr,"id":id_arr,
                                                                            "submit":"Update Chemical Names",
                                                                            "adminkey":args.key,
                                                                            },timeout=30)
