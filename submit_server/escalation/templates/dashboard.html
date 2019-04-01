@@ -77,6 +77,13 @@
 
 <a name="auto"></a>
 <h2>Automation</h2>
+
+<div id="runs_per_crank" class="chart" style="max-width:800px; max-height:500px;"></div>
+<script type="text/javascript">
+  var graph = {{runs_per_crank | safe}};
+  Plotly.newPlot("runs_per_crank",graph.data,graph.layout, {responsive: true});        
+</script>
+
 <!-- Datatables uploads per crank -->
   <div id="uploads_per_crank" class="chart" style="max-width:800px; max-height:400px;"></div>
   <script type="text/javascript">

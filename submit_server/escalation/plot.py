@@ -72,7 +72,7 @@ def success_by_amine():
         xaxis = {'title':"Ammonium Iodide Salt",
                  'automargin':True
         },
-        yaxis = {'title':"Numbef of Expereimnts"},
+        yaxis = {'title':"Numbef of Experiments"},
         title = "Success Rate by Amine",
         )
     graph = {'data': [trace1, trace2],
@@ -112,4 +112,69 @@ def uploads_per_crank():
              'layout': layout
     }
     return json.dumps(graph,cls=plotly.utils.PlotlyJSONEncoder)
+
+def update_runs_per_crank():
+    global plot_data    
+    name = 'runs_per_crank'
+
+    total = defaultdict(int)
+    success = defaultdict(int)
     
+    sql = text('select count(_out_crystalscore), dataset from training_run group by dataset')
+    rows = list(db.engine.execute(sql))
+    for row in rows:
+        total[row[1]] = row[0]
+
+    sql = text('select count(_out_crystalscore), dataset from training_run where _out_crystalscore = 4 group by dataset')
+    rows = list(db.engine.execute(sql))
+    for row in rows:
+        success[row[1]] = row[0]
+        
+
+    sorted_list = sorted(total.keys())#[x[0] for x in sorted(total.items(), key=operator.itemgetter(1)) ]
+    plot_data[name]['xs'] = [crank for crank in sorted_list ]
+    plot_data[name]['ys_success'] = [ success[crank] for crank in sorted_list]
+    plot_data[name]['ys_total'] = [total[crank] for crank in sorted_list]
+    
+def runs_per_crank():
+    global plot_data
+    name = 'runs_per_crank'
+
+    if name not in plot_data:
+        update_runs_per_crank()
+
+    print(plot_data[name])        
+    trace1 = go.Scatter(
+        x = plot_data[name]['xs'],
+        y = plot_data[name]['ys_total'],
+        mode = 'lines',
+        name = "Total",
+        marker = {
+            'color':'#a55942',
+        }
+    )
+    trace2 = go.Scatter(
+        x = plot_data[name]['xs'],
+        y = plot_data[name]['ys_success'],
+        mode = 'lines',        
+        name = "Successes",
+        marker = {
+            'color':'#5eabdb',
+            }
+    )    
+    layout = go.Layout(
+        xaxis = {'title':"Progress By Weekly Crank",
+                 'automargin':True,
+                 'showgrid':False,
+        },
+        yaxis = {'title':"Number of Experiments",
+                 'range': [0,1000 * (1 + max(plot_data[name]['ys_total']) // 1000)],
+                 'showgrid':False,
+        },
+        title = "Total Number of Experiments over Time",
+    )
+    graph = {'data': [trace1, trace2],
+             'layout': layout
+    }
+    return json.dumps(graph,cls=plotly.utils.PlotlyJSONEncoder)
+

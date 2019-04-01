@@ -62,7 +62,7 @@ def get_files_of_necessary_types(versioned_datasets_repo_path,debug=False):
         # assert(len(file_name_components) == 2, 'A file with an unrecognized name format is in the manifest')
         base_filename = os.path.basename(file_name)
         versioned_file_type = base_filename.split('.')[-2]
-        crank  = re.findall(r'(\d{4})\.', base_filename)[0]
+        crank  = re.findall(r'(\d{4})[\._]', base_filename)[0]
 
         if versioned_file_type in file_types:
             found_files[crank][versioned_file_type] = os.path.join(versioned_datasets_repo_path,'data',perovskite_manifest['project name'],file_name)

@@ -41,7 +41,8 @@ def update_auto():
             )
         db.session.commit()
         plot.update_uploads_per_crank()
-
+        plot.update_runs_per_crank()
+        
 def update_science():
     app = scheduler.app
     app.logger.info("Updating science stats")
@@ -148,6 +149,7 @@ def dashboard():
                            ml_table=ml_table,
                            leaderboard=get_leaderboard(),
                            uploads_per_crank = plot.uploads_per_crank(),
+                           runs_per_crank = plot.runs_per_crank(),
                            success_by_amine = plot.success_by_amine(),
     )
 

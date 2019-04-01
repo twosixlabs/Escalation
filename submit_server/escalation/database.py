@@ -147,9 +147,7 @@ def create_db():
 def delete_db():
     Run.query.delete()
     TrainingRun.query.delete()    
-
     Prediction.query.delete()
-
     Submission.query.delete()
     Crank.query.delete()
 
