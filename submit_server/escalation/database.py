@@ -215,9 +215,15 @@ def get_crank(id=None):
         return Crank.query.order_by(Crank.created.desc()).all()
 
 def get_rxns(crank,githash,names):
-#TODO    res = Run.query.filter(and_(Run.githash==githash,Run.dataset == crank, Run.name.in_(names))).all() #disabled for now since the githash logic is not thought through
-    res = Run.query.filter(and_(Run.dataset == crank, Run.name.in_(names))).all() #todo add githash check    
-    app.logger.info("Returned %d reactions from stateset" % (len(res)))
+    #TODO speed up if len(names) == len(Run)
+    num_names = len(names)
+    num_rows = Run.query.filter(Run.dataset == crank).count()
+    if num_names == num_rows:
+        res =  Run.query.filter(Run.dataset == crank).all()
+    else:
+        res = Run.query.filter(and_(Run.dataset == crank, Run.name.in_(names))).all() #todo add githash check    
+        app.logger.info("Returned %d reactions from stateset" % (len(res)))
+        #TODO    res = Run.query.filter(and_(Run.githash==githash,Run.dataset == crank, Run.name.in_(names))).all() #disabled for now since the githash logic is not thought through        
     d={}
     for r in res:
         d[r.name] = {'organic':r._rxn_M_organic,'inorganic':r._rxn_M_inorganic,'acid' : r._rxn_M_acid}
