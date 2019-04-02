@@ -247,14 +247,17 @@ def get_predictions(id=None):
     else:
         return [p.__dict__ for p in Prediction.query.filter_by(sub_id=id).all()]
 
+
 def get_training(dataset='all'):
     if dataset == 'all':
         return TrainingRun.query.all()
     else:
         return TrainingRun.query.filter_by(dataset=dataset).all()
     
-def add_training(filename,githash):
+def add_training(filename,githash,crank):
     app.logger.info("Adding training runs")
+
+    TrainingRun.query.filter(TrainingRun.dataset==crank).delete()
     with open(filename) as csvfile:
         csvreader = csv.DictReader(filter(lambda row: row[0]!='#', csvfile))
         objs=[]

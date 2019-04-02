@@ -39,7 +39,28 @@ bp = Blueprint('admin',__name__)
 @bp.route('/admin', methods=('GET','POST'))
 def admin():
     error = None
+
+    if request.method == 'POST' and request.headers.get('User-Agent') == 'escalation' and request.form['submit'] == 'training_run':    
+        training = request.files['perovskitedata']
+        training_file = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(training.filename))
                 
+        username = request.form['username']
+        crank = request.form['crank']                
+        githash  = request.form['githash']
+
+        app.logger.info("Received request: {} {} {} {}".format(training_file,username,crank,githash))
+        training.save(training_file)
+        num_train_rows = db.add_training(training_file,githash,crank)
+
+        out="Successfully added training run data for %s with %d rows" % (crank,num_train_rows)
+        app.logger.info(out)
+
+        # kick off stats refresh
+        job1 = scheduler.add_job(func=update_science, args=[], id = 'update_science')
+        job2 = scheduler.add_job(func=update_auto, args=[], id = 'update_auto')
+        job3 = scheduler.add_job(func=update_ml, args=[], id = 'update_ml')                    
+        return jsonify({'success':'added training data for %s with %d rows' % (crank,num_train_rows)}), 200        
+
     if request.method == 'POST' and request.headers.get('User-Agent') == 'escalation' and request.form['submit'] == 'stateset':
         stateset  = request.files['stateset']
         stateset_file  = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(stateset.filename))
@@ -62,7 +83,7 @@ def admin():
 
         if error == None:
             num_rows       = db.add_stateset(stateset_file,crank,githash,username)
-            num_train_rows = db.add_training(training_file,githash)
+            num_train_rows = db.add_training(training_file,githash,crank)
 
             out="Successfully updated to crank %s and stateset %s with %d rows" % (crank, githash,num_rows)
             app.logger.info(out)

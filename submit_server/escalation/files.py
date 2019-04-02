@@ -65,7 +65,7 @@ def validate_submission(rows,crank,githash):
             break
 
         if len(row.keys()) != len(COLUMNS):
-               arr.append("Row %d: Number of columns (%d) does not match expected number of %d. Maybe you are missing a comma in this row or the header?" % len(row.keys()), len(COLUMNS))
+               arr.append("Row %d: Number of columns (%d) does not match expected number of %d. Maybe you are missing a comma in this row or the header?" % (i,len(row.keys()), len(COLUMNS)))
                continue
         if set (row.keys()) != set(COLUMNS):
             num_errors+=1

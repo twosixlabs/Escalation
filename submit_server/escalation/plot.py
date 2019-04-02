@@ -214,20 +214,31 @@ def runs_per_month():
     name = 'runs_per_month'
 
     chemicals={}
+    abbrev={}
     res = get_chemicals()
     for r in res:
         chemicals[r.inchi] = r.common_name
+        abbrev[r.inchi] = r.abbrev
     
     if name not in plot_data:
         update_runs_per_month()
 
     trace = []
     for inchi,ys in plot_data[name]['ys'].items():
+        chem = chemicals[inchi] if inchi in chemicals else inchi
+        abb = abbrev[inchi] if inchi in chemicals else inchi[:7]
         trace.append(go.Bar(
             x = plot_data[name]['xs'],
             y = ys,
-            name = chemicals[inchi] if inchi in chemicals else inchi,
+            text = ["%d %s" % (y, abb ) for y in ys],
+            name = chem,
+            hoverlabel = dict(namelength = -1),
+            hoverinfo = 'text',
+            marker={'color':[ '#5eabdb' for x in plot_data[name]['xs']],
+                    'line': {'color':'#000000', 'width':1},
+            }
         ))
+
         
     layout = go.Layout(
         xaxis = {'title':"Progress By Month",
@@ -239,7 +250,9 @@ def runs_per_month():
                  'showgrid':False,
         },
         title = "Number of Experiments per Month",
-        barmode='stack'
+        barmode='stack',
+        hovermode='closest',
+        showlegend=False,
     )
     graph = {'data': trace,
              'layout': layout
