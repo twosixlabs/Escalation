@@ -64,13 +64,13 @@ print("notes:",notes)
 print("csv:",args.csv)
 print("githash:",githash)
 
-
-        
+print("If you are uploading 1000s of rows, this may take a couple minutes due to input validation")
 r = requests.post(args.endpoint, headers={'User-Agent':'escalation'},data={'crank':crank,'username':user,'expname':expname,'notes':notes, 'githash':githash},
-                      files={'csvfile':open(args.csv,'rb')},timeout=60*2)    
+                      files={'csvfile':open(args.csv,'rb')},timeout=60*5)    
 print(r.status_code, r.reason,r)
 try:
     out = r.json()
+    
     if 'error' in out:
         if type(out['error']) == list:
             print( "\n".join(out['error']))

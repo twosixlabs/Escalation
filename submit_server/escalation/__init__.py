@@ -25,8 +25,8 @@ def create_app():
         #        DATABASE=os.path.join(app.instance_path, 'escalation.sqlite'),
         UPLOAD_FOLDER = os.path.join(app.instance_path,'submissions'),
         SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///' + os.path.join(app.instance_path,'escalation.sqlite'),
-        #32 MB max upload
-        MAX_CONTENT_LENGTH = 32 * 1024 * 1024,
+        #128 MB max upload
+        MAX_CONTENT_LENGTH = 128 * 1024 * 1024,
         ADMIN_KEY='secret',
         SQLALCHEMY_TRACK_MODIFICATIONS=False
     )

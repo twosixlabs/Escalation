@@ -82,13 +82,6 @@ $('#submission_table').DataTable( {
   
   <input type="hidden" value="{{ crank }}" name="crank">
   <input type="submit" value="Download files">
-  <script type="text/javascript">
-    function uncheckAll() {
-    $("input[type='checkbox']:checked").prop("checked", false)
-    }
-    $(':button').on('click', uncheckAll)
-  </script>
-  <input type='button' value="clear" />
 </form>  
 </div>
 {% endblock %}
