@@ -223,6 +223,12 @@ def get_rxns(crank,githash,names):
         d[r.name] = {'organic':r._rxn_M_organic,'inorganic':r._rxn_M_inorganic,'acid' : r._rxn_M_acid}
     return d
 
+def remove_submission(sub_id):
+    Prediction.query.filter(Prediction.sub_id==sub_id).delete()
+    Submission.query.filter(Submission.id==sub_id).delete()
+    db.session.commit()
+    #how to deal with test harness?
+    
 def add_submission(username,expname,crank,githash,rows,notes):
     sub=Submission(username=username,expname=expname,crank=crank,notes=notes,githash=githash)
     db.session.add(sub)

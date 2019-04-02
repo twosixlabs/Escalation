@@ -150,8 +150,8 @@ input.danger {
 }
 
 input[type=submit] {
-  align-self: start;
-  min-width: 10em;
+    align-self: start;
+    font-size:18px;
 }
 
 select{
@@ -224,4 +224,10 @@ h2 {
 .chart {
     margin-top: 40px;
     margin-bottom: 40px;
+}
+
+#danger {
+  float: right;
+  max-width:10em;
+  color:red;
 }

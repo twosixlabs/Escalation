@@ -1,5 +1,5 @@
 FROM python:3.6-alpine
-
+RUN echo "America/New_York" > /etc/timezone
 RUN adduser -D escalation
 
 WORKDIR /home/escalation
@@ -16,16 +16,13 @@ RUN venv/bin/pip3 install gunicorn pymysql
 ENV FLASK_APP escalation
 ENV SECRET_KEY perovskite52cb883e323b48d
 
+COPY server.py server.py
+COPY boot.sh boot.sh
+RUN chmod +x boot.sh
+
 COPY escalation escalation
 COPY migrations migrations
 RUN chown -R escalation:escalation ./
-
-COPY server.py server.py
-COPY boot.sh boot.sh
-
-RUN chmod +x boot.sh
-
-RUN echo "America/New_York" > /etc/timezone
 
 USER escalation
 

@@ -11,18 +11,25 @@ bp = Blueprint('view', __name__)
 @bp.route('/', methods=('GET','POST'))
 
 def view():
-    cranks = db.get_unique_cranks()
     curr_crank = "all"
     
     if request.method == 'POST' and 'crank' in request.form:
         curr_crank = request.form['crank']
 
-    submissions = db.get_submissions(curr_crank) #contains data
-        
-    if request.method == 'POST' and 'download' in request.form:
+    if request.method == 'POST' and 'submit' in request.form and request.form['submit'] == 'Delete file':
+        requested=[int(x) for x in request.form.getlist('download')]
+
+        if len(requested) > 1:
+            flash("Please delete one submission at a time. This is slow, but helps ensure no accidental deletions")
+        if len(requested) == 1:
+            db.remove_submission(request.form['download'])
+
+    submissions=db.get_submissions(curr_crank)
+
+    if request.method == 'POST' and  'submit' in request.form and request.form['submit'] == 'Download files':
         requested=[int(x) for x in request.form.getlist('download')]
         submissions = [sub for sub in submissions if sub.id in requested]
         zipfile = download_zip(app.config['UPLOAD_FOLDER'],submissions, curr_crank)
         return send_file(os.path.join(app.config['UPLOAD_FOLDER'],zipfile),as_attachment=True)
     
-    return render_template('index.html', submissions=submissions,cranks=cranks, crank=curr_crank)
+    return render_template('index.html',submissions=submissions,cranks=db.get_unique_cranks(), crank=curr_crank)
