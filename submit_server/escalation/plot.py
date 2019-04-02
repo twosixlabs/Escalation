@@ -198,17 +198,25 @@ def update_runs_per_month():
 
     xs = sorted(list(xs))
     ys_dict = {}
+    monthy = defaultdict(int)
     sorted_inchis = [x[0] for x in sorted(totals.items(),key=operator.itemgetter(1),reverse=True)]
     for inchi in sorted_inchis:
         ys = []
+
         for month in xs:
             ys.append(by_inchi[inchi][month])
+            monthy[month] += by_inchi[inchi][month]
         ys_dict[inchi] = ys
         print(inchi,ys)
-    
+
+    max_y = 0
+    for month,y in monthy.items():
+        if y > max_y:
+            max_y = y
+            
     plot_data[name]['xs'] = xs
     plot_data[name]['ys'] = ys_dict
-    
+    plot_data[name]['ymax'] = max_y
 def runs_per_month():
     global plot_data
     name = 'runs_per_month'
@@ -244,9 +252,10 @@ def runs_per_month():
         xaxis = {'title':"Progress By Month",
                  'automargin':True,
                  'showgrid':False,
+                 'tickangle':45,
         },
         yaxis = {'title':"Number of Experiments",
-                 'range': [0,1000],
+                 'range': [0,100 * (1 + plot_data[name]['ymax'] // 100)],
                  'showgrid':False,
         },
         title = "Number of Experiments per Month",

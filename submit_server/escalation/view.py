@@ -17,12 +17,15 @@ def view():
         curr_crank = request.form['crank']
 
     if request.method == 'POST' and 'submit' in request.form and request.form['submit'] == 'Delete file':
-        requested=[int(x) for x in request.form.getlist('download')]
+        if request.form['adminkey'] != app.config['ADMIN_KEY']:
+            flash("Incorrect admin code")
+        else:
+            requested=[int(x) for x in request.form.getlist('download')]
 
-        if len(requested) > 1:
-            flash("Please delete one submission at a time. This is slow, but helps ensure no accidental deletions")
-        if len(requested) == 1:
-            db.remove_submission(request.form['download'])
+            if len(requested) > 1:
+                flash("Please delete one submission at a time. This is slow, but helps ensure no accidental deletions")
+            elif len(requested) == 1:
+                db.remove_submission(request.form['download'])
 
     submissions=db.get_submissions(curr_crank)
 

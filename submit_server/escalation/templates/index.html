@@ -89,9 +89,13 @@ $('#submission_table').DataTable( {
 	</script>
   
   <input type="hidden" value="{{ crank }}" name="crank">
-  <div style="margin-top:1em">
+  <div>        
     <input type="submit" value="Download files" name="submit">
-    <input id="danger" type="submit" value="Delete file" onClick="deleteConfSubmit(this.form);" name="submit">
+    <div style="float:right">
+      <input type="submit" value="Delete file" onClick="deleteConfSubmit(this.form);" name="submit" style="color:red">      
+      <label for="adminkey" style="display:flex">Admin code required for deletion</label>  
+      <input type="text" name="adminkey">
+    </div>
   </div>
 </form>  
 </div>
