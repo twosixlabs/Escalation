@@ -40,8 +40,9 @@ def update_auto():
             )
             )
         db.session.commit()
-        plot.update_uploads_per_crank()
-        plot.update_runs_per_crank()
+        plot.update_uploads_by_crank()
+        plot.update_runs_by_crank()
+        plot.update_runs_by_month()        
         
 def update_science():
     app = scheduler.app
@@ -120,7 +121,7 @@ def update_ml():
             )
             #end crank
         db.session.commit()
-
+        plot.update_results_by_model()
 
     
     
@@ -142,16 +143,16 @@ def dashboard():
     sci_table  = ScienceStat.query.all()
     ml_table   = MLStat.query.all()
 
-
     return render_template('dashboard.html',
                            sci_table=sci_table,
                            auto_table=auto_table,
                            ml_table=ml_table,
                            leaderboard=get_leaderboard(),
-                           uploads_per_crank = plot.uploads_per_crank(),
-                           runs_per_crank = plot.runs_per_crank(),
-                           runs_per_month = plot.runs_per_month(),                           
+                           uploads_by_crank = plot.uploads_by_crank(),
+                           runs_by_crank = plot.runs_by_crank(),
+                           runs_by_month = plot.runs_by_month(),                           
                            success_by_amine = plot.success_by_amine(),
+                           results_by_model = plot.results_by_model(),
     )
 
 

@@ -8,7 +8,7 @@ from collections import defaultdict
 from flask import current_app as app
 from sqlalchemy import text
 from escalation import db
-from .database import Submission, get_chemicals
+from .database import Submission, get_chemicals, get_leaderboard
 
 global plot_data
 
@@ -69,43 +69,43 @@ def success_by_amine():
             }
     )
     layout = go.Layout(
-        xaxis = {'title':"Ammonium Iodide Salt",
+        xaxis = {'title':"<b>Ammonium Iodide Salt</b>",
                  'automargin':True
         },
-        yaxis = {'title':"Numbef of Experiments"},
-        title = "Success Rate by Amine",
+        yaxis = {'title':"<b>Numbef of Experiments</b>"},
+        title = "<b>Success Rate by Amine</b>",
         )
     graph = {'data': [trace1, trace2],
              'layout': layout
     }
     return json.dumps(graph,cls=plotly.utils.PlotlyJSONEncoder)
     
-def update_uploads_per_crank():
+def update_uploads_by_crank():
     global plot_data
 
     res=db.session.query(Submission.crank, func.count(Submission.crank)).group_by(Submission.crank).order_by(Submission.crank.asc()).all()
 
-    plot_data['uploads_per_crank']['xs'] = [r[0] for r in res]
-    plot_data['uploads_per_crank']['ys'] = [r[1] for r in res]
+    plot_data['uploads_by_crank']['xs'] = [r[0] for r in res]
+    plot_data['uploads_by_crank']['ys'] = [r[1] for r in res]
     app.logger.info("Updated plot 'uploads per crank'")
 
-def uploads_per_crank():
+def uploads_by_crank():
     global plot_data
-    if 'uploads_per_crank' not in plot_data:
-        update_uploads_per_crank()
+    if 'uploads_by_crank' not in plot_data:
+        update_uploads_by_crank()
             
     trace = go.Bar(
-        x = plot_data['uploads_per_crank']['xs'],
-        y = plot_data['uploads_per_crank']['ys']
+        x = plot_data['uploads_by_crank']['xs'],
+        y = plot_data['uploads_by_crank']['ys']
     )
 
     layout = go.Layout(
         xaxis = { 'type' : 'category',
-                  'title': "Crank",
+                  'title': "<b>Crank</b>",
         },
-        yaxis = {'title': 'Number of Submissions'
+        yaxis = {'title': '<b>Number of Submissions</b>'
         },
-        title = "Number of Submissions per Crank"
+        title = "<b>Number of Submissions per Crank</b>"
         
     )
     graph = {'data': [trace],
@@ -113,9 +113,9 @@ def uploads_per_crank():
     }
     return json.dumps(graph,cls=plotly.utils.PlotlyJSONEncoder)
 
-def update_runs_per_crank():
+def update_runs_by_crank():
     global plot_data    
-    name = 'runs_per_crank'
+    name = 'runs_by_crank'
 
     total = defaultdict(int)
     success = defaultdict(int)
@@ -136,12 +136,12 @@ def update_runs_per_crank():
     plot_data[name]['ys_success'] = [ success[crank] for crank in sorted_list]
     plot_data[name]['ys_total'] = [total[crank] for crank in sorted_list]
     
-def runs_per_crank():
+def runs_by_crank():
     global plot_data
-    name = 'runs_per_crank'
+    name = 'runs_by_crank'
 
     if name not in plot_data:
-        update_runs_per_crank()
+        update_runs_by_crank()
 
     trace1 = go.Scatter(
         x = plot_data[name]['xs'],
@@ -162,15 +162,15 @@ def runs_per_crank():
             }
     )    
     layout = go.Layout(
-        xaxis = {'title':"Progress By Weekly Crank",
+        xaxis = {'title':"<b>Progress By Weekly Crank</b>",
                  'automargin':True,
                  'showgrid':False,
         },
-        yaxis = {'title':"Number of Experiments",
+        yaxis = {'title':"<b>Number of Experiments</b>",
                  'range': [0,1000 * (1 + max(plot_data[name]['ys_total']) // 1000)],
                  'showgrid':False,
         },
-        title = "Total Number of Experiments over Time",
+        title = "<b>Total Number of Experiments over Time</b>",
     )
     graph = {'data': [trace1, trace2],
              'layout': layout
@@ -178,9 +178,12 @@ def runs_per_crank():
     return json.dumps(graph,cls=plotly.utils.PlotlyJSONEncoder)
 
 
-def update_runs_per_month():
+def update_runs_by_month():
     global plot_data    
-    name = 'runs_per_month'
+    name = 'runs_by_month'
+
+    if name not in plot_data:
+        update_runs_by_crank()
 
     total = defaultdict(int)
     success = defaultdict(int)
@@ -207,7 +210,6 @@ def update_runs_per_month():
             ys.append(by_inchi[inchi][month])
             monthy[month] += by_inchi[inchi][month]
         ys_dict[inchi] = ys
-        print(inchi,ys)
 
     max_y = 0
     for month,y in monthy.items():
@@ -217,9 +219,10 @@ def update_runs_per_month():
     plot_data[name]['xs'] = xs
     plot_data[name]['ys'] = ys_dict
     plot_data[name]['ymax'] = max_y
-def runs_per_month():
+    
+def runs_by_month():
     global plot_data
-    name = 'runs_per_month'
+    name = 'runs_by_month'
 
     chemicals={}
     abbrev={}
@@ -229,7 +232,7 @@ def runs_per_month():
         abbrev[r.inchi] = r.abbrev
     
     if name not in plot_data:
-        update_runs_per_month()
+        update_runs_by_month()
 
     trace = []
     for inchi,ys in plot_data[name]['ys'].items():
@@ -249,16 +252,16 @@ def runs_per_month():
 
         
     layout = go.Layout(
-        xaxis = {'title':"Progress By Month",
+        xaxis = {'title':"<b>Progress By Month</b>",
                  'automargin':True,
                  'showgrid':False,
                  'tickangle':45,
         },
-        yaxis = {'title':"Number of Experiments",
+        yaxis = {'title':"<b>Number of Experiments</b>",
                  'range': [0,100 * (1 + plot_data[name]['ymax'] // 100)],
                  'showgrid':False,
         },
-        title = "Number of Experiments per Month",
+        title = "<b>Number of Experiments per Month</b>",
         barmode='stack',
         hovermode='closest',
         showlegend=False,
@@ -268,3 +271,110 @@ def runs_per_month():
     }
     return json.dumps(graph,cls=plotly.utils.PlotlyJSONEncoder)
 
+
+def update_results_by_model():
+    name = 'results_by_model'
+    global plot_data
+
+    res = get_leaderboard()
+    d_f1= defaultdict(list)
+    d_auc= defaultdict(list)
+    d_prec= defaultdict(list)
+    d_rec= defaultdict(list)            
+    for r in res:
+        d_f1[r.model_name].append(r.f1_score)
+        d_auc[r.model_name].append(r.auc_score)
+        d_rec[r.model_name].append(r.recall)
+        d_prec[r.model_name].append(r.precision)        
+
+    plot_data[name]['f1'] = []
+    plot_data[name]['auc'] = []
+    plot_data[name]['model'] = []
+
+
+    means = defaultdict(float)
+    for model,arr in d_auc.items():
+        means[model] = sum(arr)/len(arr)
+    sorted_models = [x[0] for x in sorted(means.items(),key=operator.itemgetter(1),reverse=False)]        
+    for model in sorted_models:
+        plot_data[name]['model'].append(model)
+        plot_data[name]['f1'].append(d_f1[model])
+        plot_data[name]['auc'].append(d_auc[model])
+        
+def results_by_model():
+    name = 'results_by_model'
+    global plot_data
+
+    if name not in plot_data:
+        update_results_by_model()
+
+    models = plot_data[name]['model']
+    f1_trace=[]
+    auc_trace=[]
+    
+    for i,model in enumerate(models):
+        f1_trace.append(go.Box(
+            x = plot_data[name]['f1'][i],
+            name=model,
+            visible=False,
+        ))
+
+        auc_trace.append(go.Box(
+            x = plot_data[name]['auc'][i],
+            name=model,
+            visible=True,
+        ))
+    auc_bools = [True] * len(models) + [False] * len(models)
+    f1_bools = [False] * len(models) + [True] * len(models)    
+    layout = go.Layout(
+        xaxis = {'title': '<b>AUC</b>',
+                 'range':[0.5,1],
+                 'tick0':0.5,
+                 'dtick':0.05,
+                 'ticklen':10,
+                 'showgrid':True,                 
+        },
+        yaxis = {'automargin':True,
+                 'title':'<b>Classifier</b>',
+        },
+        title = "<b>AUC scores over %d cranks</b>" % len(plot_data[name]['auc'][0]),          
+        showlegend=False,
+        updatemenus=list([
+            dict(
+                 buttons=list([   
+                     dict(label = 'AUC',
+                          method = 'update',
+                          args = [{'visible': auc_bools},
+                                  {'title': "<b>AUC scores over %d cranks</b>" % len(plot_data[name]['auc'][0]),
+                                   'xaxis':{'title':'<b>AUC</b>',
+                                            'range':[0.5,1],
+                                            'tick0':0.5,
+                                            'dtick':0.05,
+                                            'ticklen':10,
+                                            'showgrid':True,                                            
+                                   }},
+                          ]),
+                     dict(label = 'F1 Score',
+                          method = 'update',
+                          args = [{'visible': f1_bools},
+                                  {'title': "<b>F1 scores over %d cranks</b>" % len(plot_data[name]['auc'][0]),
+                                   'xaxis':{'title':'<b>F1 Score</b>',
+                                            'range':[0,1],
+                                            'tick0':0,
+                                            'dtick':0.1,
+                                            'ticklen':10,
+                                            'showgrid':True,
+                                   }},
+                          ]
+                     ),
+                     ]),
+                direction = 'right',
+                showactive = True,
+                type = 'buttons',
+                y = 1.4,
+                yanchor = 'top' 
+        )
+        ]),
+    )
+    graph  = {'data':auc_trace+f1_trace, 'layout': layout}
+    return json.dumps(graph,cls=plotly.utils.PlotlyJSONEncoder)
