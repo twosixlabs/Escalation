@@ -141,7 +141,22 @@
     var graph = {{results_by_model | safe}};
     Plotly.newPlot("results_by_model",graph.data,graph.layout, {responsive: true});        
   </script>
-  
+</div>
+
+  <div id="f1_by_model" class="chart" style="max-width:1000px;"></div>
+  <script type="text/javascript">
+    var graph = {{f1_by_model | safe}};
+    Plotly.newPlot("f1_by_model",graph.data,graph.layout, {responsive: true});        
+  </script>
+</div>
+
+  <div id="results_by_crank" class="chart" style="max-width:1000px;"></div>
+  <script type="text/javascript">
+    var graph = {{results_by_crank | safe}};
+    Plotly.newPlot("results_by_crank",graph.data,graph.layout, {responsive: true});        
+  </script>
+</div>
+
 <h3>Leaderboard summary</h3>
 
 <a href="{{ url_for('leaderboard.leaderboard') }}">View full leaderboard</a>
@@ -150,7 +165,6 @@
     <th>Dataset</th>      
     <th>Name</th>      
     <th>Author</th>
-    <th>Accuracy</th>
     <th>AUC</th>
     <th>F1 score</th>
     <th>Precision</th>
@@ -203,7 +217,8 @@
         </tr>
         {% endfor %}
       </tbody>
-    </table>
+  </table>
+  
 <script>
 $(document).ready(function() {
 $('#ml_table').DataTable( {

@@ -280,16 +280,21 @@ def update_results_by_model():
     d_f1= defaultdict(list)
     d_auc= defaultdict(list)
     d_prec= defaultdict(list)
-    d_rec= defaultdict(list)            
+    d_rec= defaultdict(list)
+    d_dataset= defaultdict(list)                
     for r in res:
         d_f1[r.model_name].append(r.f1_score)
         d_auc[r.model_name].append(r.auc_score)
         d_rec[r.model_name].append(r.recall)
-        d_prec[r.model_name].append(r.precision)        
+        d_prec[r.model_name].append(r.precision)
+        d_dataset[r.model_name].append(r.dataset_name)                
 
     plot_data[name]['f1'] = []
     plot_data[name]['auc'] = []
     plot_data[name]['model'] = []
+    plot_data[name]['prec'] = []
+    plot_data[name]['rec'] = []
+    plot_data[name]['dataset'] = []    
 
 
     means = defaultdict(float)
@@ -300,6 +305,9 @@ def update_results_by_model():
         plot_data[name]['model'].append(model)
         plot_data[name]['f1'].append(d_f1[model])
         plot_data[name]['auc'].append(d_auc[model])
+        plot_data[name]['prec'].append(d_prec[model])
+        plot_data[name]['rec'].append(d_rec[model])
+        plot_data[name]['dataset'].append(d_dataset[model])                
         
 def results_by_model():
     name = 'results_by_model'
@@ -378,3 +386,82 @@ def results_by_model():
     )
     graph  = {'data':auc_trace+f1_trace, 'layout': layout}
     return json.dumps(graph,cls=plotly.utils.PlotlyJSONEncoder)
+
+def f1_by_model():
+    global plot_data
+    name = 'results_by_model'
+
+    #uses the same update function as above
+    if name not in plot_data:
+        update_results_by_model()
+
+    models = plot_data[name]['model']
+    colors= [
+    '#1f77b4',  # muted blue
+    '#ff7f0e',  # safety orange
+    '#2ca02c',  # cooked asparagus green
+    '#d62728',  # brick red
+    '#9467bd',  # muted purple
+    '#8c564b',  # chestnut brown
+    '#e377c2',  # raspberry yogurt pink
+    '#7f7f7f',  # middle gray
+    '#bcbd22',  # curry yellow-green
+    '#17becf'   # blue-teal
+    ]
+
+    trace=[]
+    shapes=[]
+    for i,model in enumerate(models):
+        trace.append(go.Scatter(
+            x = plot_data[name]['prec'][i],
+            y = plot_data[name]['rec'][i],
+            text = plot_data[name]['dataset'][i],
+            name=model,
+            mode='markers',
+            marker= dict(size=12,
+                         color=colors[i],
+                         )
+        ))
+        shapes.append(
+            {
+                'type': 'circle',
+                'xref': 'x',
+                'yref': 'y',
+                'x0': min(plot_data[name]['prec'][i]),
+                'x1': max(plot_data[name]['prec'][i]),                
+                'y0': min(plot_data[name]['rec'][i]),
+                'y1': max(plot_data[name]['rec'][i]),
+                'opacity': 0.2,
+                'fillcolor': colors[i],
+            }
+        )
+        
+    layout = go.Layout(
+        autosize=False,
+        width = 1000,
+        height = 600,
+        xaxis = {'title': '<b>Precision</b>',
+                 'range':[0,1],
+                 'tick0':0,
+                 'dtick':0.1,
+                 'ticklen':10,
+                 'showgrid':True,                 
+        },
+        yaxis = {
+            'title':'<b>Recall</b>',
+            'range':[0,1],
+            'tick0':0,
+            'dtick':0.1,
+            'ticklen':10,
+            'showgrid':True,                             
+        },
+        title = "<b>Precision and Recall</b>",
+        showlegend=True,
+        shapes=shapes,
+    )
+    print(trace)
+            
+    graph  = {'data':trace, 'layout': layout}
+    return json.dumps(graph,cls=plotly.utils.PlotlyJSONEncoder)
+
+        
