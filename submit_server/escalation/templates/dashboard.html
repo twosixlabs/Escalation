@@ -150,6 +150,14 @@
   </script>
 </div>
 
+<div id="results_by_crank" class="chart" style="max-width:1000px;"></div>
+  <script type="text/javascript">
+    var graph = {{results_by_crank | safe}};
+    Plotly.newPlot("results_by_crank",graph.data,graph.layout, {responsive: true});        
+  </script>
+</div>
+
+
   <div id="results_by_crank" class="chart" style="max-width:1000px;"></div>
   <script type="text/javascript">
     var graph = {{results_by_crank | safe}};
