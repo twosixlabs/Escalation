@@ -153,6 +153,7 @@ def dashboard():
                            runs_by_month = plot.runs_by_month(),                           
                            success_by_amine = plot.success_by_amine(),
                            results_by_model = plot.results_by_model(),
+                           results_by_crank = plot.results_by_crank(),                           
                            f1_by_model = plot.f1_by_model(),
     )
 

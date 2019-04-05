@@ -277,38 +277,58 @@ def update_results_by_model():
     global plot_data
 
     res = get_leaderboard()
+    results = defaultdict(list)
+
+    # first group the data together by model
+    for r in res:
+        results[r.model_name].append(r)
+
+    #sort array of rows by their dataset name
+    for m in results:
+        results[m] = sorted(results[m], key=lambda x: x.dataset_name)
+        
     d_f1= defaultdict(list)
     d_auc= defaultdict(list)
+    d_avg_prec= defaultdict(list)    
     d_prec= defaultdict(list)
     d_rec= defaultdict(list)
-    d_dataset= defaultdict(list)                
-    for r in res:
-        d_f1[r.model_name].append(r.f1_score)
-        d_auc[r.model_name].append(r.auc_score)
-        d_rec[r.model_name].append(r.recall)
-        d_prec[r.model_name].append(r.precision)
-        d_dataset[r.model_name].append(r.dataset_name)                
+    d_dataset= defaultdict(list)
 
-    plot_data[name]['f1'] = []
-    plot_data[name]['auc'] = []
-    plot_data[name]['model'] = []
-    plot_data[name]['prec'] = []
-    plot_data[name]['rec'] = []
-    plot_data[name]['dataset'] = []    
+    #now we hav a sorted dict of numbers by model
+    for m in results:
+        d_f1[m]       = [x.f1_score for x in results[m]]
+        d_auc[m]      = [x.auc_score for x in results[m]]
+        d_avg_prec[m] = [x.average_precision for x in results[m]]
+        d_rec[m]      = [x.recall for x in results[m]]
+        d_prec[m]     = [x.precision for x in results[m]]
+        d_dataset[m]  = [x.dataset_name for x in results[m]]                
+
+    plot_data[name]['f1']       = []
+    plot_data[name]['auc']      = []
+    plot_data[name]['avg_prec'] = []    
+    plot_data[name]['model']    = []
+    plot_data[name]['prec']     = []
+    plot_data[name]['rec']      = []
+    plot_data[name]['dataset']  = []    
 
 
+    #sort models by their means
     means = defaultdict(float)
     for model,arr in d_auc.items():
         means[model] = sum(arr)/len(arr)
-    sorted_models = [x[0] for x in sorted(means.items(),key=operator.itemgetter(1),reverse=False)]        
+    sorted_models = [x[0] for x in sorted(means.items(),key=operator.itemgetter(1),reverse=False)]
+
     for model in sorted_models:
         plot_data[name]['model'].append(model)
         plot_data[name]['f1'].append(d_f1[model])
         plot_data[name]['auc'].append(d_auc[model])
-        plot_data[name]['prec'].append(d_prec[model])
         plot_data[name]['rec'].append(d_rec[model])
+        plot_data[name]['prec'].append(d_prec[model])        
+        plot_data[name]['avg_prec'].append(d_avg_prec[model])        
         plot_data[name]['dataset'].append(d_dataset[model])                
-        
+
+    print(plot_data[name])
+    
 def results_by_model():
     name = 'results_by_model'
     global plot_data
@@ -319,21 +339,29 @@ def results_by_model():
     models = plot_data[name]['model']
     f1_trace=[]
     auc_trace=[]
-    
+    prec_trace=[]    
     for i,model in enumerate(models):
-        f1_trace.append(go.Box(
-            x = plot_data[name]['f1'][i],
-            name=model,
-            visible=False,
-        ))
 
         auc_trace.append(go.Box(
             x = plot_data[name]['auc'][i],
             name=model,
             visible=True,
         ))
-    auc_bools = [True] * len(models) + [False] * len(models)
-    f1_bools = [False] * len(models) + [True] * len(models)    
+        
+        f1_trace.append(go.Box(
+            x = plot_data[name]['f1'][i],
+            name=model,
+            visible=False,
+        ))
+        
+        prec_trace.append(go.Box(
+            x = plot_data[name]['avg_prec'][i],
+            name=model,
+            visible=False,
+        ))        
+    auc_bools = [True] * len(models) + [False] * (2 * len(models))
+    f1_bools = [False] * len(models) + [True] * len(models) + [False] * len(models)
+    prec_bools = [False] * (2 * len(models)) + [True] * len(models)
     layout = go.Layout(
         xaxis = {'title': '<b>AUC</b>',
                  'range':[0.5,1],
@@ -362,6 +390,18 @@ def results_by_model():
                                             'showgrid':True,                                            
                                    }},
                           ]),
+                     dict(label = 'Avg. Prec',
+                          method = 'update',
+                          args = [{'visible': prec_bools},
+                                  {'title': "<b>Avgerage Precision over %d cranks</b>" % len(plot_data[name]['auc'][0]),
+                                   'xaxis':{'title':'<b>Average Precision</b>',
+                                            'range':[0,1],
+                                            'tick0':0,
+                                            'dtick':0.1,
+                                            'ticklen':10,
+                                            'showgrid':True,                                            
+                                   }},
+                          ]),
                      dict(label = 'F1 Score',
                           method = 'update',
                           args = [{'visible': f1_bools},
@@ -384,7 +424,7 @@ def results_by_model():
         )
         ]),
     )
-    graph  = {'data':auc_trace+f1_trace, 'layout': layout}
+    graph  = {'data':auc_trace+f1_trace+prec_trace, 'layout': layout}
     return json.dumps(graph,cls=plotly.utils.PlotlyJSONEncoder)
 
 def f1_by_model():
@@ -422,19 +462,19 @@ def f1_by_model():
                          color=colors[i],
                          )
         ))
-        shapes.append(
-            {
-                'type': 'circle',
-                'xref': 'x',
-                'yref': 'y',
-                'x0': min(plot_data[name]['prec'][i]),
-                'x1': max(plot_data[name]['prec'][i]),                
-                'y0': min(plot_data[name]['rec'][i]),
-                'y1': max(plot_data[name]['rec'][i]),
-                'opacity': 0.2,
-                'fillcolor': colors[i],
-            }
-        )
+        # shapes.append(
+        #     {
+        #         'type': 'circle',
+        #         'xref': 'x',
+        #         'yref': 'y',
+        #         'x0': min(plot_data[name]['prec'][i]),
+        #         'x1': max(plot_data[name]['prec'][i]),                
+        #         'y0': min(plot_data[name]['rec'][i]),
+        #         'y1': max(plot_data[name]['rec'][i]),
+        #         'opacity': 0.2,
+        #         'fillcolor': colors[i],
+        #     }
+        # )
         
     layout = go.Layout(
         autosize=False,
@@ -457,11 +497,116 @@ def f1_by_model():
         },
         title = "<b>Precision and Recall</b>",
         showlegend=True,
-        shapes=shapes,
+#        shapes=shapes,
     )
     print(trace)
             
     graph  = {'data':trace, 'layout': layout}
     return json.dumps(graph,cls=plotly.utils.PlotlyJSONEncoder)
 
+    
+def results_by_crank():
+    global plot_data
+    name = 'results_by_model'
+
+    if name not in plot_data:
+        update_results_by_model()
         
+    models = plot_data[name]['model']
+    f1_trace=[]
+    auc_trace=[]
+    prec_trace=[]
+    
+    for i,model in enumerate(models):
+        auc_trace.append(go.Scatter(
+            x = plot_data[name]['dataset'][i],
+            y = plot_data[name]['auc'][i],            
+            name=model,
+            visible=True,
+            mode='lines'
+        ))
+        
+        f1_trace.append(go.Scatter(
+            y = plot_data[name]['f1'][i],
+            x = plot_data[name]['dataset'][i],            
+            name=model,
+            visible=False,
+            mode='lines'            
+        ))
+        
+        prec_trace.append(go.Scatter(
+            y = plot_data[name]['avg_prec'][i],
+            x = plot_data[name]['dataset'][i],
+            name=model,
+            visible=False,
+            mode='lines'            
+        ))
+    print(auc_trace)
+    auc_bools = [True] * len(models) + [False] * (2 * len(models))
+    f1_bools = [False] * len(models) + [True] * len(models) + [False] * len(models)
+    prec_bools = [False] * (2 * len(models)) + [True] * len(models)
+    layout = go.Layout(
+        yaxis = {'title': '<b>AUC</b>',
+                 'range':[0.5,1],
+                 'tick0':0.5,
+                 'dtick':0.05,
+                 'ticklen':10,
+                 'showgrid':True,                 
+        },
+        xaxis = {'automargin':True,
+                 'title':'<b>Crank</b>',
+                 'dtick':1,
+        },
+        title = "<b>AUC scores for %d models</b>" % len(plot_data[name]['auc'][0]),          
+        showlegend=True,
+        updatemenus=list([
+            dict(
+                 buttons=list([   
+                     dict(label = 'AUC',
+                          method = 'update',
+                          args = [{'visible': auc_bools},
+                                  {'title': "<b>AUC scores</b>",
+                                   'yaxis':{'title':'<b>AUC</b>',
+                                            'range':[0.5,1],
+                                            'tick0':0.5,
+                                            'dtick':0.05,
+                                            'ticklen':10,
+                                            'showgrid':True,                                            
+                                   }},
+                          ]),
+                     dict(label = 'Avg. Prec',
+                          method = 'update',
+                          args = [{'visible': prec_bools},
+                                  {'title': "<b>Avgerage Precision</b>",
+                                   'yaxis':{'title':'<b>Average Precision</b>',
+                                            'range':[0,1],
+                                            'tick0':0,
+                                            'dtick':0.1,
+                                            'ticklen':10,
+                                            'showgrid':True,                                            
+                                   }},
+                          ]),
+                     dict(label = 'F1 Score',
+                          method = 'update',
+                          args = [{'visible': f1_bools},
+                                  {'title': "<b>F1 score</b>",
+                                   'yaxis':{'title':'<b>F1 Score</b>',
+                                            'range':[0,1],
+                                            'tick0':0,
+                                            'dtick':0.1,
+                                            'ticklen':10,
+                                            'showgrid':True,
+                                   }},
+                          ]
+                     ),
+                     ]),
+                direction = 'right',
+                showactive = True,
+                type = 'buttons',
+                y = 1.4,
+                yanchor = 'top' 
+        )
+        ]),
+    )
+    graph  = {'data':auc_trace+f1_trace+prec_trace, 'layout': layout}
+    return json.dumps(graph,cls=plotly.utils.PlotlyJSONEncoder)
