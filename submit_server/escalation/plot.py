@@ -523,7 +523,7 @@ def results_by_crank():
             y = plot_data[name]['auc'][i],            
             name=model,
             visible=True,
-            mode='lines'
+            mode='lines+markers'
         ))
         
         f1_trace.append(go.Scatter(
@@ -531,7 +531,7 @@ def results_by_crank():
             x = plot_data[name]['dataset'][i],            
             name=model,
             visible=False,
-            mode='lines'            
+            mode='lines+markers'            
         ))
         
         prec_trace.append(go.Scatter(
@@ -539,8 +539,9 @@ def results_by_crank():
             x = plot_data[name]['dataset'][i],
             name=model,
             visible=False,
-            mode='lines'            
+            mode='lines+markers'            
         ))
+        
     print(auc_trace)
     auc_bools = [True] * len(models) + [False] * (2 * len(models))
     f1_bools = [False] * len(models) + [True] * len(models) + [False] * len(models)
