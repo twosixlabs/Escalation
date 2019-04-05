@@ -62,6 +62,8 @@ for crank in files:
     stateset       = os.path.join(versioned_datasets_repo_path,'data','perovskite',files[crank]['stateset'])
     perovskitedata = os.path.join(versioned_datasets_repo_path,'data','perovskite',files[crank]['perovskitedata'])
 
+    orig_filename = os.path.basename(stateset)
+
     stateset_csv=tempfile.mkstemp()[1]
     print("Filtering",stateset,"to",stateset_csv)
 
@@ -88,7 +90,7 @@ for crank in files:
     print("githash:", git_sha[:7])
     print("username:",git_username)
     r = requests.post(args.endpoint, headers={'User-Agent':'escalation'},
-                      data={'crank':crank,'githash':git_sha[:7], 'username':git_username,'adminkey':args.key,'submit':'stateset','filename':files[crank]['stateset']},
+                      data={'crank':crank,'githash':git_sha[:7], 'username':git_username,'adminkey':args.key,'submit':'stateset','filename':orig_filename},
                       files={'stateset':open(stateset_csv,'rb'), 'perovskitedata':open(perovskite_csv,'rb')},timeout=300)
     print(r.status_code, r.reason,r)
     try:
