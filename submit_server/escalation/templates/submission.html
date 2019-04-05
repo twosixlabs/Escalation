@@ -3,13 +3,29 @@
 
 
 {% block header %}
-  <h1>{% block title %}Upload CSV{% endblock %}</h1>
+<h1>{% block title %}Upload CSV{% endblock %}</h1>
+
+<script type="text/javascript">
+  function myFunction() {
+  var x = document.getElementById("instructions");
+  if (x.style.display === "none") {
+    x.style.display = "block";
+  } else {
+    x.style.display = "none";
+  }
+  }
+</script>
+
 {% endblock %}
 
   {% block content %}
 
   <h3>Current cranks: {{ curr_cranks }}</h3>
-  
+
+  <div id="instructions" style="margin-bottom:50px; display:none; background:#f1f1f1">
+    <p>
+      
+  </div>
   <form method="post" enctype="multipart/form-data">
 
     {% if 'crank' in session %}

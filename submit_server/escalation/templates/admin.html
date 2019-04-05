@@ -27,18 +27,20 @@
      <th>Git commit </th>     
      <th>Number Runs</th>
      <th>Uploader </th>
-     <th>Timestamp </th>
+     <th>Upload </th>
+     <th>Timestamp </th>     
      <th>Active / Inactive</th>     
    </tr>
     </thead>
     <tbody>
   {% for r in cranks %}
    <tr>
-     <td> {{ r['crank'] }} </td>
-     <td> {{ r['githash'] }} </td>    
-     <td> {{ r['num_runs'] }} </td>        
-     <td> {{ r['username'] }} </td>
-     <td> {{ r['created'].strftime("%Y-%m-%d %H:%M:%S") }} </td>
+     <td>{{ r['crank'] }}</td>
+     <td>{{ r['githash'] }}</td>    
+     <td>{{ r['num_runs'] }}</td>        
+     <td>{{ r['username'] }}</td>
+     <td>{{ r['upload_filename'] }}</td>     
+     <td>{{ r['created'].strftime("%Y-%m-%d %H:%M:%S") }}</td>
      <td data-order="{{ r['active'] }}">
        <input type="radio" name="{{ r['id']}}" value="active" {% if r['active'] %} checked="checked"{% endif %}>
        <input type="radio" name="{{ r['id']}}" value="not_active" {% if not r['active']  %} checked="checked"{% endif %}>

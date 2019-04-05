@@ -71,7 +71,7 @@ def admin():
         username = request.form['username']
         crank = request.form['crank']                
         githash  = request.form['githash']
-
+        orig_filename = request.form['filename']
         app.logger.info("Received request: {} {} {} {} {}".format(stateset_file,training_file,username,crank,githash))
 
         if db.is_stateset_stored(crank,githash):
@@ -82,7 +82,7 @@ def admin():
             error = validate(request.form['adminkey'],githash,stateset_file)
 
         if error == None:
-            num_rows       = db.add_stateset(stateset_file,crank,githash,username)
+            num_rows       = db.add_stateset(stateset_file,crank,githash,username,orig_filename)
             num_train_rows = db.add_training(training_file,githash,crank)
 
             out="Successfully updated to crank %s and stateset %s with %d rows" % (crank, githash,num_rows)

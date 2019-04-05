@@ -97,13 +97,14 @@ class TrainingRun(db.Model):
         return "<Training Run {} {} {} {} {}".format(self.id,self.name,self.dataset,self._out_crystalscore,self._rxn_M_inorganic,self._rxn_M_organic,self._rxn_M_acid, self.inchikey)
     
 class Crank(db.Model):
-    id       = db.Column(db.Integer,primary_key=True)
-    crank    = db.Column(db.String(64))    
-    githash  = db.Column(db.String(7))    #git commit of stateset file in versioned-data
-    username = db.Column(db.String(64))
-    num_runs = db.Column(db.Integer)    
-    active  = db.Column(db.Boolean)
-    created  = db.Column(db.DateTime(timezone=True), server_default=sql.func.now())
+    id              = db.Column(db.Integer,primary_key=True)
+    crank           = db.Column(db.String(64))    
+    githash         = db.Column(db.String(7))    #git commit of stateset file in versioned-data
+    username        = db.Column(db.String(64))
+    num_runs        = db.Column(db.Integer)    
+    active          = db.Column(db.Boolean)
+    created         = db.Column(db.DateTime(timezone=True), server_default=sql.func.now())
+    upload_filename = db.Column(db.String(256)) #uploaded file name for comparison
 
     def  __repr__(self):
         return '<Crank {} {} {} {}>'.format(self.crank,self.githash,self.active,self.created)
@@ -171,13 +172,13 @@ def read_in_stateset(filename,crank,githash):
     app.logger.info("Added %d runs for stateset" % len(objs))
     return len(objs)
     
-def add_stateset(filename,crank,githash,username):
+def add_stateset(filename,crank,githash,username,orig_filename):
     num_runs= read_in_stateset(filename,crank,githash)
 
     #retire other entries that have the same crank
     Crank.query.filter_by(crank=crank).update({'active':False})
     
-    db.session.add(Crank(crank=crank,githash=githash,username=username,num_runs=num_runs,active=True))
+    db.session.add(Crank(crank=crank,githash=githash,username=username,num_runs=num_runs,active=True,upload_filename=orig_filename))
     db.session.commit()
     return num_runs
 

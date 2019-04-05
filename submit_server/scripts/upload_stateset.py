@@ -88,7 +88,7 @@ for crank in files:
     print("githash:", git_sha[:7])
     print("username:",git_username)
     r = requests.post(args.endpoint, headers={'User-Agent':'escalation'},
-                      data={'crank':crank,'githash':git_sha[:7], 'username':git_username,'adminkey':args.key,'submit':'stateset'},
+                      data={'crank':crank,'githash':git_sha[:7], 'username':git_username,'adminkey':args.key,'submit':'stateset','filename':files[crank]['stateset']},
                       files={'stateset':open(stateset_csv,'rb'), 'perovskitedata':open(perovskite_csv,'rb')},timeout=300)
     print(r.status_code, r.reason,r)
     try:
