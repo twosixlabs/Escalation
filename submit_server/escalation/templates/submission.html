@@ -21,11 +21,53 @@
   {% block content %}
 
   <h3>Current cranks: {{ curr_cranks }}</h3>
-
-  <div id="instructions" style="margin-bottom:50px; display:none; background:#f1f1f1">
-    <p>
-      
+  <button onclick="myFunction()" style="border:none; background-color:#f1f1f1; font-size:16px; margin-bottom:16px;">Show Instructions<i class="fa fa-caret-down"></i></button>
+  <div id="instructions" style="margin-bottom:50px; display:none;">
+    <ul>
+      <li><b>First time setup:</b>
+        <ul>
+          <li>Clone and <em>install</em> the <a href="https://gitlab.sd2e.org/sd2program/versioned-datasets">versioned datasets repo</a> on your local machine</li>
+          <li>Clone the <a href="https://gitlab.sd2e.org/sd2program/escalation">escalation repo</a> on your local machine</li>
+        </ul>
+      <li><b>To predict for the current crank</b>:
+        <ul>
+          <li><b>Step 1:</b> Download the latest data from the versioned data repo
+          <pre>
+cd your-installation-of-versioend-data-repo
+git pull origin master
+python3 scripts/pull_data.py manifest/perovskite.manifest.yml</pre>
+          </li>
+          <li><b>Step 2:</b> Generate the submission template.
+            <pre>escalation/make_perovskites_blank_submission.py</pre>
+          <li><b>Step 3:</b> Train your algorithm.
+            <pre>data/perovskite/perovskitedata/$current_crank.perovskitedata.csv</pre>
+          </li>
+          <li><b>Step 4:</b> Populate the blank submission file with your <b>top 100</b> predictions using as input.
+            <pre>data/perovskite/stateset/$current_crank.stateset.csv</pre>
+            For validation and ensemble learning, the file requires the following fields:
+            <pre>
+dataset,name,_rxn_M_inorganic,_rxn_M_organic,_rxn_M_acid,predicted_out,score
+0001,0,0.0,0.0,0.0000,1,0.8
+0001,1,0.0,0.0,0.5196,1,0.4
+0001,2,0.0,0.0,1.0194,1,0.5
+0001,3,0.0,0.0,1.5002,1,0
+            </pre>
+            <ul>
+              <li>The first five columns come from the stateset file. </li>
+              <li>predicted_out is a value in 1,2,3 or 4</li>
+              <li>score is a confidence/probability of correct in [0,1]</li>
+              </ul>
+                
+          </li>
+          <li><b>Step 5:</b> Upload your submissions using the form below or with one command.
+            <pre>python3 escalation/submit_server/scripts/upload_submission.py auto_generated_file_from_step_2</pre>
+          </li>
+        </ul>
+      </li>
+    </ul>
   </div>
+      
+
   <form method="post" enctype="multipart/form-data">
 
     {% if 'crank' in session %}

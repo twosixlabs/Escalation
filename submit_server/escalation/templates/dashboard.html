@@ -18,6 +18,13 @@
 <a name="science">
 <h2>Science</h2>
 
+<div id="rxn_3d_scatter" class="chart" style="max-width:1000px;"></div>
+<script type="text/javascript">
+  var graph = {{rxn_3d_scatter | safe}};
+  Plotly.newPlot("rxn_3d_scatter",graph.data,graph.layout, {responsive: true});        
+</script>
+</div>
+
 <!-- Plotly success by amine bar chart -->
 <a name="science.success_by_amine"></a>
 <div id="success_by_amine" class="chart" style="max-width:1000px; max-height:500px;"></div>
