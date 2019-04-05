@@ -1,7 +1,18 @@
 {% extends 'base.html' %}
 
 {% block header %}
- <h1>{% block title %}Crank Administration{% endblock %}</h1>
+<h1>{% block title %}Crank Administration{% endblock %}</h1>
+
+<script type="text/javascript">
+  function myFunction() {
+  var x = document.getElementById("chem_instructions");
+  if (x.style.display === "none") {
+    x.style.display = "block";
+  } else {
+    x.style.display = "none";
+  }
+  }
+</script>
 {% endblock %}
 
  {% block content %}
@@ -62,39 +73,48 @@ $('#crank_table').DataTable( {
 
 <h2>Chemical Database</h2>
 
-<form method="post" id="chem_form">
+<button onclick="myFunction()" style="border:none; background-color:#f1f1f1; font-size:16px; margin-bottom:16px;">Show Instructions<i class="fa fa-caret-down"></i></button>
+<div id="chem_instructions" style="margin-bottom:50px; display:none; background:#f1f1f1">
+  <p>Step 1: export the google inventory list as a tab-separated file.</p>
+  <img src="/static/tsv_download.png" width="600px" style="margin-left:50px">
+  <p>Step 2. upload the set of chemicals to the submission server. This will overwrite any existing INCHI entry.</p>
+  <div style="margin-left:50px">
+    <p><em>Note the backslashes to handle whitespace!</em></p>
+    <pre>python3 scripts/upload_chemicals.py --tsv ~/Downloads/Chemical\ Inventory\ -\ Chemicals.tsv</pre>
+  </div>
+</div>
+<div style="max-width:1000px">
   <table id="chem_table">
     <thead>
-      <th>Delete</th>
       <th>INCHI key</th>
       <th>Chemical Name</th>
       <th>Abbreviation</th>
     </thead>
     <tbody>
       {% for chem in chem_table %}
-      <input type="hidden" name="id" value="{{ chem['id'] }}">
       <tr>
-        <td> <input type="checkbox" name="delete" value="{{ chem['id'] }}"></td>
-        <td> <input class="chem_text" size="40" type="text" name="inchi" value="{{ chem['inchi'] }}" required></td>
-        <td> <input class="chem_text" size="30" type="text" name="common_name" value="{{ chem['common_name'] }}" required> </td>
-        <td> <input class="chem_text" size="20" type="text" name="abbrev" value="{{ chem['abbrev'] }}" required> </td>
+        <td> {{ chem['inchi'] }}</td>
+        <td> {{ chem['common_name'] }}</td>
+        <td> {{ chem['abbrev'] }}</td>
       </tr>
       {% endfor %}
-      <tr>
-        <td></td>        
-        <td> <input class="chem_text" size="40" type="text" name="inchi" placeholder="New INCHI key"></td>
-        <td> <input class="chem_text" size="30" type="text" name="common_name" placeholder="Common Name"> </td>
-        <td> <input class="chem_text" size="20" type="text" name="abbrev" placeholder="Abbreviation"> </td>
-      </tr>
     </tbody>
   </table>
+<script>
+$(document).ready(function() {
+$('#chem_table').DataTable( {
+   "order": [[ 0, "desc" ]],
+   "columns": [
+     { "width": "40%" },
+     { "width": "30%" },
+     { "width": "30%" },
+   ],
+  }
+  );
+  } );
 
-  <label for="adminkey">Admin code</label>  
-  <input type="text" name="adminkey" required>
-  
-  <input type="submit" value="Update Chemical Names" name="submit">
-    
-</form>  
+</script>
+</div>
  <h2>Development commands for database</h2>
  <form method="post">
   <label>

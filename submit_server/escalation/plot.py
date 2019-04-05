@@ -14,6 +14,69 @@ global plot_data
 
 plot_data = defaultdict(dict)
 
+def update_rxn_3d_scatter():
+    global plot_data
+    name = 'rxn_3d_scatter'
+
+    chemicals={}
+    res = get_chemicals()
+    for r in res:
+        chemicals[r.inchi] = r.common_name
+
+    sql = text('select distinct name,inchikey,_out_crystalscore,_rxn_M_organic,_rxn_M_inorganic,_rxn_M_acid from training_run limit 10000')
+    rows = list(db.engine.execute(sql))
+    xs = []
+    ys = []
+    zs = []
+    labels = []
+    inchis = []
+    for r in rows:
+        xs.append(r._rxn_M_inorganic)
+        ys.append(r._rxn_M_organic)
+        zs.append(r._rxn_M_acid)        
+        labels.append(r._out_crystalscore)            
+        inchis.append(chemicals[r.inchikey] if r.inchikey in chemicals else r.inchikey)
+        
+    plot_data[name]['xs'] = xs
+    plot_data[name]['ys'] = ys
+    plot_data[name]['zs'] = zs
+    plot_data[name]['labels'] = labels
+    plot_data[name]['inchis'] = inchis
+    
+def rxn_3d_scatter():
+    global plot_data
+    name = 'rxn_3d_scatter'
+    
+    if name not in plot_data:
+        update_rxn_3d_scatter()
+    
+    trace1 = go.Scatter3d(
+        x=plot_data[name]['xs'],
+        y=plot_data[name]['ys'],
+        z=plot_data[name]['zs'],
+        mode='markers',
+        marker=dict(
+            size=12,
+            color=plot_data[name]['labels'],   # set color to an array/list of desired values
+            colorscale='Viridis',   # choose a colorscale
+            opacity=0.8
+        )
+    )
+
+    data = [trace1]
+    layout = go.Layout(
+        margin=dict(
+            l=0,
+            r=0,
+            b=0,
+            t=0
+        )
+    )
+    graph = {'data': [trace1],
+             'layout': layout
+    }
+    return json.dumps(graph,cls=plotly.utils.PlotlyJSONEncoder)
+    
 def update_success_by_amine():
     global plot_data
     name='sucess_by_amine'

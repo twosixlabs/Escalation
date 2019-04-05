@@ -5,27 +5,37 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--endpoint',help="Rest endpoint",default='http://escalation.sd2e.org/admin')
-parser.add_argument('--csv',help="Chemical csv")
+parser.add_argument('--tsv',help="Chemical tab separated tsv")
 parser.add_argument('--key',help="admin secret key",default='secret')
 args=parser.parse_args()
 
-if args.csv is None:
-    print("Must pass in csv")
+if args.tsv is None:
+    print("Must pass in tsv")
     exit()
     
-csvfile = open(args.csv)
-reader = csv.DictReader(filter(lambda row: row[0]!='#',csvfile),delimiter="\t")
+tsvfile = open(args.tsv)
+reader = csv.DictReader(filter(lambda row: row[0]!='#',tsvfile),delimiter="\t")
 inchi_arr=[]
 name_arr=[]
 abbrev_arr=[]
 id_arr=[]
 i=0
 names= ('Chemical Name','Chemical Abbreviation','InChI Key (ID)')
-for row in reader:
-    
-    if set(row.keys()) != set(names):
-        print("The column names should be 'Chemical Name,Chemical Abbreviation,InChI Key (ID)'")
-        exit()
+for i, row in enumerate(reader):
+
+    for name in names:
+        if name not in row:
+            print("Column '%s' not found in tsv" % name)
+            exit()
+    if row['InChI Key (ID)'] == "" or row['InChI Key (ID)'] == None or row['InChI Key (ID)'] == 'null':
+        print("Skipping row %d because of invalid InChI Key (ID) '%s'" % (i,row['InChI Key (ID)']))
+        continue
+    if row['Chemical Name'] == "" or row['Chemical Name'] == None or row['Chemical Name'] == 'null':
+        print("Skipping row %d because of invalid chemical name '%s'" % (i,row['Chemical Name']))
+        continue
+    if row['Chemical Abbreviation'] == "" or row['Chemical Abbreviation'] == None or row['Chemical Abbreviation'] == 'null':
+        print("Skipping row %d because of invalid Chemical Abbreviation '%s'" % (i, row['Chemical Abbreviation']))
+        continue    
     inchi_arr.append(row['InChI Key (ID)'])
     name_arr.append(row['Chemical Name'])
     abbrev_arr.append(row['Chemical Abbreviation'])

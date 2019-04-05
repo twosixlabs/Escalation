@@ -39,7 +39,13 @@ def text2rows(text):
         comments = None
 
     return data, comments
-    
+
+class SubmissionValidator(object):
+    def __init__(self,numprocs,infile):
+        self.numprocs = numprocs
+        self.infile = open(infile)
+        #TODO!!!!
+
 def validate_submission(rows,crank,githash):
     arr = []
     app.logger.info("Validating %d lines" % len(rows))
