@@ -129,19 +129,26 @@ def update_ml():
     
 @bp.route('/dashboard', methods=('GET','POST'))
 def dashboard():
+    curr_inchikey='all'
+    
     if request.method == 'POST':
         if 'update' in request.form:
             flash("Refreshing stats...")
             app.logger.info("Refreshing stats")
             job1 = scheduler.add_job(func=update_science, args=[], id = 'update_science')
             job2 = scheduler.add_job(func=update_auto, args=[], id = 'update_auto')
-            job3 = scheduler.add_job(func=update_ml, args=[], id = 'update_ml')        
+            job3 = scheduler.add_job(func=update_ml, args=[], id = 'update_ml')
+        elif 'inchikey' in request.form:
+            curr_inchikey=request.form['inchikey']
+            flash("Updating 3D scatter plot with %s" % request.form['inchikey'])
+            plot.update_scatter_3d_by_rxn(request.form['inchikey'])
         else:
             flash("Unknown button!")
 
     auto_table = AutomationStat.query.all()
     sci_table  = ScienceStat.query.all()
     ml_table   = MLStat.query.all()
+
 
     return render_template('dashboard.html',
                            sci_table=sci_table,
@@ -155,7 +162,9 @@ def dashboard():
                            results_by_model = plot.results_by_model(),
                            results_by_crank = plot.results_by_crank(),
                            f1_by_model = plot.f1_by_model(),
-                           rxn_3d_scatter = plot.rxn_3d_scatter()
+                           rxn_3d_scatter = plot.scatter_3d_by_rxn(),
+                           chemicals = database.get_chemicals_in_training(),
+                           curr_inchikey=curr_inchikey,
     )
 
 

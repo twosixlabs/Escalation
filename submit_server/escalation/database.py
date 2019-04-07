@@ -347,6 +347,15 @@ def add_leaderboard(form):
 def get_chemicals():
     return Chemical.query.order_by(Chemical.inchi.desc()).all()
 
+def get_chemicals_in_training():
+    chems = Chemical.query.order_by(Chemical.common_name.desc()).all()
+    training_inchis = [x[0] for x in db.session.query(TrainingRun.inchikey).distinct().all()]
+    print(training_inchis)
+    res = [c for c in chems if c.inchi in training_inchis]
+    print(res)
+    return res
+
+    
 def remove_chemical(id):
     Chemical.query.filter(Chemical.id==id).delete()
 

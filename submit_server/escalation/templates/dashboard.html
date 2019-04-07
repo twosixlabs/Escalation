@@ -18,6 +18,16 @@
 <a name="science">
 <h2>Science</h2>
 
+<form method="post">
+  <select name="inchikey" onchange="this.form.submit()">
+    <option value="all" {% if curr_inchikey == "all" %} selected="selected" {% endif %}>All</option>
+    {% for chem in chemicals %}
+      <option value="{{ chem.inchi }}" {% if curr_inchikey == chem.inchi %} selected="selected"> {% endif %}>{{ chem.common_name }}</option>
+    {% endfor %}
+  </select>
+  <noscript><input type="submit" value="Filter on Chemical"></noscript>
+</form>
+
 <div id="rxn_3d_scatter" class="chart" style="max-width:1000px;"></div>
 <script type="text/javascript">
   var graph = {{rxn_3d_scatter | safe}};

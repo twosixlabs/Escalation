@@ -1,6 +1,7 @@
 import plotly.graph_objs as go
 import plotly
 import json
+import math
 import operator
 
 from sqlalchemy import func
@@ -14,69 +15,6 @@ global plot_data
 
 plot_data = defaultdict(dict)
 
-def update_rxn_3d_scatter():
-    global plot_data
-    name = 'rxn_3d_scatter'
-
-    chemicals={}
-    res = get_chemicals()
-    for r in res:
-        chemicals[r.inchi] = r.common_name
-
-    sql = text('select distinct name,inchikey,_out_crystalscore,_rxn_M_organic,_rxn_M_inorganic,_rxn_M_acid from training_run limit 10000')
-    rows = list(db.engine.execute(sql))
-    xs = []
-    ys = []
-    zs = []
-    labels = []
-    inchis = []
-    for r in rows:
-        xs.append(r._rxn_M_inorganic)
-        ys.append(r._rxn_M_organic)
-        zs.append(r._rxn_M_acid)        
-        labels.append(r._out_crystalscore)            
-        inchis.append(chemicals[r.inchikey] if r.inchikey in chemicals else r.inchikey)
-        
-    plot_data[name]['xs'] = xs
-    plot_data[name]['ys'] = ys
-    plot_data[name]['zs'] = zs
-    plot_data[name]['labels'] = labels
-    plot_data[name]['inchis'] = inchis
-    
-def rxn_3d_scatter():
-    global plot_data
-    name = 'rxn_3d_scatter'
-    
-    if name not in plot_data:
-        update_rxn_3d_scatter()
-    
-    trace1 = go.Scatter3d(
-        x=plot_data[name]['xs'],
-        y=plot_data[name]['ys'],
-        z=plot_data[name]['zs'],
-        mode='markers',
-        marker=dict(
-            size=12,
-            color=plot_data[name]['labels'],   # set color to an array/list of desired values
-            colorscale='Viridis',   # choose a colorscale
-            opacity=0.8
-        )
-    )
-
-    data = [trace1]
-    layout = go.Layout(
-        margin=dict(
-            l=0,
-            r=0,
-            b=0,
-            t=0
-        )
-    )
-    graph = {'data': [trace1],
-             'layout': layout
-    }
-    return json.dumps(graph,cls=plotly.utils.PlotlyJSONEncoder)
-    
 def update_success_by_amine():
     global plot_data
     name='sucess_by_amine'
@@ -390,8 +328,6 @@ def update_results_by_model():
         plot_data[name]['avg_prec'].append(d_avg_prec[model])        
         plot_data[name]['dataset'].append(d_dataset[model])                
 
-    print(plot_data[name])
-    
 def results_by_model():
     name = 'results_by_model'
     global plot_data
@@ -562,7 +498,6 @@ def f1_by_model():
         showlegend=True,
 #        shapes=shapes,
     )
-    print(trace)
             
     graph  = {'data':trace, 'layout': layout}
     return json.dumps(graph,cls=plotly.utils.PlotlyJSONEncoder)
@@ -605,7 +540,6 @@ def results_by_crank():
             mode='lines+markers'            
         ))
         
-    print(auc_trace)
     auc_bools = [True] * len(models) + [False] * (2 * len(models))
     f1_bools = [False] * len(models) + [True] * len(models) + [False] * len(models)
     prec_bools = [False] * (2 * len(models)) + [True] * len(models)
@@ -674,3 +608,202 @@ def results_by_crank():
     )
     graph  = {'data':auc_trace+f1_trace+prec_trace, 'layout': layout}
     return json.dumps(graph,cls=plotly.utils.PlotlyJSONEncoder)
+
+def cluster(interval=0.1,xmin=0,xmax=4,X=[]):
+    dz = dy = dx = interval
+    xl = yl = zl = xmin
+    xu = yu = zu = xmax
+    s = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
+    n = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
+
+    for x in X:
+        s[x._rxn_M_organic//dx][x._rxn_M_inorganic//dy][x._rxn_M_acid//dz] += x._out_crystalscore
+        n[x._rxn_M_organic//dx][x._rxn_M_inorganic//dy][x._rxn_M_acid//dz] += 1
+    xs=[]
+    ys=[]
+    zs=[]
+    ss=[]
+    ns=[]
+
+    for x in sorted(s.keys()):
+        for y in sorted(s[x].keys()):
+            for z in sorted(s[x][y].keys()):
+                xs.append(dx*x + dx/2)
+                ys.append(dy*y + dy/2)
+                zs.append(dz*z + dz/2)
+                ss.append(s[x][y][z]/n[x][y][z])
+                ns.append(n[x][y][z])
+    m = max(ns)
+    sizes = [4+4*math.sqrt(x) for x in ns]
+    texts=["%d,%.2f" % x for x in zip(ns,ss)]
+    
+    return xs, ys, zs, ss, ns, sizes, texts
+
+def update_scatter_3d_by_rxn(inchikey='all'):
+    name = 'scatter_3d_by_rxn'    
+    plot_data[name]['xl'] = 0
+    plot_data[name]['xu'] = 8
+    plot_data[name]['intervals']=[0.1,0.25,0.5,0.75,1]
+    
+    chemicals={}
+    res = get_chemicals()
+    for r in res:
+        chemicals[r.inchi] = r.common_name
+
+    if inchikey != 'all':
+        sql = text('select distinct name,inchikey,_out_crystalscore,_rxn_M_organic,_rxn_M_inorganic,_rxn_M_acid from training_run where inchikey = "%s" limit 10000' % inchikey)
+    else:
+        sql = text('select distinct name,inchikey,_out_crystalscore,_rxn_M_organic,_rxn_M_inorganic,_rxn_M_acid from training_run limit 10000')
+        
+    rows = list(db.engine.execute(sql))
+    inchis = set([x.inchikey for x in rows])
+    
+    if len(inchis) == 1:
+        out = chemicals[inchis.pop()]
+    else:
+        out = len(inchis)
+
+    if inchikey == 'all':
+        annotation = "</b>%d samples for %d chemicals</b>" % (len(rows),out)
+    else:
+        annotation = "<b>%d samples for %s</b>" % (len(rows),out)
+    plot_data[name]['annotation'] = annotation
+    
+    app.logger.info(annotation)
+    plot_data[name]['data'] = defaultdict(lambda: defaultdict(list))
+    for interval in plot_data[name]['intervals']:
+        xs, ys, zs, ss, ns, size, texts = cluster(interval,plot_data[name]['xl'],plot_data[name]['xu'],rows)
+        plot_data[name]['data'][interval]['xs'] = xs
+        plot_data[name]['data'][interval]['ys'] = ys
+        plot_data[name]['data'][interval]['zs'] = zs
+        plot_data[name]['data'][interval]['ss'] = ss
+        plot_data[name]['data'][interval]['ns'] = ns
+        plot_data[name]['data'][interval]['size'] = size
+        plot_data[name]['data'][interval]['text'] = texts
+    
+                    
+def scatter_3d_by_rxn():
+    global plot_data
+    name = 'scatter_3d_by_rxn'
+
+    if name not in plot_data:
+        update_scatter_3d_by_rxn()
+
+    xl = plot_data[name]['xl']
+    xu = plot_data[name]['xu']    
+    data = plot_data[name]['data']
+    traces=[]
+    for interval in plot_data[name]['intervals']:
+        traces.append(go.Scatter3d(
+            x = data[interval]['xs'],
+            y = data[interval]['ys'],
+            z = data[interval]['zs'],
+            mode = 'markers',
+            hoverlabel = dict(namelength = -1),
+            hoverinfo = 'text',
+            text = data[interval]['text'],
+            marker = dict(opacity = 0.7,
+                          color=data[interval]['ss'],
+                          size=data[interval]['size'],
+                          colorscale='Portland',
+                          colorbar=dict(title='Crystal Score')),
+            visible=False
+            ))
+    traces[2]['visible']=True
+
+    buttons=[]
+    for i, interval in enumerate(plot_data[name]['intervals']):
+        step = dict(
+            label = str(interval),
+            method = 'update',  
+            args = [{'visible': [False] * len(traces)},
+                    { 'scene':{'xaxis':{'title':'<b>Inorganic Formula(M)</b>',
+                                        'tickmode':'linear',
+                                        'tick0':xl,
+                                        'dtick':interval,
+                                        'range':[xl,xu],
+                    },
+                               'yaxis':{'title':'<b>Organic Formula(M)</b>',
+                                        'tickmode':'linear',
+                                        'tick0':xl,
+                                        'dtick':interval,
+                                        'range':[xl,xu],
+                               },
+                               'zaxis':{'title':'<b>Acid Formula(M)</b>',
+                                        'tickmode':'linear',
+                                        'tick0':xl,
+                                        'dtick':interval,
+                                        'range':[xl,xu],
+                               },
+                               'aspectmode':'manual',
+                               'aspectratio':go.layout.scene.Aspectratio(
+                                   x=1, y=1, z=1,
+                               )  ,      
+                    }
+                    },
+            ] ,
+        )
+        step['args'][0]['visible'][i] = True # Toggle i'th trace to "visible"
+        buttons.append(step)
+
+    layout = go.Layout(
+        margin=dict(
+            l=0,
+            r=0,
+            b=0,
+            t=0
+        ),
+        scene = dict(
+            aspectmode='manual',
+            aspectratio=go.layout.scene.Aspectratio(
+                x=1, y=1, z=1,
+            )  ,      
+            xaxis = dict(
+                title='Inorganic Formula (M)',
+                tickmode='linear',
+                tick0=xl,
+                dtick=0.5,
+                range=[xl,xu],
+
+            ),
+            yaxis = dict(
+                title='Organic Formula (M)',
+                tickmode='linear',
+                tick0=xl,
+                dtick=0.5,
+                range=[xl,xu],
+
+            ),
+            zaxis = dict(
+                title='Acid Formula (M)',
+                tickmode='linear',
+                tick0=xl,
+                dtick=0.5,
+                range=[xl,xu],
+
+            ),
+        ),
+        updatemenus=list([
+            dict(
+                buttons=buttons,
+                
+                direction = 'down',
+                showactive = True,
+                type = 'buttons',
+                active=2
+            )]),
+        showlegend=False,
+        title=go.layout.Title(
+            text=plot_data[name]['annotation'],
+            xref='paper',
+            x=0.5,
+            y=0.95,
+    ),
+        width=1000,
+        height=600,
+        )
+
+    
+    graph  = {'data':traces, 'layout': layout}
+    return json.dumps(graph,cls=plotly.utils.PlotlyJSONEncoder)
+    
