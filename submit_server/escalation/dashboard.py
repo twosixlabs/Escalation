@@ -77,6 +77,7 @@ def update_science():
             app.logger.info("%s: %d %d" % (amine, success[amine],total[amine]))
             db.session.commit()
         plot.update_success_by_amine()
+        plot.update_scatter_3d_by_rxn()
     
 def update_ml():
     from .database import Prediction

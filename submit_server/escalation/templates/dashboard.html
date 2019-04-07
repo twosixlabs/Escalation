@@ -18,23 +18,6 @@
 <a name="science">
 <h2>Science</h2>
 
-<form method="post">
-  <select name="inchikey" onchange="this.form.submit()">
-    <option value="all" {% if curr_inchikey == "all" %} selected="selected" {% endif %}>All</option>
-    {% for chem in chemicals %}
-      <option value="{{ chem.inchi }}" {% if curr_inchikey == chem.inchi %} selected="selected"> {% endif %}>{{ chem.common_name }}</option>
-    {% endfor %}
-  </select>
-  <noscript><input type="submit" value="Filter on Chemical"></noscript>
-</form>
-
-<div id="rxn_3d_scatter" class="chart" style="max-width:1000px;"></div>
-<script type="text/javascript">
-  var graph = {{rxn_3d_scatter | safe}};
-  Plotly.newPlot("rxn_3d_scatter",graph.data,graph.layout, {responsive: true});        
-</script>
-</div>
-
 <!-- Plotly success by amine bar chart -->
 <a name="science.success_by_amine"></a>
 <div id="success_by_amine" class="chart" style="max-width:1000px; max-height:500px;"></div>
@@ -74,6 +57,24 @@
     }
     );
   </script>
+</div>
+
+<a name="science.scatter_plot"></a>
+<form method="post">
+  <p>Select Chemical <select name="inchikey" onchange="this.form.submit()"> </p>
+    <option value="all" {% if curr_inchikey == "all" %} selected="selected" {% endif %}>All</option>
+    {% for chem in chemicals %}
+    <option value="{{ chem.inchi }}" {% if curr_inchikey == chem.inchi %} selected="selected"> {% endif %}>{{ chem.common_name }}</option>
+    {% endfor %}
+  </select>
+  <noscript><input type="submit" value="Filter on Chemical"></noscript>
+</form>
+
+<div id="rxn_3d_scatter" class="chart" style="max-width:1000px;"></div>
+<script type="text/javascript">
+  var graph = {{rxn_3d_scatter | safe}};
+  Plotly.newPlot("rxn_3d_scatter",graph.data,graph.layout, {responsive: true});        
+</script>
 </div>
 
 <a name="auto"></a>

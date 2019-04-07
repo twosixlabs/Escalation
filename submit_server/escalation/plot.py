@@ -634,7 +634,7 @@ def cluster(interval=0.1,xmin=0,xmax=4,X=[]):
                 ss.append(s[x][y][z]/n[x][y][z])
                 ns.append(n[x][y][z])
     m = max(ns)
-    sizes = [4+4*math.sqrt(x) for x in ns]
+    sizes = [2+10*(0.4244 * x**(1/3)) for x in ns]
     texts=["%d,%.2f" % x for x in zip(ns,ss)]
     
     return xs, ys, zs, ss, ns, sizes, texts
@@ -664,7 +664,7 @@ def update_scatter_3d_by_rxn(inchikey='all'):
         out = len(inchis)
 
     if inchikey == 'all':
-        annotation = "</b>%d samples for %d chemicals</b>" % (len(rows),out)
+        annotation = "<b>%d samples for %d chemicals</b>" % (len(rows),out)
     else:
         annotation = "<b>%d samples for %s</b>" % (len(rows),out)
     plot_data[name]['annotation'] = annotation
@@ -800,7 +800,7 @@ def scatter_3d_by_rxn():
             y=0.95,
     ),
         width=1000,
-        height=600,
+        height=800,
         )
 
     
