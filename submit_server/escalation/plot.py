@@ -706,7 +706,13 @@ def scatter_3d_by_rxn():
                           color=data[interval]['ss'],
                           size=data[interval]['size'],
                           colorscale='Portland',
-                          colorbar=dict(title='Crystal Score')),
+                          colorbar=dict(title='Crystal Score',
+                                        tick0=0,
+                                        dtick=1,
+                          ),
+                          cmax=4,
+                          cmin=1
+                          ),
             visible=False
             ))
     traces[2]['visible']=True
@@ -714,7 +720,7 @@ def scatter_3d_by_rxn():
     buttons=[]
     for i, interval in enumerate(plot_data[name]['intervals']):
         step = dict(
-            label = str(interval),
+            label = "%.2f resolution" % interval,
             method = 'update',  
             args = [{'visible': [False] * len(traces)},
                     { 'scene':{'xaxis':{'title':'<b>Inorganic Formula(M)</b>',

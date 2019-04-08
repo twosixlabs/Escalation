@@ -60,7 +60,7 @@
 </div>
 
 <a name="science.scatter_plot"></a>
-<form method="post">
+<form method="post" action="{{ url_for('dashboard.dashboard') }}#science.scatter_plot">
   <p>Select Chemical <select name="inchikey" onchange="this.form.submit()"> </p>
     <option value="all" {% if curr_inchikey == "all" %} selected="selected" {% endif %}>All</option>
     {% for chem in chemicals %}
