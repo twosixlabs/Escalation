@@ -82,7 +82,7 @@ def admin():
             error = validate(request.form['adminkey'],githash,stateset_file)
 
         if error == None:
-            num_rows       = db.add_stateset(stateset_file,crank,githash,username,orig_filename)
+            num_rows       = db.add_stateset(stateset_file,crank,githash,username,orig_filename,training_file)
             num_train_rows = db.add_training(training_file,githash,crank)
 
             out="Successfully updated to crank %s and stateset %s with %d rows" % (crank, githash,num_rows)

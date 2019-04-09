@@ -76,11 +76,13 @@ for crank in files:
 
     #TODO: turn into a file and reduce I/O
     df2 = pd.read_csv(perovskitedata,comment='#',dtype={'dataset': 'str'})
-    df2 = df2[['dataset','name','_out_crystalscore','_rxn_M_acid','_rxn_M_inorganic','_rxn_M_organic','_rxn_organic-inchikey']]
     orig_len = len(df2)
+    feats =  [x for x in df2.columns if 'feat' in x] + ['_rxn_M_organic','_rxn_M_inorganic','_rxn_M_acid','dataset','name','_out_crystalscore','_rxn_organic-inchikey']
     df2 = df2[~df2._out_crystalscore.isna()]
+    df2 = df2[feats]    
     if len(df2) != orig_len:
         print("WARNING: Removed %d NA values from perovskitesdata before uploading" % (orig_len  - len(df2)))
+        
     df2._out_crystalscore = df2._out_crystalscore.astype(int)
     df2.to_csv(perovskite_csv,index=False)
 

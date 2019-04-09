@@ -122,8 +122,8 @@ def update_ml():
             )
             #end crank
         db.session.commit()
-        plot.update_results_by_model()
-
+        plot.update_results_by_model() #f1_by_model and results_by_model
+        plot.update_feature_importance()
     
     
 
@@ -139,6 +139,7 @@ def dashboard():
             job1 = scheduler.add_job(func=update_science, args=[], id = 'update_science')
             job2 = scheduler.add_job(func=update_auto, args=[], id = 'update_auto')
             job3 = scheduler.add_job(func=update_ml, args=[], id = 'update_ml')
+            
         elif 'inchikey' in request.form:
             curr_inchikey=request.form['inchikey']
             flash("Updating 3D scatter plot with %s" % request.form['inchikey'])
@@ -156,16 +157,22 @@ def dashboard():
                            auto_table=auto_table,
                            ml_table=ml_table,
                            leaderboard=get_leaderboard(),
+                           chemicals = database.get_chemicals_in_training(),
+                           curr_inchikey=curr_inchikey,                           
+
+                           #science
+                           success_by_amine = plot.success_by_amine(),
+                           rxn_3d_scatter = plot.scatter_3d_by_rxn(),
+
+                           #automation
                            uploads_by_crank = plot.uploads_by_crank(),
                            runs_by_crank = plot.runs_by_crank(),
-                           runs_by_month = plot.runs_by_month(),                           
-                           success_by_amine = plot.success_by_amine(),
+                           runs_by_month = plot.runs_by_month(),
+
+                           #ml
                            results_by_model = plot.results_by_model(),
                            results_by_crank = plot.results_by_crank(),
-                           f1_by_model = plot.f1_by_model(),
-                           rxn_3d_scatter = plot.scatter_3d_by_rxn(),
-                           chemicals = database.get_chemicals_in_training(),
-                           curr_inchikey=curr_inchikey,
+                           feature_importance = plot.feature_importance(),
     )
 
 

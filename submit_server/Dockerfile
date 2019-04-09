@@ -14,7 +14,7 @@ RUN venv/bin/pip3 install -r requirements.txt
 RUN venv/bin/pip3 install gunicorn pymysql 
 
 ENV FLASK_APP escalation
-ENV SECRET_KEY perovskite52cb883e323b48d
+oENV SECRET_KEY perovskite52cb883e323b48d
 
 COPY server.py server.py
 COPY boot.sh boot.sh

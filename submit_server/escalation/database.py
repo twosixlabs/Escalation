@@ -3,7 +3,7 @@ from sqlalchemy import and_, sql, create_engine, text
 from sqlalchemy.orm import deferred, column_property
 from flask import current_app as app
 import csv
-
+import pandas as pd
 # Leaderboard statistics
 
 class LeaderBoard(db.Model):
@@ -105,6 +105,7 @@ class Crank(db.Model):
     active          = db.Column(db.Boolean)
     created         = db.Column(db.DateTime(timezone=True), server_default=sql.func.now())
     upload_filename = db.Column(db.String(256)) #uploaded file name for comparison
+    train_filename  = db.Column(db.String(256)) #perovskitedata filename
 
     def  __repr__(self):
         return '<Crank {} {} {} {}>'.format(self.crank,self.githash,self.active,self.created)
@@ -172,13 +173,14 @@ def read_in_stateset(filename,crank,githash):
     app.logger.info("Added %d runs for stateset" % len(objs))
     return len(objs)
     
-def add_stateset(filename,crank,githash,username,orig_filename):
+def add_stateset(filename,crank,githash,username,orig_filename,train_filename):
     num_runs= read_in_stateset(filename,crank,githash)
 
     #retire other entries that have the same crank
     Crank.query.filter_by(crank=crank).update({'active':False})
     
-    db.session.add(Crank(crank=crank,githash=githash,username=username,num_runs=num_runs,active=True,upload_filename=orig_filename))
+    db.session.add(Crank(crank=crank,githash=githash,username=username,num_runs=num_runs,active=True,
+                         upload_filename=orig_filename,train_filename=train_filename))
     db.session.commit()
     return num_runs
 
@@ -370,3 +372,12 @@ def get_unique_training_runs():
     app.logger.info("Returned %d unique training runs" % len(result))
     return result
 
+def get_perovskites_data():
+
+    sql = text('select crank, train_filename from crank order by crank desc limit 1')
+    res = list(db.engine.execute(sql))
+    return res[0].crank, res[0].train_filename
+
+        
+
+    

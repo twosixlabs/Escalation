@@ -3,13 +3,16 @@ import plotly
 import json
 import math
 import operator
+import xgboost as xgb
+import pandas as pd
+import numpy as np
 
 from sqlalchemy import func
 from collections import defaultdict
 from flask import current_app as app
 from sqlalchemy import text
 from escalation import db
-from .database import Submission, get_chemicals, get_leaderboard
+from .database import Submission, get_chemicals, get_leaderboard, get_perovskites_data
 
 global plot_data
 
@@ -94,6 +97,8 @@ def uploads_by_crank():
     global plot_data
     if 'uploads_by_crank' not in plot_data:
         update_uploads_by_crank()
+
+        
             
     trace = go.Bar(
         x = plot_data['uploads_by_crank']['xs'],
@@ -813,3 +818,128 @@ def scatter_3d_by_rxn():
     graph  = {'data':traces, 'layout': layout}
     return json.dumps(graph,cls=plotly.utils.PlotlyJSONEncoder)
     
+
+def update_feature_importance():
+    global plot_data
+    name = 'feature_importance'
+
+    from sklearn.model_selection import train_test_split
+    try:
+        crank,csvfile=get_perovskites_data()
+
+        df = pd.read_csv(csvfile,comment='#')
+        app.logger.info("Perovskites data length:%d" % (len(df)))
+    except:
+        app.logger.error("Could not read csv %s" % csvfile)
+        return
+
+    feat_imp_cv = defaultdict(list)
+    feat_imp_heldout = defaultdict(list)
+    feats =  [x for x in df.columns if 'feat' in x] + ['_rxn_M_organic','_rxn_M_inorganic','_rxn_M_acid']
+
+    for i in range(10):
+        X_train, X_test,Y_train,Y_test = train_test_split(df[feats].values,[int(x) for x in df._out_crystalscore >= 3],test_size=0.2,random_state=i)
+        clf = xgb.XGBClassifier(max_depth=3,feature_names=feats,objective='binary:logistic',eval_metric='auc',random_state=i)
+        clf.fit(X_train, Y_train)
+
+        for i, imp in enumerate(clf.feature_importances_):
+            feat_imp_cv[feats[i]].append(imp)
+
+    inchis=df['_rxn_organic-inchikey'].unique()
+    for inchi in inchis:
+        df1 = df[df['_rxn_organic-inchikey'] != inchi]
+        df2 = df[df['_rxn_organic-inchikey'] == inchi]
+        
+        app.logger.info("%s: %d train, %d test" % (inchi, len(df1), len(df2)))
+        X_train = df1[feats].values
+        Y_train = [int(x) for x in df1._out_crystalscore >= 3]
+        X_test = df2[feats].values
+        Y_test = [int(x) for x in df2._out_crystalscore >= 3]
+        clf = xgb.XGBClassifier(max_depth=5,feature_names=feats,objective='binary:logistic',eval_metric='auc')
+        clf.fit(X_train, Y_train)
+        for i, imp in enumerate(clf.feature_importances_):
+            feat_imp_heldout[feats[i]].append(imp)
+
+           
+    plot_data[name]['heldout'] = feat_imp_heldout
+    plot_data[name]['cv']      = feat_imp_cv
+    plot_data[name]['feats']   = feats
+    plot_data[name]['inchis']  = inchis
+    plot_data[name]['crank']   = crank
+
+
+def feature_importance():
+    global plot_data
+    name = 'feature_importance'
+    
+    if name not in plot_data:
+        update_feature_importance()
+
+
+    feats   = plot_data[name]['feats']
+    cv      = plot_data[name]['cv']
+    heldout = plot_data[name]['heldout']
+    inchis  = plot_data[name]['inchis']
+    crank   = plot_data[name]['crank']
+
+
+        
+    mean={}
+    
+    for i, feat in enumerate(feats):
+        mean[feat] = np.mean(cv[feat])
+
+    cv_bools = []
+    general_bools = []
+    sorted_feats = [x[0] for x in sorted(mean.items(),key=operator.itemgetter(1),reverse=True)]
+
+    traces=[]
+    for i, feat in enumerate(sorted_feats):
+        if mean[feat] > 0.025:
+            traces.append(go.Box(x=cv[feat],
+                                 name=feat.replace('_feat_',''),
+                                 visible=True,
+            )
+            )
+            general_bools.append(True)
+            cv_bools.append(False)
+            traces.append(go.Box(x=heldout[feat],
+                                 name=feat.replace('_feat_',''),
+                                 visible=False,
+            )
+            )
+            general_bools.append(False)
+            cv_bools.append(True)
+
+
+    layout = go.Layout(
+        showlegend=False,
+        title="Ranked features by importance for %d chemicals with crank %s" % (len(inchis),crank),
+        updatemenus=list([
+            dict(
+                buttons=list([
+                    dict(label = 'General',
+                         method = 'update',
+                         args = [{'visible': general_bools},
+                         ]),
+                    dict(label = 'Cross-Validated',
+                         method = 'update',
+                         args = [{'visible': cv_bools},
+                         ]),
+                ])
+            )
+        ]),
+        yaxis=dict(
+            showgrid=True,
+        ),
+
+        xaxis=dict(
+            title="Feature Importance",            
+        ),
+        height=600
+    )
+    
+    graph  = {'data':traces, 'layout': layout}
+    return json.dumps(graph,cls=plotly.utils.PlotlyJSONEncoder)
+
+
