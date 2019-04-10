@@ -10,7 +10,7 @@ import time
 import csv
 
 DELIMITER = ','
-VALID_CATEGORIES = set([1,2,3,4])
+VALID_CATEGORIES = set(['1','2','3','4','null'])
 BAD_DELIMITERS = set('\t, |.') - set(DELIMITER)  # common delimiters that are disallowed
 COLUMNS = ['dataset','name','_rxn_M_inorganic','_rxn_M_organic','_rxn_M_acid','predicted_out','score']
 
@@ -92,6 +92,7 @@ def validate_submission(rows,crank,githash):
         if row['dataset'] != crank:
             num_errors+=1
             arr.append("Row %d 'dataset' column (%s) does not match expected crank '%s' ?" % (i, row['dataset'],crank))
+
         try:
             int(row['name'])
         except ValueError:
@@ -113,13 +114,9 @@ def validate_submission(rows,crank,githash):
             num_errors+=1                
             arr.append("Row %d '_rxn_M_acid' column (%s) is not a float. Did you use the values from the state set?" % (i, row['_rxn_M_acid']))                            
             
-        try:
-            if int(row['predicted_out']) not in VALID_CATEGORIES:
-                num_errors+=1
-                arr.append("Row %d 'predicted_out' column (%s) is not in %s" %(i,row['predicted_out'],",".join([str(x) for x in VALID_CATEGORIES])))
-        except ValueError:
-            num_errors+=1                
-            arr.append("Row %d 'predicted_out' column (%s) is not an int. Did you use the values from the state set?" % (i, row['predicted_out']))            
+        if str(row['predicted_out']).lower() not in VALID_CATEGORIES:
+            num_errors+=1
+            arr.append("Row %d 'predicted_out' column (%s) is not in %s" %(i,row['predicted_out'],",".join(VALID_CATEGORIES)))
         try:
             x=float(row['score'])
             if x < 0 or x > 1:

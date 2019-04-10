@@ -3,7 +3,6 @@ from sqlalchemy import and_, sql, create_engine, text
 from sqlalchemy.orm import deferred, column_property
 from flask import current_app as app
 import csv
-import pandas as pd
 # Leaderboard statistics
 
 class LeaderBoard(db.Model):
@@ -245,7 +244,8 @@ def add_submission(username,expname,crank,githash,rows,notes):
     
     objs=[]
     for row in rows:
-        objs.append(Prediction(sub_id=sub.id,dataset=row['dataset'],name=row['name'],predicted_out=row['predicted_out'],score=row['score']))
+        if row['predicted_out'].lower() != "null":
+            objs.append(Prediction(sub_id=sub.id,dataset=row['dataset'],name=row['name'],predicted_out=row['predicted_out'],score=row['score']))
     db.session.bulk_save_objects(objs)
     db.session.commit()
     app.logger.info("Added %d predictions for submission" % len(objs))

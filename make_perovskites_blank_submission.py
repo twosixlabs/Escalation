@@ -40,7 +40,7 @@ def get_submission_template_info():
             fout.write("# USERNAME: %s\n" % git_username)
             fout.write("# USER CAN ENTER COMMENT LINES WITH MODEL USED OR NOTES HERE\n")
             fout.write(
-                "# Data schema: <11 character md5 hash of state type=str>, <run# type=int>, <truncated 5 decimal places type=float>,<truncated 5 decimal places type=float>,<truncated 5 decimal places type=float>, <1-4 type=int>, <0-1 (confidence) type=float\n")
+                "# Data schema: <11 character md5 hash of state type=str>, <run# type=int>, <truncated 5 decimal places type=float>,<truncated 5 decimal places type=float>,<truncated 5 decimal places type=float>, <1-4 type=int or 'null'>, <0-1 (confidence) type=float\n")
             fout.write("dataset,name,_rxn_M_inorganic,_rxn_M_organic,_rxn_M_acid,predicted_out,score\n")
             print("Created file %s" % submission_template_filename)
 
