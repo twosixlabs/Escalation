@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<h1>{% block title %}Feature Analysis{% endblock %}</h1>
+
+<script language="javascript">
+
+  function deleteConfSubmit(form) {
+
+  if (confirm("Are you sure you want to delete?")) {
+  form.submit();
+ }
+}
+
+function checkAll(ele) {
+     var checkboxes = document.getElementsByTagName('input');
+     if (ele.checked) {
+         for (var i = 0; i < checkboxes.length; i++) {
+             if (checkboxes[i].type == 'checkbox') {
+                 checkboxes[i].checked = true;
+             }
+         }
+     } else {
+         for (var i = 0; i < checkboxes.length; i++) {
+             console.log(i)
+             if (checkboxes[i].type == 'checkbox') {
+                 checkboxes[i].checked = false;
+             }
+         }
+     }
+
+      }
+</script>
+
+{% endblock %}
+
+{% block content %}
+<div class="features">
+  <form method="post">    
+    <table id="feature_table" class="compact hover order-column row-border" style="width:100%; max-width:1000px">
+      <thead>
+        <th><input type="checkbox" onchange="checkAll(this)" name="chk[]" /> </th>      
+      </thead>
+      <tbody>
+        {% for r in table %}
+        <tr>
+          <td> <input type="checkbox" name="delete" value="{{ r['id'] }}" >      
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div style="float:right">
+      <input type="submit" value="Delete" onClick="deleteConfSubmit(this.form);" name="submit" style="color:red">      
+      <label for="adminkey" style="display:flex">Admin code required for deletion</label>  
+      <input type="text" name="adminkey">
+    </div>
+    
+  </form>    
+  
+  <script>
+    $(document).ready(function() {
+    $('#leaderboard_table').DataTable( {
+    "order": [[ 0, "desc" ]],
+    }
+    );
+    } );
+    
+  </script>
+</div>
+
+{% endblock %}

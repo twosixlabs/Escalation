@@ -51,6 +51,9 @@ def create_app():
 
     from .submission import bp as sub_bp
     app.register_blueprint(sub_bp)
+
+    from .feature_analysis import bp as feat_bp
+    app.register_blueprint(feat_bp)
     
     from .view import bp as view_bp
     app.register_blueprint(view_bp)

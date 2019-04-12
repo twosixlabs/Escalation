@@ -5,6 +5,27 @@ from flask import current_app as app
 import csv
 # Leaderboard statistics
 
+class FeatureImportance(db.Model):
+    id           = db.Column(db.Integer,primary_key=True)
+    method       = db.Column(db.String(128))
+    heldout_chem = db.Column(db.Boolean) #did you hold out by chemical?    
+    crank        = db.Column(db.String(64))
+    notes        = db.Column(db.Text)
+    run_id       = db.Column(db.String(128)) # string to tie back to a particulary entry (such as in test harness)    
+    rows         = db.relationship('FeatureImportanceValue', backref='entry', lazy='dynamic') #set of (feature name/weight) pairs
+
+class Feature(db.Model):
+    id   = db.Column(db.Integer,primary_key=True)
+    name = db.Column(db.String(128))
+    desc = db.Column(db.Text)
+    
+class FeatureImportanceValue(db.Model):
+    id      = db.Column(db.Integer,primary_key=True)
+    feat_id = db.Column(db.Integer, db.ForeignKey('feature.id'))
+    entry_id = db.Column(db.Integer, db.ForeignKey('feature_importance.id'))     
+    rank    = db.Column(db.Integer)
+    weight  = db.Column(db.Float)
+        
 class LeaderBoard(db.Model):
     id                          = db.Column(db.Integer,primary_key=True)
     dataset_name                = db.Column(db.String(64))
@@ -382,6 +403,12 @@ def get_perovskites_data():
     res = list(db.engine.execute(sql))
     return res[0].crank, res[0].train_filename
 
-        
+def add_feature_analysis():
+    pass
 
+def remove_feature_analysis():
+    pass
+
+def get_feature_analysis():
+    return []
     
