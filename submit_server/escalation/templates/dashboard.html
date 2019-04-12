@@ -10,6 +10,35 @@
 <!-- Plotly.js -->
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
+<script type="text/javascript">
+  function sci_details() {
+  var x = document.getElementById("sci_details");
+  if (x.style.display === "none") {
+    x.style.display = "block";
+  } else {
+    x.style.display = "none";
+  }
+  }
+  function auto_details() {
+  var x = document.getElementById("auto_details");
+  if (x.style.display === "none") {
+    x.style.display = "block";
+  } else {
+    x.style.display = "none";
+  }
+  }
+  function ml_details() {
+  var x = document.getElementById("ml_details");
+  if (x.style.display === "none") {
+    x.style.display = "block";
+  } else {
+    x.style.display = "none";
+  }
+  }
+
+  
+</script>
+
 
 <h1>{% block title %}Dashboard{% endblock %}</h1>
 {% endblock %}
@@ -18,13 +47,16 @@
 <a name="science">
 <h2>Science</h2>
 
-<!-- Plotly success by amine bar chart -->
+
 <a name="science.success_by_amine"></a>
 <div id="success_by_amine" class="chart" style="max-width:1000px; max-height:500px;"></div>
 <script type="text/javascript">
   var graph = {{success_by_amine | safe}};
   Plotly.newPlot("success_by_amine",graph.data,graph.layout, {responsive: true});        
 </script>
+
+<button onclick="sci_details()" style="border:none; background-color:#008CBA; font-size:16px; margin-bottom:16px; color: white;">More Information<i class="fa fa-caret-down"></i></button>
+<div id="sci_details" style="margin-bottom:50px; display:none;">
 
 <!-- Datatables amine overview -->
 <a name="science.sci_table"></a>
@@ -90,14 +122,18 @@
 </div>
 
 -->
+</div>
 <a name="auto"></a>
-<h2>Automation</h2>
 
+<h2>Automation</h2>
 <div id="runs_by_crank" class="chart" style="max-width:1000px; max-height:500px;"></div>
 <script type="text/javascript">
   var graph = {{runs_by_crank | safe}};
   Plotly.newPlot("runs_by_crank",graph.data,graph.layout, {responsive: true});        
 </script>
+
+<button onclick="auto_details()" style="border:none; background-color:#008CBA; color:white; font-size:16px; margin-bottom:16px;">More Information<i class="fa fa-caret-down"></i></button>
+<div id="auto_details" style="margin-bottom:50px; display:none;">
 
 <div id="runs_by_month" class="chart" style="max-width:1000px; max-height:500px;"></div>
 <script type="text/javascript">
@@ -163,6 +199,7 @@
     } );
   </script>
 </div>
+</div>
 <a name="ml"></a>
 <h2>Machine Learning</h2>
 
@@ -174,79 +211,79 @@
   </script>
 </div>
 
+<button onclick="ml_details()" style="border:none; background-color:#008CBA;  color: white; font-size:16px; margin-bottom:16px;">More Information<i class="fa fa-caret-down"></i></button>
+<div id="ml_details" style="margin-bottom:50px; display:none;">
+
   <div id="f1_by_model" class="chart" style="max-width:1000px;"></div>
   <script type="text/javascript">
-    var graph = {{f1_by_model | safe}};
+    var graph = {{ f1_by_model | safe}};
     Plotly.newPlot("f1_by_model",graph.data,graph.layout, {responsive: true});        
   </script>
-</div>
-
-<div id="results_by_crank" class="chart" style="max-width:1000px;"></div>
-  <script type="text/javascript">
-    var graph = {{results_by_crank | safe}};
-    Plotly.newPlot("results_by_crank",graph.data,graph.layout, {responsive: true});        
-  </script>
-</div>
-
 
   <div id="results_by_crank" class="chart" style="max-width:1000px;"></div>
   <script type="text/javascript">
     var graph = {{results_by_crank | safe}};
     Plotly.newPlot("results_by_crank",graph.data,graph.layout, {responsive: true});        
   </script>
-</div>
 
-<h3>Leaderboard summary</h3>
+  <div id="results_by_crank" class="chart" style="max-width:1000px;"></div>
+  <script type="text/javascript">
+    var graph = {{results_by_crank | safe}};
+    Plotly.newPlot("results_by_crank",graph.data,graph.layout, {responsive: true});        
+  </script>
+  
+  
+  <h3>Leaderboard summary</h3>
 
-<a href="{{ url_for('leaderboard.leaderboard') }}">View full leaderboard</a>
-<table id="leaderboard_table" class="compact hover order-column row-border" style="width:100%">
-  <thead>
-    <th>Dataset</th>      
-    <th>Name</th>      
-    <th>Author</th>
-    <th>AUC</th>
-    <th>F1 score</th>
-    <th>Precision</th>
-    <th>Recall</th>      
-  </thead>
-  <tbody>
-    {% for r in leaderboard %}
-    <tr>
-      <td> {{ r['dataset_name'] }} </td>      
-      <td> {{ r['model_name'] }} </td>      
-      <td> {{ r['model_author'] }} </td>
-      <td> {{ r['auc_score'] }} </td>
-      <td> {{ r['f1_score'] }} </td>
-      <td> {{ r['precision'] }} </td>
-      <td> {{ r['recall'] }} </td>      
-
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-
-<script>
-  $(document).ready(function() {
-  $('#leaderboard_table').DataTable( {
-  "order": [[ 0, "desc" ]],
-  }
-  );
-  } );
-</script>
-
-<h3>Training Data Statistics</h3>
-<div class="ml_table">
-  <table id="ml_table" class="compact hover order-column row-border" style="width:100%">
+  <a href="{{ url_for('leaderboard.leaderboard') }}">View full leaderboard</a>
+  <table id="leaderboard_table" class="compact hover order-column row-border" style="width:100%">
     <thead>
-      <th>Crank</th>
-      <th>Upload Date</th>
-      <th>Training Samples</th>        
-      <th>Training Mean</th>
-      <th>Predicted Mean</th>        
+      <th>Dataset</th>      
+      <th>Name</th>      
+      <th>Author</th>
+      <th>AUC</th>
+      <th>F1 score</th>
+      <th>Precision</th>
+      <th>Recall</th>      
     </thead>
     <tbody>
-      {% for r in ml_table %}
+      {% for r in leaderboard %}
       <tr>
+        <td> {{ r['dataset_name'] }} </td>      
+        <td> {{ r['model_name'] }} </td>      
+        <td> {{ r['model_author'] }} </td>
+        <td> {{ r['auc_score'] }} </td>
+        <td> {{ r['f1_score'] }} </td>
+        <td> {{ r['precision'] }} </td>
+        <td> {{ r['recall'] }} </td>      
+        
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  
+  <script>
+    $(document).ready(function() {
+    $('#leaderboard_table').DataTable( {
+    "order": [[ 0, "desc" ]],
+    }
+    );
+    } );
+  </script>
+  
+  <h3>Training Data Statistics</h3>
+  <div class="ml_table">
+    <table id="ml_table" class="compact hover order-column row-border" style="width:100%">
+      <thead>
+        <th>Crank</th>
+        <th>Upload Date</th>
+        <th>Training Samples</th>        
+        <th>Training Mean</th>
+        <th>Predicted Mean</th>        
+      </thead>
+      <tbody>
+        {% for r in ml_table %}
+        <tr>
           <td> {{ r['crank'] }} </td>
           <td> {{ r['upload_date'] }} </td>
           <td> {{ r['num_train_rows'] }} </td>                    
@@ -255,22 +292,23 @@
         </tr>
         {% endfor %}
       </tbody>
-  </table>
-  
-<script>
-$(document).ready(function() {
-$('#ml_table').DataTable( {
-        "order": [[ 0, "desc" ]],
-  }
-  );
-  } );
+    </table>
+    
+    <script>
+      $(document).ready(function() {
+      $('#ml_table').DataTable( {
+      "order": [[ 0, "desc" ]],
+      }
+      );
+      } );
+      
+    </script>
+    
+  </div>
+</div>
+  <form method="post">
+    <input type="submit" value="Refresh" name="update">
+  </form>
 
-</script>
 
-
-<form method="post">
-  <input type="submit" value="Refresh" name="update">
-</form>
-
-  
 {% endblock %}

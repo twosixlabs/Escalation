@@ -170,6 +170,7 @@ def dashboard():
                            #ml
                            results_by_model = plot.results_by_model(),
                            results_by_crank = plot.results_by_crank(),
+                           f1_by_model = plot.f1_by_model(),
 #                           feature_importance = plot.feature_importance(),
     )
 
