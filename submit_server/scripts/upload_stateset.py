@@ -71,7 +71,9 @@ for crank in files:
     df = pd.read_csv(stateset,comment='#',dtype={'dataset': 'str'})
     df[['dataset','name','_rxn_M_inorganic','_rxn_M_organic','_rxn_M_acid']].to_csv(stateset_csv,index=False)
 
-    perovskite_csv=tempfile.mkstemp()[1]
+    tmpdir = tempfile.mkdtemp()
+    perovskite_csv=os.path.join(tmpdir,os.path.basename(files[crank]['perovskitedata']))
+    print(perovskite_csv)
     print("Filtering",perovskitedata,"to",perovskite_csv)
 
     #TODO: turn into a file and reduce I/O
@@ -93,7 +95,7 @@ for crank in files:
     print("username:",git_username)
     r = requests.post(args.endpoint, headers={'User-Agent':'escalation'},
                       data={'crank':crank,'githash':git_sha[:7], 'username':git_username,'adminkey':args.key,'submit':'stateset','filename':orig_filename},
-                      files={'stateset':open(stateset_csv,'rb'), 'perovskitedata':open(perovskite_csv,'rb')},timeout=300)
+                      files={'stateset':open(stateset_csv,'rb'), 'perovskitedata':open(perovskite_csv,'rb')},timeout=600)
     print(r.status_code, r.reason,r)
     try:
         print(r.json())

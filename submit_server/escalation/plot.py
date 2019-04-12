@@ -3,6 +3,7 @@ import plotly
 import json
 import math
 import operator
+import os
 
 from sqlalchemy import func
 from collections import defaultdict
@@ -826,6 +827,7 @@ def update_feature_importance():
     name = 'feature_importance'
     app.logger.info("Updating %s" % (name))
     crank,csvfile=get_perovskites_data()
+    csvfile =  os.path.join(app.config['UPLOAD_FOLDER'], csvfile)
 
     df = pd.read_csv(csvfile,comment='#')
     app.logger.info("Perovskites data length:%d" % (len(df)))
@@ -834,8 +836,8 @@ def update_feature_importance():
     feat_imp_heldout = defaultdict(list)
     feats =  [x for x in df.columns if 'feat' in x] + ['_rxn_M_organic','_rxn_M_inorganic','_rxn_M_acid']
 
-    for i in range(10):
-        X_train, X_test,Y_train,Y_test = train_test_split(df[feats].values,[int(x) for x in df._out_crystalscore >= 3],test_size=0.2,random_state=i)
+    for i in range(5):
+        X_train, X_test,Y_train,Y_test = train_test_split(df[feats].values,[int(x) for x in df._out_crystalscore >= 4],test_size=0.2,random_state=i)
         clf = xgb.XGBClassifier(max_depth=3,feature_names=feats,objective='binary:logistic',eval_metric='auc',random_state=i)
         clf.fit(X_train, Y_train)
 
@@ -849,10 +851,10 @@ def update_feature_importance():
         
         app.logger.info("%s: %d train, %d test" % (inchi, len(df1), len(df2)))
         X_train = df1[feats].values
-        Y_train = [int(x) for x in df1._out_crystalscore >= 3]
+        Y_train = [int(x) for x in df1._out_crystalscore >= 4]
         X_test = df2[feats].values
-        Y_test = [int(x) for x in df2._out_crystalscore >= 3]
-        clf = xgb.XGBClassifier(max_depth=5,feature_names=feats,objective='binary:logistic',eval_metric='auc')
+        Y_test = [int(x) for x in df2._out_crystalscore >= 4]
+        clf = xgb.XGBClassifier(max_depth=3,feature_names=feats,objective='binary:logistic',eval_metric='auc')
         clf.fit(X_train, Y_train)
         for i, imp in enumerate(clf.feature_importances_):
             feat_imp_heldout[feats[i]].append(imp)

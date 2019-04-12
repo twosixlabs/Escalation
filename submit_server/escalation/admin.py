@@ -51,7 +51,7 @@ def admin():
         app.logger.info("Received request: {} {} {} {}".format(training_file,username,crank,githash))
         training.save(training_file)
         num_train_rows = db.add_training(training_file,githash,crank)
-
+        
         out="Successfully added training run data for %s with %d rows" % (crank,num_train_rows)
         app.logger.info(out)
 
@@ -65,7 +65,7 @@ def admin():
         stateset_file  = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(stateset.filename))
 
         training = request.files['perovskitedata']
-        training_file = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(training.filename))
+        training_file =secure_filename(training.filename)
                 
         username = request.form['username']
         crank = request.form['crank']                
@@ -77,12 +77,12 @@ def admin():
             error = 'Crank and githash already stored in database'
         else:
             stateset.save(stateset_file)
-            training.save(training_file)
+            training.save( os.path.join(app.config['UPLOAD_FOLDER'], training_file))
             error = validate(request.form['adminkey'],githash,stateset_file)
 
         if error == None:
             num_rows       = db.add_stateset(stateset_file,crank,githash,username,orig_filename,training_file)
-            num_train_rows = db.add_training(training_file,githash,crank)
+            num_train_rows = db.add_training(os.path.join(app.config['UPLOAD_FOLDER'],training_file),githash,crank)
 
             out="Successfully updated to crank %s and stateset %s with %d rows" % (crank, githash,num_rows)
             app.logger.info(out)

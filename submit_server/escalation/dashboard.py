@@ -78,7 +78,7 @@ def update_science():
             db.session.commit()
         plot.update_success_by_amine()
         plot.update_scatter_3d_by_rxn()
-        plot.update_feature_importance()
+#        plot.update_feature_importance()
         
 def update_ml():
     from .database import Prediction
@@ -170,7 +170,7 @@ def dashboard():
                            #ml
                            results_by_model = plot.results_by_model(),
                            results_by_crank = plot.results_by_crank(),
-                           feature_importance = plot.feature_importance(),
+#                           feature_importance = plot.feature_importance(),
     )
 
 
