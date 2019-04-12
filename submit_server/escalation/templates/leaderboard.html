@@ -1,13 +1,45 @@
 {% extends 'base.html' %}
 
 {% block header %}
-  <h1>{% block title %}ML Leaderboard{% endblock %}</h1>
+<h1>{% block title %}ML Leaderboard{% endblock %}</h1>
+
+<script language="javascript">
+
+  function deleteConfSubmit(form) {
+
+  if (confirm("Are you sure you want to delete leadeboard entries?")) {
+  form.submit();
+ }
+}
+
+function checkAll(ele) {
+     var checkboxes = document.getElementsByTagName('input');
+     if (ele.checked) {
+         for (var i = 0; i < checkboxes.length; i++) {
+             if (checkboxes[i].type == 'checkbox') {
+                 checkboxes[i].checked = true;
+             }
+         }
+     } else {
+         for (var i = 0; i < checkboxes.length; i++) {
+             console.log(i)
+             if (checkboxes[i].type == 'checkbox') {
+                 checkboxes[i].checked = false;
+             }
+         }
+     }
+
+      }
+</script>
+
 {% endblock %}
 
 {% block content %}
-<div class="leaderboard">
-  <table id="leaderboard_table" class="compact hover order-column row-border" style="width:100%; max-width:1400px">
+  <div class="leaderboard">
+    <form method="post">    
+      <table id="leaderboard_table" class="compact hover order-column row-border" style="width:100%; max-width:1400px">
     <thead>
+      <th><input type="checkbox" onchange="checkAll(this)" name="chk[]" /> </th>      
       <th>Posted</th>            
       <th>Name</th>      
       <th>Dataset</th>
@@ -27,6 +59,7 @@
     <tbody>
     {% for r in table %}
     <tr>
+      <td> <input type="checkbox" name="delete" value="{{ r['id'] }}" >      
       <td> {{ r['created'] }} </td>            
       <td> {{ r['model_name'] }} </td>      
       <td> {{ r['dataset_name'] }} </td>
@@ -45,8 +78,14 @@
     </tr>
     {% endfor %}
     </tbody>
-  </table>
-    
+      </table>
+      <div style="float:right">
+        <input type="submit" value="Delete" onClick="deleteConfSubmit(this.form);" name="submit" style="color:red">      
+        <label for="adminkey" style="display:flex">Admin code required for deletion</label>  
+        <input type="text" name="adminkey">
+    </div>
+      
+</form>    
 
 <script>
 $(document).ready(function() {

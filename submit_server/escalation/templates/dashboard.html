@@ -77,6 +77,18 @@
 </script>
 </div>
 
+<h3>Predictive Features</h3>
+<p>Informative features are determined by estimating a <a href="https://machinelearningmastery.com/gentle-introduction-gradient-boosting-algorithm-machine-learning/">Gradient Boosted Tree</a> either 10 times on sampling randomly across all chemicals, or by holding out each chemical. Importance is computed as the average improvement in classification purity across the boosted trees as explained <a href="https://stats.stackexchange.com/questions/162162/relative-variable-importance-for-boosting">here</a>.
+  </p>
+
+<div id="feature_importance" class="chart" style="max-width:1000px;"></div>
+<script type="text/javascript">
+  var graph = {{feature_importance | safe}};
+  Plotly.newPlot("feature_importance",graph.data,graph.layout, {responsive: true});        
+</script>
+</div>
+
+
 <a name="auto"></a>
 <h2>Automation</h2>
 
@@ -152,17 +164,6 @@
 </div>
 <a name="ml"></a>
 <h2>Machine Learning</h2>
-
-<h3>Predictive Features</h3>
-<p>Informative features are determined by estimating a <a href="https://machinelearningmastery.com/gentle-introduction-gradient-boosting-algorithm-machine-learning/">Gradient Boosted Tree</a> either 10 times on sampling randomly across all chemicals, or by holding out each chemical. Importance is computed as the average improvement in classification purity across the boosted trees as explained <a href="https://stats.stackexchange.com/questions/162162/relative-variable-importance-for-boosting">here</a>.
-  </p>
-
-<div id="feature_importance" class="chart" style="max-width:1000px;"></div>
-<script type="text/javascript">
-  var graph = {{feature_importance | safe}};
-  Plotly.newPlot("feature_importance",graph.data,graph.layout, {responsive: true});        
-</script>
-</div>
 
 <!-- Datatables uploads per crank -->
   <div id="results_by_model" class="chart" style="max-width:1000px; max-height:400px;"></div>

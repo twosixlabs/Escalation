@@ -6,6 +6,8 @@ from flask import (
 from flask import current_app as app
 from . import database as db
 from .files import download_zip
+from .dashboard import update_auto, update_science
+from escalation import scheduler
 
 bp = Blueprint('view', __name__)
 @bp.route('/', methods=('GET','POST'))
@@ -21,11 +23,9 @@ def view():
             flash("Incorrect admin code")
         else:
             requested=[int(x) for x in request.form.getlist('download')]
-
-            if len(requested) > 1:
-                flash("Please delete one submission at a time. This is slow, but helps ensure no accidental deletions")
-            elif len(requested) == 1:
-                db.remove_submission(request.form['download'])
+            for id in requested:
+                db.remove_submission(id)
+        job2 = scheduler.add_job(func=update_auto, args=[], id = 'update_auto')        
 
     submissions=db.get_submissions(curr_crank)
 

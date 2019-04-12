@@ -1,6 +1,6 @@
 docker volume create db_volume
 docker run \
-    -e MYSQL_ROOT_PASSWORD=sd2 \
+    -e MYSQL_ROOT_PASSWORD=SD21sAwes0me3 \
     -e MYSQL_DATABASE=escalation \
     -e MYSQL_USER=escalation \
     -e MYSQL_PASSWORD=perovskites \

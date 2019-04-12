@@ -10,7 +10,7 @@ from flask import (
 from werkzeug.utils import secure_filename
 from flask import current_app as app
 from . import database as db
-from .dashboard import update_ml, update_auto, update_science
+from .dashboard import update_auto, update_science
 from escalation import scheduler
 
 session_vars= ('githash','adminkey','username','crank')
@@ -58,7 +58,6 @@ def admin():
         # kick off stats refresh
         job1 = scheduler.add_job(func=update_science, args=[], id = 'update_science')
         job2 = scheduler.add_job(func=update_auto, args=[], id = 'update_auto')
-        job3 = scheduler.add_job(func=update_ml, args=[], id = 'update_ml')                    
         return jsonify({'success':'added training data for %s with %d rows' % (crank,num_train_rows)}), 200        
 
     if request.method == 'POST' and request.headers.get('User-Agent') == 'escalation' and request.form['submit'] == 'stateset':
@@ -91,7 +90,6 @@ def admin():
             # kick off stats refresh
             job1 = scheduler.add_job(func=update_science, args=[], id = 'update_science')
             job2 = scheduler.add_job(func=update_auto, args=[], id = 'update_auto')
-            job3 = scheduler.add_job(func=update_ml, args=[], id = 'update_ml')                    
             return jsonify({'success':'updated to crank %s and commit hash %s with %d rows' % (crank,githash,num_rows)}), 200        
         else:
             app.logger.error(error)            

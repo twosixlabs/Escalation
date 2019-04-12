@@ -78,7 +78,8 @@ def update_science():
             db.session.commit()
         plot.update_success_by_amine()
         plot.update_scatter_3d_by_rxn()
-    
+        plot.update_feature_importance()
+        
 def update_ml():
     from .database import Prediction
     app = scheduler.app
@@ -123,9 +124,6 @@ def update_ml():
             #end crank
         db.session.commit()
         plot.update_results_by_model() #f1_by_model and results_by_model
-        plot.update_feature_importance()
-    
-    
 
     
 @bp.route('/dashboard', methods=('GET','POST'))

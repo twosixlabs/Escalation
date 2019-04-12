@@ -291,6 +291,10 @@ def get_leaderboard(dataset='all'):
         return LeaderBoard.query.all()
     else:
         return LeaderBoard.query.filter_by(dataset=dataset).all()
+
+def remove_leaderboard(id):
+    LeaderBoard.query.filter(LeaderBoard.id==id).delete()
+    db.session.commit()
     
 def add_leaderboard(form):
     for row in 'dataset','githash','run_id','model_name','model_author','accuracy','balanced_accuracy','auc_score','average_precision','f1_score','precision','recall','samples_in_train','samples_in_test','model_description','column_predicted','num_features_used','data_and_split_description','normalized','num_features_normalized','feature_extraction','was_untested_data_predicted':
