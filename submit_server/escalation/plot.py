@@ -10,7 +10,10 @@ from flask import current_app as app
 from sqlalchemy import text
 from escalation import db
 from .database import Submission, get_chemicals, get_leaderboard, get_perovskites_data
-
+import pandas as pd
+import xgboost as xgb
+from sklearn.model_selection import train_test_split
+    
 global plot_data
 
 plot_data = defaultdict(dict)
@@ -83,12 +86,11 @@ def success_by_amine():
     
 def update_uploads_by_crank():
     global plot_data
-
+    app.logger.info("Updating uploads_by_crank")
     res=db.session.query(Submission.crank, func.count(Submission.crank)).group_by(Submission.crank).order_by(Submission.crank.asc()).all()
 
     plot_data['uploads_by_crank']['xs'] = [r[0] for r in res]
     plot_data['uploads_by_crank']['ys'] = [r[1] for r in res]
-    app.logger.info("Updated plot 'uploads per crank'")
 
 def uploads_by_crank():
     global plot_data
@@ -119,7 +121,7 @@ def uploads_by_crank():
 def update_runs_by_crank():
     global plot_data    
     name = 'runs_by_crank'
-
+    app.logger.info("Updating %s" % (name))
     total = defaultdict(int)
     success = defaultdict(int)
     
@@ -184,7 +186,7 @@ def runs_by_crank():
 def update_runs_by_month():
     global plot_data    
     name = 'runs_by_month'
-
+    app.logger.info("Updating %s" % (name))
     if name not in plot_data:
         update_runs_by_crank()
 
@@ -277,6 +279,7 @@ def runs_by_month():
 
 def update_results_by_model():
     name = 'results_by_model'
+    app.logger.info("Updating %s" % (name))    
     global plot_data
 
     res = get_leaderboard()
@@ -642,7 +645,8 @@ def cluster(interval=0.1,xmin=0,xmax=4,X=[]):
     return xs, ys, zs, ss, ns, sizes, texts
 
 def update_scatter_3d_by_rxn(inchikey='all'):
-    name = 'scatter_3d_by_rxn'    
+    name = 'scatter_3d_by_rxn'
+    app.logger.info("Updating %s" % (name))    
     plot_data[name]['xl'] = 0
     plot_data[name]['xu'] = 8
     plot_data[name]['intervals']=[0.1,0.25,0.5,0.75,1]
@@ -815,4 +819,122 @@ def scatter_3d_by_rxn():
     graph  = {'data':traces, 'layout': layout}
     return json.dumps(graph,cls=plotly.utils.PlotlyJSONEncoder)
     
+
+
+def update_feature_importance():
+    global plot_data
+    name = 'feature_importance'
+    app.logger.info("Updating %s" % (name))
+    crank,csvfile=get_perovskites_data()
+
+    df = pd.read_csv(csvfile,comment='#')
+    app.logger.info("Perovskites data length:%d" % (len(df)))
+
+    feat_imp_cv = defaultdict(list)
+    feat_imp_heldout = defaultdict(list)
+    feats =  [x for x in df.columns if 'feat' in x] + ['_rxn_M_organic','_rxn_M_inorganic','_rxn_M_acid']
+
+    for i in range(10):
+        X_train, X_test,Y_train,Y_test = train_test_split(df[feats].values,[int(x) for x in df._out_crystalscore >= 3],test_size=0.2,random_state=i)
+        clf = xgb.XGBClassifier(max_depth=3,feature_names=feats,objective='binary:logistic',eval_metric='auc',random_state=i)
+        clf.fit(X_train, Y_train)
+
+        for i, imp in enumerate(clf.feature_importances_):
+            feat_imp_cv[feats[i]].append(imp)
+
+    inchis=df['_rxn_organic-inchikey'].unique()
+    for inchi in inchis:
+        df1 = df[df['_rxn_organic-inchikey'] != inchi]
+        df2 = df[df['_rxn_organic-inchikey'] == inchi]
+        
+        app.logger.info("%s: %d train, %d test" % (inchi, len(df1), len(df2)))
+        X_train = df1[feats].values
+        Y_train = [int(x) for x in df1._out_crystalscore >= 3]
+        X_test = df2[feats].values
+        Y_test = [int(x) for x in df2._out_crystalscore >= 3]
+        clf = xgb.XGBClassifier(max_depth=5,feature_names=feats,objective='binary:logistic',eval_metric='auc')
+        clf.fit(X_train, Y_train)
+        for i, imp in enumerate(clf.feature_importances_):
+            feat_imp_heldout[feats[i]].append(imp)
+
+           
+    plot_data[name]['heldout'] = feat_imp_heldout
+    plot_data[name]['cv']      = feat_imp_cv
+    plot_data[name]['feats']   = feats
+    plot_data[name]['inchis']  = inchis
+    plot_data[name]['crank']   = crank
+
+
+def feature_importance():
+    global plot_data
+    name = 'feature_importance'
+    if name not in plot_data:
+        update_feature_importance()
+    feats   = plot_data[name]['feats']
+    cv      = plot_data[name]['cv']
+    heldout = plot_data[name]['heldout']
+    inchis  = plot_data[name]['inchis']
+    crank   = plot_data[name]['crank']
+    mean={}
+    
+    for i, feat in enumerate(feats):
+        mean[feat] = sum(cv[feat])/len(cv[feat])
+
+    cv_bools = []
+    general_bools = []
+    sorted_feats = [x[0] for x in sorted(mean.items(),key=operator.itemgetter(1),reverse=True)]
+
+    traces=[]
+    for i, feat in enumerate(sorted_feats[:10]):
+        traces.append(go.Box(x=cv[feat],
+                             name=feat.replace('_feat_',''),
+                             visible=True,
+        )
+        )
+        general_bools.append(True)
+        cv_bools.append(False)
+        traces.append(go.Box(x=heldout[feat],
+                             name=feat.replace('_feat_',''),
+                             visible=False,
+        )
+        )
+        general_bools.append(False)
+        cv_bools.append(True)
+        
+
+    layout = go.Layout(
+        showlegend=False,
+        title="Top 10 features by importance for %d chemicals with crank %s" % (len(inchis),crank),
+        updatemenus=list([
+            dict(
+                buttons=list([
+                    dict(label = 'All Chemicals',
+                         method = 'update',
+                         args = [{'visible': general_bools},
+                         ]),
+                    dict(label = 'Heldout by Chemical',
+                         method = 'update',
+                         args = [{'visible': cv_bools},
+                         ]),
+                    ]),
+                    x = -0.5,
+                    xanchor = 'left',
+                    y = 1.1,
+                    yanchor = 'top'                 
+
+            )
+        ]),
+        yaxis=dict(
+        ),
+
+        xaxis=dict(
+            showgrid=True,            
+            title="Feature Importance",            
+        ),
+        height=600
+    )
+    
+    graph  = {'data':traces, 'layout': layout}
+    return json.dumps(graph,cls=plotly.utils.PlotlyJSONEncoder)
+
 
