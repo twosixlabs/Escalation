@@ -841,7 +841,6 @@ def update_feature_importance():
             weight[names[r.feat_id]].append(r.weight)
             rank[names[r.feat_id]].append(r.rank)
 
-
         means={}
         for feat in weight:
             means[feat] = np.mean(np.abs(weight[feat]))
@@ -849,17 +848,16 @@ def update_feature_importance():
             
         sorted_feats = [x[0] for x in sorted(means.items(),key=operator.itemgetter(1),reverse=True)]
 
-        print(sorted_feats)
         weight_out=[]
         rank_out=[]
         for f in sorted_feats[:10]:
             weight_out.append([f,weight[f]])
             rank_out.append([f,rank[f]])            
-        
+
         plot_data['heldout' if a.heldout_chem else 'general'][a.crank][a.method] = {
             'notes'  : a.notes,            
-            'weight' : weight_out,
-            'rank'   : rank_out,
+            'weight' : reversed(weight_out),
+            'rank'   : reversed(rank_out),
         }
             
 def feature_importance():
@@ -878,20 +876,38 @@ def feature_importance():
     crank = cranks[0] #only plot the first crank
     
     for method in heldout[crank]:
-        method_traces[method] = []
+        
+        method_traces[method+"-heldout"] = []
+        method_traces[method+"-general"] = []        
 
         for i, arr in enumerate(heldout[crank][method]['weight']):
             traces.append(go.Box(x=arr[1],
                                  name=arr[0].replace('_feat_',''),
                                  visible=False,
             ))
-            method_traces[method].append(len(traces)-1) #assumes 1 crank!!
+            method_traces[method+"-heldout"].append(len(traces)-1) #assumes 1 crank!!
 
+        for i, arr in enumerate(general[crank][method]['weight']):
+            traces.append(go.Box(x=arr[1],
+                                 name=arr[0].replace('_feat_',''),
+                                 visible=False,
+                                 
+                                 
+            ))
+            method_traces[method+"-general"].append(len(traces)-1) #assumes 1 crank!!            
 
     buttons=[]
     method_names = sorted(method_traces.keys())
-    title="Important Features for Crank %s for Heldout Chemicals" % crank    
+    
     for m in method_names:
+        if 'general' in m:
+            title="Important Features for Crank %s Across All Chemicals" % crank
+            
+        elif 'heldout' in m:
+            title="Important Features for Crank %s Heldout By Chemical" % crank
+        else:
+            title="Feature Importances"
+                
         b = dict(
             label = m,
             method='update',
@@ -919,10 +935,12 @@ def feature_importance():
         for i in method_traces[m]:
             traces[i]['visible'] = True
 
+            
     layout = go.Layout(
         showlegend=False,
-        title=title,
+        title=buttons[0]['args'][1]['title'],
         yaxis=dict(
+            automargin=True,
         ),
 
         xaxis=dict(
@@ -937,14 +955,13 @@ def feature_importance():
                 buttons=buttons,
                 direction='down',
                 showactive=True,
-                type='buttons',
                 active=0,
                 y = 1.4,
                 yanchor = 'top' 
                 
                 ),
         ]),
-        hovermode='closest',
+        hovermode=False,
     )
     
     graph  = {'data':traces, 'layout': layout}

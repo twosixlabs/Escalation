@@ -58,7 +58,9 @@
 <button onclick="sci_details()" style="border:none; background-color:#008CBA; font-size:16px; margin-bottom:16px; color: white;">More Information<i class="fa fa-caret-down"></i></button>
 <div id="sci_details" style="margin-bottom:50px; display:none;">
 
-<!-- Datatables amine overview -->
+  
+  <!-- Datatables amine overview -->
+  <h3>Success Rate by Amine</h3>
 <a name="science.sci_table"></a>
 <div class="sci_table" style="max-width:600px">
   <table id="sci_table" class="compact hover order-column row-border" style="width:100%">
@@ -91,6 +93,20 @@
   </script>
 </div>
 
+
+<h3>Predictive Features</h3>
+<p>Informative features are determined by estimating a <a href="https://machinelearningmastery.com/gentle-introduction-gradient-boosting-algorithm-machine-learning/">Gradient Boosted Tree</a> either 10 times on sampling randomly across all chemicals, or by holding out each chemical. Importance is computed as the average improvement in classification purity across the boosted trees as explained <a href="https://stats.stackexchange.com/questions/162162/relative-variable-importance-for-boosting">here</a>.
+  </p>
+
+<div id="feature_importance" class="chart" style="max-width:1000px;"></div>
+<script type="text/javascript">
+  var graph = {{feature_importance | safe}};
+  Plotly.newPlot("feature_importance",graph.data,graph.layout, {responsive: true});        
+</script>
+
+<h3>Crystal Score and Experiments in Reaction Space</h3>
+  <p>Each sphere is sized by the number of experiments run in a region of reaction space. The color represents the average crystal score for all chemicals in that region. Varying the resolution will group the experiments into larger or smaller spheres. You can also filter by a particular chemical.</p>
+  
 <a name="science.scatter_plot"></a>
 <form method="post" action="{{ url_for('dashboard.dashboard') }}#science.scatter_plot">
   <p>Select Chemical <select name="inchikey" onchange="this.form.submit()"> </p>
@@ -107,18 +123,8 @@
   var graph = {{rxn_3d_scatter | safe}};
   Plotly.newPlot("rxn_3d_scatter",graph.data,graph.layout, {responsive: true});        
 </script>
+
 </div>
-
-
-<h3>Predictive Features</h3>
-<p>Informative features are determined by estimating a <a href="https://machinelearningmastery.com/gentle-introduction-gradient-boosting-algorithm-machine-learning/">Gradient Boosted Tree</a> either 10 times on sampling randomly across all chemicals, or by holding out each chemical. Importance is computed as the average improvement in classification purity across the boosted trees as explained <a href="https://stats.stackexchange.com/questions/162162/relative-variable-importance-for-boosting">here</a>.
-  </p>
-
-<div id="feature_importance" class="chart" style="max-width:1000px;"></div>
-<script type="text/javascript">
-  var graph = {{feature_importance | safe}};
-  Plotly.newPlot("feature_importance",graph.data,graph.layout, {responsive: true});        
-</script>
 </div>
 
 

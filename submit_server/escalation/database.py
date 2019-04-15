@@ -416,13 +416,15 @@ def add_feature_analysis(obj):
 
     for x in ('chem_heldout','all_chem'):
         for f in obj[x]:
-            if type(obj[x][f]) != list:
-                return "%s,%s is not a list" %(x,f)
-            if len(obj[x][f][0]) < 3:
+            if 'value' not in obj[x][f]:            
+                return "%s,%s does not have entry 'value'" %(x,f)
+            elif 'rank' not in obj[x][f]:            
+                return "%s,%s does not have entry 'value'" %(x,f)            
+            elif len(obj[x][f]['value']) < 3:
                 return "%s,%s:does not have 3+ samples" % (x,f)
-            if len(obj[x][f][1]) < 3:
+            elif len(obj[x][f]['rank']) < 3:
                 return "%s,%s: does not have 3+ samples" % (x,f)
-            if len(obj[x][f][1]) != len(obj[x][f][0]):
+            elif len(obj[x][f]['rank']) != len(obj[x][f]['value']):
                 return "%s,%s: does not have equal length ranks and values" % (x,f)
         
     #add features if new
@@ -467,8 +469,8 @@ def add_feature_analysis(obj):
         if feat not in ids:
             app.logger.info("Somehow feature %s is not in the db" % feat)
             return "Could not add feature %s to the db" % feat
-        varr = arr[0]
-        rarr = arr[1]
+        varr = arr['value']
+        rarr = arr['rank']
         for i, v in enumerate(varr):
             r = rarr[i]
             if int(r) != r or r < 1:
@@ -479,13 +481,13 @@ def add_feature_analysis(obj):
         if feat not in ids:
             app.logger.info("Somehow feature %s is not in the db" % feat)
             return "Could not add feature %s to the db" % feat
-        varr = arr[0]
-        rarr = arr[1]
+        varr = arr['value']
+        rarr = arr['rank']
         for i, v in enumerate(varr):
             r = rarr[i]
             if int(r) != r or r < 1:
                 return "Rank value is not a numeral"            
-            heldout_objs.append(FeatureImportanceValue(feat_id=ids[feat],entry_id=heldout_entry.id,rank=r,weight=v))
+            heldout_objs.append(FeatureImportanceValue(feat_id=ids[feat],entry_id=general_entry.id,rank=r,weight=v))
             
     db.session.bulk_save_objects(heldout_objs)
     db.session.bulk_save_objects(general_objs)            

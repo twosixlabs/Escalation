@@ -23,16 +23,24 @@ for form in ('method','crank','notes','chem_heldout','all_chem','features'):
         print("Must include",form," in form")
         err=True
 
+err=False
 for x in ('chem_heldout','all_chem'):
     for f in obj[x]:
-        if type(obj[x][f]) != list:
-            print(x,f,"is not a list")
-            if len(obj[x][f][0]) < 3:
-                print(x,f,"does not have 3+ samples")
-            if len(obj[x][f][1]) < 3:
-                print(x,f,"does not have 3+ samples")
-            if len(obj[x][f][1] != obj[x][f][0]):
-                print (x,f,"does not have equal length ranks and values")
+        if 'value' not in obj[x][f]:
+            print(x,f,"'value' not present")
+            err=True
+        elif 'rank' not in obj[x][f]:
+            print(x,f,"'value' not present")
+            err=True            
+        elif len(obj[x][f]['value']) < 3:
+            print(x,f,"does not have 3+ samples")
+            err=True            
+        elif len(obj[x][f]['rank']) < 3:
+            print(x,f,"does not have 3+ samples")
+            err=True            
+        elif len(obj[x][f]['value']) != len(obj[x][f]['rank']):
+            print (x,f,"does not have equal length ranks and values")
+            err=True            
                 
 if err:
     exit()
