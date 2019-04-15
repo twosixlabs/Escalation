@@ -10,11 +10,10 @@ from collections import defaultdict
 from flask import current_app as app
 from sqlalchemy import text
 from escalation import db
-from .database import Submission, get_chemicals, get_leaderboard, get_perovskites_data
-import pandas as pd
-import xgboost as xgb
+from .database import Submission, get_chemicals, get_leaderboard, get_perovskites_data, get_feature_analysis, get_features
 from sklearn.model_selection import train_test_split
-    
+import numpy as np
+
 global plot_data
 
 plot_data = defaultdict(dict)
@@ -398,7 +397,7 @@ def results_by_model():
                      dict(label = 'Avg. Prec',
                           method = 'update',
                           args = [{'visible': prec_bools},
-                                  {'title': "<b>Avgerage Precision over %d cranks</b>" % len(plot_data[name]['auc'][0]),
+                                  {'title': "<b>Average Precision over %d cranks</b>" % len(plot_data[name]['auc'][0]),
                                    'xaxis':{'title':'<b>Average Precision</b>',
                                             'range':[0,1],
                                             'tick0':0,
@@ -581,7 +580,7 @@ def results_by_crank():
                      dict(label = 'Avg. Prec',
                           method = 'update',
                           args = [{'visible': prec_bools},
-                                  {'title': "<b>Avgerage Precision</b>",
+                                  {'title': "<b>Average Precision</b>",
                                    'yaxis':{'title':'<b>Average Precision</b>',
                                             'range':[0,1],
                                             'tick0':0,
@@ -819,121 +818,133 @@ def scatter_3d_by_rxn():
     
     graph  = {'data':traces, 'layout': layout}
     return json.dumps(graph,cls=plotly.utils.PlotlyJSONEncoder)
-    
-
 
 def update_feature_importance():
     global plot_data
     name = 'feature_importance'
-    app.logger.info("Updating %s" % (name))
-    crank,csvfile=get_perovskites_data()
-    csvfile =  os.path.join(app.config['UPLOAD_FOLDER'], csvfile)
 
-    df = pd.read_csv(csvfile,comment='#')
-    app.logger.info("Perovskites data length:%d" % (len(df)))
+    names={}
+    features = get_features()
+    for f in features:
+        names[f.id] = f.name
+    analyses = get_feature_analysis()
+    
+    plot_data['heldout'] = defaultdict(lambda: defaultdict(lambda: dict))
+    plot_data['general'] = defaultdict(lambda: defaultdict(lambda: dict))
+    
+    for a in analyses:
+        print("method",a.method,a.heldout_chem)
+        weight=defaultdict(list)
+        rank=defaultdict(list)
 
-    feat_imp_cv = defaultdict(list)
-    feat_imp_heldout = defaultdict(list)
-    feats =  [x for x in df.columns if 'feat' in x] + ['_rxn_M_organic','_rxn_M_inorganic','_rxn_M_acid']
+        for r in a.rows:
+            weight[names[r.feat_id]].append(r.weight)
+            rank[names[r.feat_id]].append(r.rank)
 
-    for i in range(5):
-        X_train, X_test,Y_train,Y_test = train_test_split(df[feats].values,[int(x) for x in df._out_crystalscore >= 4],test_size=0.2,random_state=i)
-        clf = xgb.XGBClassifier(max_depth=3,feature_names=feats,objective='binary:logistic',eval_metric='auc',random_state=i)
-        clf.fit(X_train, Y_train)
 
-        for i, imp in enumerate(clf.feature_importances_):
-            feat_imp_cv[feats[i]].append(imp)
+        means={}
+        for feat in weight:
+            means[feat] = np.mean(np.abs(weight[feat]))
+            print(feat, np.mean(np.abs(weight[feat])))
+            
+        sorted_feats = [x[0] for x in sorted(means.items(),key=operator.itemgetter(1),reverse=True)]
 
-    inchis=df['_rxn_organic-inchikey'].unique()
-    for inchi in inchis:
-        df1 = df[df['_rxn_organic-inchikey'] != inchi]
-        df2 = df[df['_rxn_organic-inchikey'] == inchi]
+        print(sorted_feats)
+        weight_out=[]
+        rank_out=[]
+        for f in sorted_feats[:10]:
+            weight_out.append([f,weight[f]])
+            rank_out.append([f,rank[f]])            
         
-        app.logger.info("%s: %d train, %d test" % (inchi, len(df1), len(df2)))
-        X_train = df1[feats].values
-        Y_train = [int(x) for x in df1._out_crystalscore >= 4]
-        X_test = df2[feats].values
-        Y_test = [int(x) for x in df2._out_crystalscore >= 4]
-        clf = xgb.XGBClassifier(max_depth=3,feature_names=feats,objective='binary:logistic',eval_metric='auc')
-        clf.fit(X_train, Y_train)
-        for i, imp in enumerate(clf.feature_importances_):
-            feat_imp_heldout[feats[i]].append(imp)
-
-           
-    plot_data[name]['heldout'] = feat_imp_heldout
-    plot_data[name]['cv']      = feat_imp_cv
-    plot_data[name]['feats']   = feats
-    plot_data[name]['inchis']  = inchis
-    plot_data[name]['crank']   = crank
-
-
+        plot_data['heldout' if a.heldout_chem else 'general'][a.crank][a.method] = {
+            'notes'  : a.notes,            
+            'weight' : weight_out,
+            'rank'   : rank_out,
+        }
+            
 def feature_importance():
     global plot_data
     name = 'feature_importance'
     if name not in plot_data:
         update_feature_importance()
-    feats   = plot_data[name]['feats']
-    cv      = plot_data[name]['cv']
-    heldout = plot_data[name]['heldout']
-    inchis  = plot_data[name]['inchis']
-    crank   = plot_data[name]['crank']
-    mean={}
-    
-    for i, feat in enumerate(feats):
-        mean[feat] = sum(cv[feat])/len(cv[feat])
-
-    cv_bools = []
-    general_bools = []
-    sorted_feats = [x[0] for x in sorted(mean.items(),key=operator.itemgetter(1),reverse=True)]
+        
+    heldout = plot_data['heldout']
+    general = plot_data['general']
 
     traces=[]
-    for i, feat in enumerate(sorted_feats[:10]):
-        traces.append(go.Box(x=cv[feat],
-                             name=feat.replace('_feat_',''),
-                             visible=True,
-        )
-        )
-        general_bools.append(True)
-        cv_bools.append(False)
-        traces.append(go.Box(x=heldout[feat],
-                             name=feat.replace('_feat_',''),
-                             visible=False,
-        )
-        )
-        general_bools.append(False)
-        cv_bools.append(True)
+    method_traces={}
+
+    cranks = sorted(heldout.keys(),reverse=True)
+    crank = cranks[0] #only plot the first crank
+    
+    for method in heldout[crank]:
+        method_traces[method] = []
+
+        for i, arr in enumerate(heldout[crank][method]['weight']):
+            traces.append(go.Box(x=arr[1],
+                                 name=arr[0].replace('_feat_',''),
+                                 visible=False,
+            ))
+            method_traces[method].append(len(traces)-1) #assumes 1 crank!!
+
+
+    buttons=[]
+    method_names = sorted(method_traces.keys())
+    title="Important Features for Crank %s for Heldout Chemicals" % crank    
+    for m in method_names:
+        b = dict(
+            label = m,
+            method='update',
+            args = list([
+                dict(visible=[False] * len(traces) ),
+                dict(
+                    title=title,
+                    xaxis=dict(
+                        showgrid=False,
+                        title="Feature Importance",
+                        rangemode='nonnegative',
+                        autorange=True                                    
+                    ),
+                ),
+                ]),
+            )
         
+        for i in method_traces[m]:
+            b['args'][0]['visible'][i] = True
+
+        buttons.append(b)
+
+        #initialize first method to true
+        m = method_names[0]
+        for i in method_traces[m]:
+            traces[i]['visible'] = True
 
     layout = go.Layout(
         showlegend=False,
-        title="Top 10 features by importance for %d chemicals with crank %s" % (len(inchis),crank),
-        updatemenus=list([
-            dict(
-                buttons=list([
-                    dict(label = 'All Chemicals',
-                         method = 'update',
-                         args = [{'visible': general_bools},
-                         ]),
-                    dict(label = 'Heldout by Chemical',
-                         method = 'update',
-                         args = [{'visible': cv_bools},
-                         ]),
-                    ]),
-                    x = -0.5,
-                    xanchor = 'left',
-                    y = 1.1,
-                    yanchor = 'top'                 
-
-            )
-        ]),
+        title=title,
         yaxis=dict(
         ),
 
         xaxis=dict(
             showgrid=True,            
-            title="Feature Importance",            
+            title="Feature Importance",
+            rangemode='nonnegative',
+            autorange=True            
         ),
-        height=600
+        height=600,
+        updatemenus=list([
+            dict(
+                buttons=buttons,
+                direction='down',
+                showactive=True,
+                type='buttons',
+                active=0,
+                y = 1.4,
+                yanchor = 'top' 
+                
+                ),
+        ]),
+        hovermode='closest',
     )
     
     graph  = {'data':traces, 'layout': layout}

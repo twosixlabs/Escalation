@@ -13,18 +13,22 @@ class FeatureImportance(db.Model):
     notes        = db.Column(db.Text)
     run_id       = db.Column(db.String(128)) # string to tie back to a particulary entry (such as in test harness)    
     rows         = db.relationship('FeatureImportanceValue', backref='entry', lazy='dynamic') #set of (feature name/weight) pairs
+    created      = db.Column(db.DateTime(timezone=True), server_default=sql.func.now())
+
+#todo add FeatureSet
 
 class Feature(db.Model):
-    id   = db.Column(db.Integer,primary_key=True)
-    name = db.Column(db.String(128))
-    desc = db.Column(db.Text)
+    id      = db.Column(db.Integer,primary_key=True)
+    name    = db.Column(db.String(128))
+    desc    = db.Column(db.Text)
+    created = db.Column(db.DateTime(timezone=True), server_default=sql.func.now())
     
 class FeatureImportanceValue(db.Model):
-    id      = db.Column(db.Integer,primary_key=True)
-    feat_id = db.Column(db.Integer, db.ForeignKey('feature.id'))
+    id       = db.Column(db.Integer,primary_key=True)
+    feat_id  = db.Column(db.Integer, db.ForeignKey('feature.id'))
     entry_id = db.Column(db.Integer, db.ForeignKey('feature_importance.id'))     
-    rank    = db.Column(db.Integer)
-    weight  = db.Column(db.Float)
+    rank     = db.Column(db.Integer)
+    weight   = db.Column(db.Float)
         
 class LeaderBoard(db.Model):
     id                          = db.Column(db.Integer,primary_key=True)
@@ -403,12 +407,99 @@ def get_perovskites_data():
     res = list(db.engine.execute(sql))
     return res[0].crank, res[0].train_filename
 
-def add_feature_analysis():
-    pass
+def add_feature_analysis(obj):
 
-def remove_feature_analysis():
-    pass
+    #validate
+    for form in ('method','crank','notes','chem_heldout','all_chem','run_id','features'):
+        if form not in obj:
+            return "Must include",form," in form"
 
-def get_feature_analysis():
-    return []
+    for x in ('chem_heldout','all_chem'):
+        for f in obj[x]:
+            if type(obj[x][f]) != list:
+                return "%s,%s is not a list" %(x,f)
+            if len(obj[x][f][0]) < 3:
+                return "%s,%s:does not have 3+ samples" % (x,f)
+            if len(obj[x][f][1]) < 3:
+                return "%s,%s: does not have 3+ samples" % (x,f)
+            if len(obj[x][f][1]) != len(obj[x][f][0]):
+                return "%s,%s: does not have equal length ranks and values" % (x,f)
+        
+    #add features if new
+    heldout_entry=FeatureImportance(method=obj['method'],
+                                     crank=obj['crank'],
+                                     notes=obj['notes'],
+                                     run_id=obj['run_id'],
+                                     heldout_chem=True,
+    )
+    general_entry=FeatureImportance(method=obj['method'],
+                                     crank=obj['crank'],
+                                     notes=obj['notes'],
+                                     run_id=obj['run_id'],
+                                     heldout_chem=False,
+    )
+
+    res = FeatureImportance.query.filter(FeatureImportance.method==obj['method']).filter(FeatureImportance.crank==obj['crank']).all()
+    if res is not None:
+        for r in res:
+            app.logger.info("Removing existing entry %d for %s %s" % (r.id,r.method,r.crank))
+            remove_feature_analysis(r.id)
+
+    db.session.add(heldout_entry)
+    db.session.add(general_entry)
+    db.session.flush()
+    app.logger.info("Created heldout analysis %d and general %d" % (heldout_entry.id, general_entry.id))
+    feats=[]
+    imps=[]
     
+    for feat in obj['features']:
+        if Feature.query.filter(Feature.name==feat).scalar() is None:
+            db.session.add(Feature(name=feat,desc=""))
+    db.session.flush()
+
+    ids={}
+    for f in Feature.query.all():
+        ids[f.name]=f.id
+
+    heldout_objs=[]
+    general_objs=[]    
+    for feat, arr in obj['chem_heldout'].items():
+        if feat not in ids:
+            app.logger.info("Somehow feature %s is not in the db" % feat)
+            return "Could not add feature %s to the db" % feat
+        varr = arr[0]
+        rarr = arr[1]
+        for i, v in enumerate(varr):
+            r = rarr[i]
+            if int(r) != r or r < 1:
+                return "Rank value is not a numeral"
+            heldout_objs.append(FeatureImportanceValue(feat_id=ids[feat],entry_id=heldout_entry.id,rank=r,weight=v))
+            
+    for feat, arr in obj['all_chem'].items():
+        if feat not in ids:
+            app.logger.info("Somehow feature %s is not in the db" % feat)
+            return "Could not add feature %s to the db" % feat
+        varr = arr[0]
+        rarr = arr[1]
+        for i, v in enumerate(varr):
+            r = rarr[i]
+            if int(r) != r or r < 1:
+                return "Rank value is not a numeral"            
+            heldout_objs.append(FeatureImportanceValue(feat_id=ids[feat],entry_id=heldout_entry.id,rank=r,weight=v))
+            
+    db.session.bulk_save_objects(heldout_objs)
+    db.session.bulk_save_objects(general_objs)            
+    db.session.commit()
+    app.logger.info("Added analyses for %d features" % (len(obj['all_chem'])))
+    return None
+                    
+def remove_feature_analysis(id=None):
+    FeatureImportanceValue.query.filter(FeatureImportanceValue.entry_id==id).delete()
+    FeatureImportance.query.filter(FeatureImportance.id==id).delete()
+    db.session.commit()
+    
+def get_feature_analysis(id='all'):
+    return FeatureImportance.query.all()
+    
+def get_features():
+    return Feature.query.order_by(Feature.name.desc()).all()

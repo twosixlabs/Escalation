@@ -39,12 +39,22 @@ function checkAll(ele) {
   <form method="post">    
     <table id="feature_table" class="compact hover order-column row-border" style="width:100%; max-width:1000px">
       <thead>
-        <th><input type="checkbox" onchange="checkAll(this)" name="chk[]" /> </th>      
+        <th><input type="checkbox" onchange="checkAll(this)" name="chk[]" /> </th>
+        <th>Created</th>        
+        <th>Method</th>
+        <th>Crank</th>          
+        <th>Heldout?</th>
+        <th>Notes</th>
       </thead>
       <tbody>
         {% for r in table %}
         <tr>
-          <td> <input type="checkbox" name="delete" value="{{ r['id'] }}" >      
+          <td> <input type="checkbox" name="delete" value="{{ r['id'] }}" >
+          <td>{{r['created']}}</td>            
+          <td>{{r['method']}}</td>
+          <td>{{r['crank']}}</td>          
+          <td>{{ "Yes" if r['heldout_chem'] else "No" }}</td>
+          <td>{{r['notes']}}</td>
         </tr>
         {% endfor %}
       </tbody>

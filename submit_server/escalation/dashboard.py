@@ -151,27 +151,27 @@ def dashboard():
 
 
     return render_template('dashboard.html',
-                           sci_table=sci_table,
-                           auto_table=auto_table,
-                           ml_table=ml_table,
-                           leaderboard=get_leaderboard(),
-                           chemicals = database.get_chemicals_in_training(),
-                           curr_inchikey=curr_inchikey,                           
+                           sci_table     = sci_table,
+                           auto_table    = auto_table,
+                           ml_table      = ml_table,
+                           leaderboard   = get_leaderboard(),
+                           chemicals     = database.get_chemicals_in_training(),
+                           curr_inchikey = curr_inchikey,                           
 
                            #science
-                           success_by_amine = plot.success_by_amine(),
-                           rxn_3d_scatter = plot.scatter_3d_by_rxn(),
-
+                           success_by_amine   = plot.success_by_amine(),
+                           rxn_3d_scatter     = plot.scatter_3d_by_rxn(),
+                           feature_importance = plot.feature_importance(),
+                           
                            #automation
                            uploads_by_crank = plot.uploads_by_crank(),
-                           runs_by_crank = plot.runs_by_crank(),
-                           runs_by_month = plot.runs_by_month(),
+                           runs_by_crank    = plot.runs_by_crank(),
+                           runs_by_month    = plot.runs_by_month(),
 
                            #ml
                            results_by_model = plot.results_by_model(),
                            results_by_crank = plot.results_by_crank(),
                            f1_by_model = plot.f1_by_model(),
-#                           feature_importance = plot.feature_importance(),
     )
 
 
