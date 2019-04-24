@@ -76,9 +76,11 @@ def update_science():
             ))
             app.logger.info("%s: %d %d" % (amine, success[amine],total[amine]))
             db.session.commit()
+
+        plot.update_repo_table()
         plot.update_success_by_amine()
         plot.update_scatter_3d_by_rxn()
-#        plot.update_feature_importance()
+        plot.update_feature_importance()
         
 def update_ml():
     from .database import Prediction
@@ -142,26 +144,32 @@ def dashboard():
             curr_inchikey=request.form['inchikey']
             flash("Updating 3D scatter plot with %s" % request.form['inchikey'])
             plot.update_scatter_3d_by_rxn(request.form['inchikey'])
+        elif 'repo_update' in request.form:
+            flash("Updating Reproducibility plot with %s" % request.form['inchikey_repo'])
+            plot.update_repo_table(inchi=request.form['inchikey_repo'],prec=float(request.form['prec_repo']))
         else:
             flash("Unknown button!")
 
     auto_table = AutomationStat.query.all()
     sci_table  = ScienceStat.query.all()
     ml_table   = MLStat.query.all()
-
-
+    repo_table = RepoStat.query.all()
+    exp_repo_stats = plot.repo_table_stats() #get the updated summary statistics after calling update_repo_table
+    
     return render_template('dashboard.html',
                            sci_table     = sci_table,
                            auto_table    = auto_table,
                            ml_table      = ml_table,
                            leaderboard   = get_leaderboard(),
                            chemicals     = database.get_chemicals_in_training(),
-                           curr_inchikey = curr_inchikey,                           
+                           curr_inchikey = curr_inchikey,
+                           exp_repo_stats= exp_repo_stats,
 
                            #science
                            success_by_amine   = plot.success_by_amine(),
                            rxn_3d_scatter     = plot.scatter_3d_by_rxn(),
                            feature_importance = plot.feature_importance(),
+                           repo_table    = repo_table,
                            
                            #automation
                            uploads_by_crank = plot.uploads_by_crank(),

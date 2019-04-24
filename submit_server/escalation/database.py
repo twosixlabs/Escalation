@@ -82,6 +82,17 @@ class MLStat(db.Model):
     train_mean     = db.Column(db.Float, default=0)
     num_train_rows = db.Column(db.Integer,default=0)
     pred_mean      = db.Column(db.Float,default=0)
+
+# reproducibility of experiments (from Alex)
+class RepoStat(db.Model):
+    id        = db.Column(db.Integer,primary_key=True)
+    inorganic = db.Column(db.Float)
+    organic   = db.Column(db.Float)
+    acid      = db.Column(db.Float)
+    temp      = db.Column(db.Float)
+    size      = db.Column(db.Integer)
+    score     = db.Column(db.Float)
+    repo      = db.Column(db.Float)
     
 class Submission(db.Model):
     id       = db.Column(db.Integer,primary_key=True)
@@ -108,15 +119,16 @@ class Prediction(db.Model):
         return '<Prediction {} {} name={} out={}>'.format(self.id, self.dataset, self.name, self.predicted_out)
 
 class TrainingRun(db.Model):
-    id                = db.Column(db.Integer,primary_key=True)
-    dataset           = db.Column(db.String(64))
-    name              = db.Column(db.String(64))    
-    _rxn_M_inorganic  = db.Column(db.Float)
-    _rxn_M_organic    = db.Column(db.Float)
-    _rxn_M_acid       = db.Column(db.Float)    
-    _out_crystalscore = db.Column(db.Integer)
-    inchikey          = db.Column(db.String(128))
-    githash           = db.Column(db.String(7))
+    id                            = db.Column(db.Integer,primary_key=True)
+    dataset                       = db.Column(db.String(64))
+    name                          = db.Column(db.String(64))    
+    _rxn_M_inorganic              = db.Column(db.Float)
+    _rxn_M_organic                = db.Column(db.Float)
+    _rxn_M_acid                   = db.Column(db.Float)
+    _rxn_temperatureC_actual_bulk = db.Column(db.Float)
+    _out_crystalscore             = db.Column(db.Integer)
+    inchikey                      = db.Column(db.String(128))
+    githash                       = db.Column(db.String(7))
     def __repr__(self):
         return "<Training Run {} {} {} {} {}".format(self.id,self.name,self.dataset,self._out_crystalscore,self._rxn_M_inorganic,self._rxn_M_organic,self._rxn_M_acid, self.inchikey)
     
@@ -304,8 +316,8 @@ def add_training(filename,githash,crank):
         for r in csvreader:
             objs.append(TrainingRun(dataset=r['dataset'],name=r['name'],githash=githash,
                                     _rxn_M_inorganic=r['_rxn_M_inorganic'],_rxn_M_organic=r['_rxn_M_organic'],_rxn_M_acid=r['_rxn_M_acid'],
-                                    _out_crystalscore=r['_out_crystalscore'],inchikey=r['_rxn_organic-inchikey'])
-            )
+                                    _out_crystalscore=r['_out_crystalscore'],inchikey=r['_rxn_organic-inchikey'], _rxn_temperatureC_actual_bulk=r['_rxn_temperatureC_actual_bulk'],
+            ))
         db.session.bulk_save_objects(objs)
         db.session.commit()
     app.logger.info("Added %d training runs" % len(objs))

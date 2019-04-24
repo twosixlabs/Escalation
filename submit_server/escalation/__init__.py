@@ -9,6 +9,8 @@ import atexit
 import click
 import logging
 from logging.handlers import RotatingFileHandler
+
+
 # create and configure the app
 
 db = SQLAlchemy()
@@ -27,7 +29,7 @@ def create_app():
         SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///' + os.path.join(app.instance_path,'escalation.sqlite'),
         #1GB max upload
         MAX_CONTENT_LENGTH = 1024 * 1024 * 1024,
-        ADMIN_KEY='secret',
+        ADMIN_KEY='Trompdoy',
         SQLALCHEMY_TRACK_MODIFICATIONS=False
     )
 
@@ -97,8 +99,8 @@ def create_app():
 
     @app.cli.command('job')
     def do_job():
-        from .plot import update_feature_importance
-        update_feature_importance()
+        from .plot import update_repo_table
+        update_repo_table()
         
     # Shut down the scheduler when exiting the app
     return app

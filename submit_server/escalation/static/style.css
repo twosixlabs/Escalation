@@ -196,14 +196,6 @@ pre {
     font-size: 12px;
 }
 
-.auto_table {
-    max-width:600px;
-}
-
-.ml_table {
-    max-width:800px;
-}
-
 h1 {
     font-size: 40px;
 }
@@ -221,8 +213,32 @@ h2 {
     margin-right:20px !important;
 }
 
+
 .chart {
-    margin-top: 40px;
-    margin-bottom: 40px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    max-width:1200px;
 }
 
+.dashboard {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#sci_table_div {
+    max-width:800px;
+}
+
+#sci_repo_table_wrapper {
+    max-width:1000px;
+}
+
+#auto_table_div {
+    max-width:600px;
+}
