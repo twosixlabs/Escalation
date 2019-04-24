@@ -177,6 +177,8 @@ def download_zip(basedir,submissions,pfx=""):
         writer = csv.DictWriter(fh, fieldnames=['dataset','name','predicted_out','score'],extrasaction='ignore',lineterminator='\n')
         writer.writeheader()
         for row in preds:
+            if row['predicted_out'] == 0:
+                row['predicted_out'] = 'null'
             writer.writerow(row)
         fh.close()
             

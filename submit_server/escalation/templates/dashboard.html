@@ -152,7 +152,7 @@ window.onload = function() {
   <a name="science.repo_table"></a> 
   <div class="dashboard">
     <h3>Experimental Reproducibility</h3>    
-    <p>We first cluster experiments into groups that fall within the same window of organic, inorganic, acid and temperature values (which you can change by varying the precision above). Then for each cluster, we compute the mean crystal score and reproducibility of cluster to consistently produce the same crystal score.</p>
+    <p>We first cluster experiments into groups that fall within the same window of organic, inorganic, acid and temperature values (which you can change by varying the <b>Cluster Width</b> below). For each cluster, we then compute the mean crystal score and reproducibility of cluster. Reproducibility is defined as the number of experiment crystal scores that agree with the most common crystal score in that bin (so bins of size 1 have 100% reproducibility by definition).</p>
     <form method="post" action="{{ url_for('dashboard.dashboard') }}#science.repo_table">
       <p>Select Chemical
         <select name="inchikey_repo">

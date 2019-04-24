@@ -281,8 +281,9 @@ def add_submission(username,expname,crank,githash,rows,notes):
     
     objs=[]
     for row in rows:
-        if row['predicted_out'].lower() != "null":
-            objs.append(Prediction(sub_id=sub.id,dataset=row['dataset'],name=row['name'],predicted_out=row['predicted_out'],score=row['score']))
+        if row['predicted_out'].lower() == "null":
+            row['predicted_out'] = 0
+        objs.append(Prediction(sub_id=sub.id,dataset=row['dataset'],name=row['name'],predicted_out=row['predicted_out'],score=row['score']))
     db.session.bulk_save_objects(objs)
     db.session.commit()
     app.logger.info("Added %d predictions for submission" % len(objs))
