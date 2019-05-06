@@ -57,13 +57,12 @@ function checkAllModels(ele) {
 <div style="max-width:1000px;">
 <form method="post">
   <label for="crank">Select specific crank</label>
-  <select name="crank">
+  <select name="crank"   onchange="this.form.submit()">
     <option value="all">All</option>
     {% for crank in cranks %}
-    <option value="{{ crank }}">{{ crank }} </option>
+    <option value="{{ crank }}" {% if crank == curr_crank %} selected {% endif %} >{{ crank }}</option>
     {% endfor %}
   </select>
-  <input type="submit" value="Select">
 </form>
 
 
@@ -108,7 +107,7 @@ $('#submission_table').DataTable( {
 } );
 	</script>
   
-  <input type="hidden" value="{{ curr_crank }}" name="crank">
+  <input type="hidden" value="{{ policy_crank }}" name="crank">
   <div>        
     <input type="submit" value="Download files" name="submit">
     <div style="float:right">
@@ -125,26 +124,29 @@ $('#submission_table').DataTable( {
   <label for="policy_crank">Select specific crank</label>
   <select name="policy_crank"  onchange="this.form.submit()">
     {% for crank in cranks %}
-    <option value="{{ crank }}" {% if crank == curr_crank %} selected {% endif %} >{{ crank }} </option>
+    <option value="{{ crank }}" {% if crank == policy_crank %} selected {% endif %} >{{ crank }} </option>
     {% endfor %}
   </select>
   
 <label for="cranksize">Number of samples</label>
 <input type="text" name="cranksize" required style="width:80px">
-  <table id="model_table" width="150">
+  <table id="model_table" width="390">
     <thead>
       <col width="10">
-      <col width="140">      
+      <col width="140">
+      <col width="240">            
       <tr>
         <th><input type="checkbox" onchange="checkAllModels(this)" name="chk[]" /> </th>
         <th>Model</th>
+        <th>Created</th>        
       </tr>
     </thead>
     <tbody>
     {% for model in models %}
     <tr>
-      <td> <input type="checkbox" name="policy_download" value="{{model['id']}}" {% if model['checked'] %} checked {% endif %}></td>
+      <td> <input type="checkbox" name="policy_download" value="{{model['id']}}" {% if model['expname'] in defaults %} checked {% endif %}></td>
       <td>{{model['expname']}} </td>
+      <td>{{model['created']}} </td>      
     </tr>
     {% endfor %}
     </tbody>

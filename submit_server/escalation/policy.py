@@ -5,6 +5,13 @@ import os
 import csv
 import random
 import time
+default_models = [
+    'BOGP',
+    'gradient_boosted_tree',
+    'support_vector_radial_basis_classifier',
+    'random_forest_classification',
+    'baseline_uniform'
+    ]
 
 def download_uniform_policy(basedir,submissions,size,pfx=""):
     app.logger.info("Running uniform sampling policy")

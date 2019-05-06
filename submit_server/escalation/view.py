@@ -6,21 +6,23 @@ from flask import (
 from flask import current_app as app
 from . import database as db
 from .files import download_zip
-from .policy import download_uniform_policy
+from .policy import download_uniform_policy, default_models
 from .dashboard import update_auto, update_science
 from escalation import scheduler
+
 
 bp = Blueprint('view', __name__)
 @bp.route('/', methods=('GET','POST'))
 
 def view():
     cranks=db.get_unique_cranks()
-    curr_crank = cranks[0]
-    models=db.get_submissions(curr_crank)
+    curr_crank = 'all'
+    policy_crank = cranks[0]
+    models=db.get_submissions(policy_crank)
 
     if request.method == 'POST' and 'crank' in request.form:
         curr_crank = request.form['crank']
-
+        
     if request.method == 'POST' and 'submit' in request.form and request.form['submit'] == 'Delete file':
         if request.form['adminkey'] != app.config['ADMIN_KEY']:
             flash("Incorrect admin code")
@@ -64,7 +66,6 @@ def view():
             return send_file(os.path.join(app.config['UPLOAD_FOLDER'],zipfile),as_attachment=True)
         
     elif request.method == 'POST' and 'policy_crank' in request.form:
-        curr_crank = request.form['policy_crank']
-        models = db.get_submissions(curr_crank)
-    
-    return render_template('index.html',submissions=submissions,cranks=cranks, curr_crank=curr_crank, models=models)
+        policy_crank = request.form['policy_crank']
+        models = db.get_submissions(policy_crank)
+    return render_template('index.html',submissions=submissions,cranks=cranks, curr_crank=curr_crank, models=models,policy_crank=policy_crank,defaults=default_models)
