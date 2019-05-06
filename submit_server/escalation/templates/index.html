@@ -16,20 +16,40 @@ function checkAll(ele) {
      var checkboxes = document.getElementsByTagName('input');
      if (ele.checked) {
          for (var i = 0; i < checkboxes.length; i++) {
-             if (checkboxes[i].type == 'checkbox') {
+             if (checkboxes[i].type == 'checkbox'  && checkboxes[i].name == 'download') {
                  checkboxes[i].checked = true;
              }
          }
      } else {
          for (var i = 0; i < checkboxes.length; i++) {
              console.log(i)
-             if (checkboxes[i].type == 'checkbox') {
+             if (checkboxes[i].type == 'checkbox'  && checkboxes[i].name == 'download') {
+                 checkboxes[i].checked = false;
+             }
+         }
+     }
+
+                             }
+
+function checkAllModels(ele) {
+     var checkboxes = document.getElementsByTagName('input');
+     if (ele.checked) {
+         for (var i = 0; i < checkboxes.length; i++) {
+             if (checkboxes[i].type == 'checkbox' && checkboxes[i].name == 'policy_download') {
+                 checkboxes[i].checked = true;
+             }
+         }
+     } else {
+         for (var i = 0; i < checkboxes.length; i++) {
+             console.log(i)
+             if (checkboxes[i].type == 'checkbox' && checkboxes[i].name == 'policy_download') {
                  checkboxes[i].checked = false;
              }
          }
      }
 
       }
+                             
 </script>
 {% endblock %}
 
@@ -63,7 +83,7 @@ function checkAll(ele) {
   <tbody>
 {% for sub in submissions %}
   <tr>
-    <td> <input type="checkbox" name="download" value="{{ sub['id'] }}" checked>
+    <td> <input type="checkbox" name="download" value="{{ sub['id'] }}" checked> </td>
     <td> {{ sub['crank'] }} </td>  
     <td> {{ sub['username'] }} </td>
     <td> {{ sub['expname'] }} </td>
@@ -88,7 +108,7 @@ $('#submission_table').DataTable( {
 } );
 	</script>
   
-  <input type="hidden" value="{{ crank }}" name="crank">
+  <input type="hidden" value="{{ curr_crank }}" name="crank">
   <div>        
     <input type="submit" value="Download files" name="submit">
     <div style="float:right">
@@ -97,6 +117,39 @@ $('#submission_table').DataTable( {
       <input type="text" name="adminkey">
     </div>
   </div>
-</form>  
+</form>
 </div>
+<a name="policy"></a>  
+<h2>Policy-Guided Download</h2>
+<form method="post" action="{{ url_for('view.view') }}#policy" >
+  <label for="policy_crank">Select specific crank</label>
+  <select name="policy_crank"  onchange="this.form.submit()">
+    {% for crank in cranks %}
+    <option value="{{ crank }}" {% if crank == curr_crank %} selected {% endif %} >{{ crank }} </option>
+    {% endfor %}
+  </select>
+  
+<label for="cranksize">Number of samples</label>
+<input type="text" name="cranksize" required style="width:80px">
+  <table id="model_table" width="150">
+    <thead>
+      <col width="10">
+      <col width="140">      
+      <tr>
+        <th><input type="checkbox" onchange="checkAllModels(this)" name="chk[]" /> </th>
+        <th>Model</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for model in models %}
+    <tr>
+      <td> <input type="checkbox" name="policy_download" value="{{model['id']}}" {% if model['checked'] %} checked {% endif %}></td>
+      <td>{{model['expname']}} </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <input type="submit" value="Download Submissions" name="policy_submit">
+</form>
+
 {% endblock %}
