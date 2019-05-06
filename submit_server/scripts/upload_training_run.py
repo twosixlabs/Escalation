@@ -17,7 +17,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--endpoint',help="Rest endpoint",default='http://escalation.sd2e.org/admin')
 parser.add_argument('--debug',help="Use debug manifest and dev endpoint",action='store_true')
 parser.add_argument('--githash',help="FOR DEBUG ONLY")
-parser.add_argument('--key',help="admin secret key",default='secret')
+parser.add_argument('--key',help="admin secret key",default='Trompdoy')
 args=parser.parse_args()
 
 if args.githash and not args.debug:
@@ -65,9 +65,11 @@ for crank in files:
 
     #TODO: turn into a file and reduce I/O
     df2 = pd.read_csv(perovskitedata,comment='#',dtype={'dataset': 'str'})
-    df2 = df2[['dataset','name','_out_crystalscore','_rxn_M_acid','_rxn_M_inorganic','_rxn_M_organic','_rxn_organic-inchikey']]
+    feats =  [x for x in df2.columns if 'feat' in x] + ['_rxn_M_organic','_rxn_M_inorganic','_rxn_M_acid','dataset','name','_out_crystalscore','_rxn_organic-inchikey','_rxn_temperatureC_actual_bulk']    
+    df2 = df2[feats]
     orig_len = len(df2)
     df2 = df2[~df2._out_crystalscore.isna()]
+    df2 = df2[~df2._rxn_temperatureC_actual_bulk.isna()]        
     if len(df2) != orig_len:
         print("WARNING: Removed %d NA values from perovskitesdata before uploading" % (orig_len  - len(df2)))
     df2._out_crystalscore = df2._out_crystalscore.astype(int)

@@ -17,7 +17,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--endpoint',help="Rest endpoint",default='http://escalation.sd2e.org/admin')
 parser.add_argument('--debug',help="Use debug manifest and dev endpoint",action='store_true')
 parser.add_argument('--githash',help="FOR DEBUG ONLY")
-parser.add_argument('--key',help="admin secret key",default='secret')
+parser.add_argument('--key',help="admin secret key",default='Trompdoy')
 args=parser.parse_args()
 
 if args.githash and not args.debug:

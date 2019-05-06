@@ -1005,12 +1005,17 @@ def repo_cluster(df, prec):
     return data
 
 def update_repo_table(prec=0.25,inchi='all'):
+    app.logger.info("Updating reproducibility table")
     global plot_data
     name = 'exp_repo'    
     #update reproducibility
     RepoStat.query.delete()
 
-    query="select * from training_run where dataset in (select max(dataset) dataset from training_run as m)"
+    sql="select max(dataset) dataset from training_run"
+    rows = list(db.engine.execute(sql))
+    crank = rows[0][0]
+    app.logger.info("Selected crank %s" % crank)
+    query='select * from training_run where dataset = "%s"' % (crank)
     df = pd.read_sql(query ,db.session.bind)
     app.logger.info("Selected %d training runs" % len(df))
     if inchi != 'all':
@@ -1034,8 +1039,12 @@ def update_repo_table(prec=0.25,inchi='all'):
         mean_cs += row['cs']
         mean_purity += row['purity']
 
-    mean_cs /= len(data)
-    mean_purity /= len(data)
+    if len(data) > 0:
+        mean_cs /= len(data)
+        mean_purity /= len(data)
+    else:
+        mean_cs = 0
+        mean_purity = 0
     
     app.logger.info("Added %d clusters" % len(objs))
 

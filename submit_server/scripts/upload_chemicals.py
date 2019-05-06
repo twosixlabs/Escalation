@@ -6,7 +6,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--endpoint',help="Rest endpoint",default='http://escalation.sd2e.org/admin')
 parser.add_argument('--tsv',help="Chemical tab separated tsv")
-parser.add_argument('--key',help="admin secret key",default='secret')
+parser.add_argument('--key',help="admin secret key",default='Trompdoy')
 args=parser.parse_args()
 
 if args.tsv is None:
