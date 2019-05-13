@@ -69,14 +69,17 @@ for crank in files:
     df2 = df2[feats]
     orig_len = len(df2)
     df2 = df2[~df2._out_crystalscore.isna()]
+    crystal_na_len = len(df2)
     df2 = df2[~df2._rxn_temperatureC_actual_bulk.isna()]        
     if len(df2) != orig_len:
-        print("WARNING: Removed %d NA values from perovskitesdata before uploading" % (orig_len  - len(df2)))
+        print("WARNING: Removed %d NA values from '_out_crystalscore' and %d NA values from _rxn_temperatureC_actual_bulk' from perovskitesdata before uploading" %
+              (orig_len - crystal_na_len,
+              crystal_na_len  - len(df2)))
     df2._out_crystalscore = df2._out_crystalscore.astype(int)
     df2.to_csv(perovskite_csv,index=False)
 
     print("Pushing %d rows from %s to %s . Could take a minute or two." % (len(df2),perovskite_csv,args.endpoint))
-
+            
     print("crank:",crank)
     print("githash:", git_sha[:7])
     print("username:",git_username)
