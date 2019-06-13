@@ -6,6 +6,7 @@ import re
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--endpoint',help="REST endpoint",default='http://escalation.sd2e.org/submission')
+parser.add_argument('--dev',help="Use dev manifest and dev endpoint",action='store_true')
 parser.add_argument('--csv',help="csv file")
 parser.add_argument('--user',help="user name")
 parser.add_argument('--expname',help="experiment name")
@@ -13,6 +14,18 @@ parser.add_argument('--crank',help="crank number [0000]")
 parser.add_argument('--githash',help="7 character git commit of versioned data")
 parser.add_argument('--notes',help="notes")
 args=parser.parse_args()
+
+if args.dev and args.endpoint == 'http://escalation.sd2e.org/submission':
+    args.endpoint = 'http://escalation-dev.sd2e.org/submission'
+    
+if not args.dev:
+    while True:
+        a = input("Uploading to production server. Are you sure? [yes/no]:")
+        if a == "yes":
+            break
+        elif a == "no":
+            exit()
+print("Uploading to",args.endpoint)
 
 regex=r'(\d{4})_train_([^-]{7})_([^\.]+)\.csv'
 

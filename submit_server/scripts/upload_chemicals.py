@@ -5,13 +5,27 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--endpoint',help="Rest endpoint",default='http://escalation.sd2e.org/admin')
+parser.add_argument('--dev',help="Use dev manifest and dev endpoint",action='store_true')
 parser.add_argument('--tsv',help="Chemical tab separated tsv")
 parser.add_argument('--key',help="admin secret key",default='Trompdoy')
 args=parser.parse_args()
 
+if args.dev and args.endpoint == 'http://escalation.sd2e.org/admin':
+    args.endpoint = 'http://escalation-dev.sd2e.org/admin'
+    
+if not args.dev:
+    while True:
+        a = input("Uploading to production server. Are you sure? [yes/no]:")
+        if a == "yes":
+            break
+        elif a == "no":
+            exit()
+print("Uploading to",args.endpoint)
+
 if args.tsv is None:
     print("Must pass in tsv")
     exit()
+
     
 tsvfile = open(args.tsv)
 reader = csv.DictReader(filter(lambda row: row[0]!='#',tsvfile),delimiter="\t")

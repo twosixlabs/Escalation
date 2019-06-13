@@ -15,28 +15,33 @@ import utils
                 
 parser = argparse.ArgumentParser()
 parser.add_argument('--endpoint',help="Rest endpoint",default='http://escalation.sd2e.org/admin')
+parser.add_argument('--dev',help="Use dev manifest and dev endpoint",action='store_true')
 parser.add_argument('--debug',help="Use debug manifest and dev endpoint",action='store_true')
 parser.add_argument('--githash',help="FOR DEBUG ONLY")
 parser.add_argument('--key',help="admin secret key",default='Trompdoy')
 args=parser.parse_args()
 
+
 if args.githash and not args.debug:
     print("Can only pass in custom githash in debug mode")
     exit()
-    
+
 if args.debug and args.endpoint == 'http://escalation.sd2e.org/admin':
     args.endpoint = 'http://127.0.0.1:5000/admin'
 
+if args.dev and args.endpoint == 'http://escalation.sd2e.org/admin':
+    args.endpoint = 'http://escalation-dev.sd2e.org/admin'
+    
 print("POSTing to",args.endpoint)    
 
-
-if not args.debug:
+if not args.debug or args.dev:
     while True:
-        a = input("Do you want to upload to the production server? [yes/no]:")
+        a = input("Uploading to production server. Are you sure? [yes/no]:")
         if a == "yes":
             break
         elif a == "no":
             exit()
+
 
 versioned_datasets_repo_path = utils.get_versioned_data_repo_directory()
 git_sha, git_username = utils.get_git_info(versioned_datasets_repo_path)

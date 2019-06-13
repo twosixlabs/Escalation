@@ -4,9 +4,16 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--endpoint',help="REST endpoint",default='http://escalation.sd2e.org/leaderboard')
+parser.add_argument('--dev',help="Use dev manifest and dev endpoint",action='store_true')
 parser.add_argument('--csv',help="csv file")
 parser.add_argument('--githash',help="7 digit git commit of versioned data repo")
 args=parser.parse_args()
+
+if args.dev and args.endpoint == 'http://escalation.sd2e.org/leaderboard':
+    args.endpoint = 'http://escalation-dev.sd2e.org/leaderboard'
+    
+print("Uploading to",args.endpoint)
+
 
 def mapping(name):
     return name.lower().replace(' ','_')

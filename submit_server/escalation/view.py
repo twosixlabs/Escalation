@@ -35,9 +35,9 @@ def view():
     submissions=db.get_submissions(curr_crank)
 
     if request.method == 'POST' and  'submit' in request.form and request.form['submit'] == 'Download files':
-        
         requested=[int(x) for x in request.form.getlist('download')]
         submissions = [sub for sub in submissions if sub.id in requested]
+        app.logger.info("Downloading %d submissions of %d requested for crank %s" % (len(submissions), len(requested),curr_crank))
         zipfile = download_zip(app.config['UPLOAD_FOLDER'],submissions, curr_crank)
         return send_file(os.path.join(app.config['UPLOAD_FOLDER'],zipfile),as_attachment=True)
 
