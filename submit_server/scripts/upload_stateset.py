@@ -33,7 +33,7 @@ if args.dev and args.endpoint == 'http://escalation.sd2e.org/admin':
     
 print("POSTing to",args.endpoint)    
 
-if not args.debug or args.dev:
+if not args.debug and not args.dev:
     while True:
         a = input("Uploading to production server. Are you sure? [yes/no]:")
         if a == "yes":
