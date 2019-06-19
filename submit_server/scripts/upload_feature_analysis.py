@@ -49,7 +49,8 @@ for x in ('chem_heldout','all_chem'):
         elif len(obj[x][f]['value']) != len(obj[x][f]['rank']):
             print (x,f,"does not have equal length ranks and values")
             err=True            
-                
+        o =[r+1 for r in obj[x][f]['rank'] ]
+        obj[x][f]['rank'] = o
 if err:
     exit()
     
