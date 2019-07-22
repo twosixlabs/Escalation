@@ -28,13 +28,13 @@ docker run \
 This assumes you have a public docker hub account. If not, go make one at https://hub.docker.com/
 
 ```
-# select your version
-VERSION=0.2
+# set your escalation app version (should be tracked in VERSION.py
+ESCALATION_VERSION=0.2
 # change to your Docker user ID
 DOCKERUSER=snovotney
-docker build -t escalation-server 
-docker tag escalation-server:latest $DOCKERUSER/escalation:$VERSION
-docker push $DOCKERUSER/escalation:$VERSION
+docker build -t escalation-server .
+docker tag escalation-server:latest $DOCKERUSER/escalation:ESCALATION_VERSION
+docker push $DOCKERUSER/escalation:ESCALATION_VERSION
 ```
 
 ## Run the web server locally in a docker container
@@ -57,6 +57,7 @@ You can also run the web server outside of docker. There are a couple useful com
 
 1. setup the virtual environment venv (instructions incomplete, I know, I know)
 2. `source venv/bin/activate`
+3. `pip install -r requirements-dev.txt`
 3 `flask init-db` creates the tables in the database (run once)
 4. `flask run`
 
