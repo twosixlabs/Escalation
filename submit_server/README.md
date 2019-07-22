@@ -21,7 +21,7 @@ docker run \
     --name escalation-mysql \
     mysql:latest
 ```
-3. If desired, connect to the db directly with  ` mysql -h localhost -P 3306 --protocol=tcp -u escalation -pperovskites`
+3. If desired, connect to the db directly with  ` mysql -h localhost -P 3306 --protocol=tcp -u escalation -pperovskites -D escalation`
 
 ## Build the web server container
 
@@ -68,23 +68,23 @@ There are two other useful commands:
 - `flask reset-db` deletes all data from the tables.
 
 
-# Update stateset from current perovskites versioned data manifest
+## Update stateset from current perovskites versioned data manifest
 
-`python3 submit_server/scripts/upload_stateset.py --endpoint http://127.0.0.1:5000/submission --dev`
+`python3 submit_server/scripts/upload_stateset.py --endpoint http://127.0.0.1:5000/admin --dev`
 
-# Upload submissions on the command line
+## Upload submissions on the command line
 
 1. Run `make_perovskites_blank_submission.py`
-2. Run `python3 submit_server/scripts/upload_submission.py --csv submit_server/tests/0017_train_c4844e9_snovotney.csv --expname first --notes "These are my awesome notes"`
+2. Run `python3 submit_server/scripts/upload_submission.py --endpoint http://127.0.0.1:5000/submission --dev --csv 0038_train_12f4ffd_NickLeiby.csv --expname first --notes "These are my awesome notes"`
 
 Here's example output of running both
 ```
-python3 submit_server/scripts/upload_stateset.py  --data ../versioned-datasets/
+python3 submit_server/scripts/upload_stateset.py --endpoint http://127.0.0.1:5000/admin --dev
 Filtering ../versioned-datasets/data/perovskite/stateset/0017.stateset.csv to /var/folders/08/cb19qzd92wsbhh3n4cz145v00000gp/T/tmpbx31mcn6
 Pushing filtered csv to http://escalation.sd2e.org/admin
 200 OK <Response [200]>
 {'success': 'updated to crank 0017 and stateset hash a301494d902 with 465426 rows'}
-(venv) scott.novotney@mac0561:~/trunk/sd2/escalation$ python3 submit_server/scripts/upload_submission.py --csv submit_server/tests/0017_train_c4844e9_snovotney.csv --expname first
+(venv) scott.novotney@mac0561:~/trunk/sd2/escalation$ python3 submit_server/scripts/upload_submission.py --endpoint http://127.0.0.1:5000/submission --dev --csv submit_server/tests/0017_train_c4844e9_snovotney.csv --expname first
 0017 c4844e9 snovotney
 crank 0017
 username snovotney
