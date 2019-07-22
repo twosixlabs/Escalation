@@ -1,2 +1,6 @@
 -r requirements.txt
 flask
+sqlalchemy
+flask_sqlalchemy
+Flask-Migrate
+pymysql
