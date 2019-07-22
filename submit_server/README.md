@@ -58,8 +58,8 @@ You can also run the web server outside of docker. There are a couple useful com
 1. setup the virtual environment venv (instructions incomplete, I know, I know)
 2. `source venv/bin/activate`
 3. `pip install -r requirements-dev.txt`
-3 `flask init-db` creates the tables in the database (run once)
-4. `flask run`
+4.  `flask init-db` creates the tables in the database (run once)
+5. `flask run`
 
 Step 3 should use the environment variables in `.env`. If not, then source the variables inside there directly.
 
@@ -68,15 +68,14 @@ There are two other useful commands:
 - `flask reset-db` deletes all data from the tables.
 
 
+# Update stateset from current perovskites versioned data manifest
+
+`python3 submit_server/scripts/upload_stateset.py --endpoint http://127.0.0.1:5000/submission --dev`
 
 # Upload submissions on the command line
 
 1. Run `make_perovskites_blank_submission.py`
 2. Run `python3 submit_server/scripts/upload_submission.py --csv submit_server/tests/0017_train_c4844e9_snovotney.csv --expname first --notes "These are my awesome notes"`
-
-# Update stateset from current perovskites versioned data manifest
-
-`python3 submit_server/scripts/upload_stateset.py  --data ../versioned-datasets/`
 
 Here's example output of running both
 ```
