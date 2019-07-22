@@ -1,17 +1,16 @@
 DELIMITER = ','
 BAD_DELIMITERS = set('\t, |.') - set(DELIMITER)  # common delimiters that are disallowed
 import os
-import csv
-import hashlib
 
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for, jsonify
+    Blueprint, flash, render_template, request, session, jsonify
 )
 from werkzeug.utils import secure_filename
 from flask import current_app as app
 from . import database as db
 from .dashboard import update_auto, update_science
-from escalation import scheduler
+from escalation import scheduler, PERSISTENT_STORAGE, STATESETS_PATH, TRAINING_DATA_PATH
+
 
 session_vars= ('githash','adminkey','username','crank')
 # check that admin key is correct, git commit is 7 digits and csv file is the right format
@@ -42,7 +41,7 @@ def admin():
 
     if request.method == 'POST' and request.headers.get('User-Agent') == 'escalation' and request.form['submit'] == 'training_run':    
         training = request.files['perovskitedata']
-        training_file = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(training.filename))
+        training_file = os.path.join(app.config[PERSISTENT_STORAGE], secure_filename(training.filename))
                 
         username = request.form['username']
         crank = request.form['crank']                
@@ -61,28 +60,30 @@ def admin():
         return jsonify({'success':'added training data for %s with %d rows' % (crank,num_train_rows)}), 200        
 
     if request.method == 'POST' and request.headers.get('User-Agent') == 'escalation' and request.form['submit'] == 'stateset':
-        stateset  = request.files['stateset']
-        stateset_file  = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(stateset.filename))
+        stateset = request.files['stateset']
+        # note- this is a tmp filename because it is only a portion of the stateset, subsetted by the upload script
+        stateset_filename = os.path.join(app.config[PERSISTENT_STORAGE], STATESETS_PATH, secure_filename(stateset.filename))
 
         training = request.files['perovskitedata']
-        training_file =secure_filename(training.filename)
+        original_training_filename = training.filename
+        training_filename = os.path.join(app.config[PERSISTENT_STORAGE], TRAINING_DATA_PATH, secure_filename(original_training_filename))
                 
         username = request.form['username']
         crank = request.form['crank']                
         githash  = request.form['githash']
         orig_filename = request.form['filename']
-        app.logger.info("Received request: {} {} {} {} {}".format(stateset_file,training_file,username,crank,githash))
+        app.logger.info("Received request: {} {} {} {} {}".format(stateset_filename, training_filename, username, crank, githash))
 
         if db.is_stateset_stored(crank,githash):
             error = 'Crank and githash already stored in database'
         else:
-            stateset.save(stateset_file)
-            training.save( os.path.join(app.config['UPLOAD_FOLDER'], training_file))
-            error = validate(request.form['adminkey'],githash,stateset_file)
+            stateset.save(stateset_filename)
+            training.save(training_filename)
+            error = validate(request.form['adminkey'], githash, stateset_filename)
 
-        if error == None:
-            num_rows       = db.add_stateset(stateset_file,crank,githash,username,orig_filename,training_file)
-            num_train_rows = db.add_training(os.path.join(app.config['UPLOAD_FOLDER'],training_file),githash,crank)
+        if error is None:
+            num_rows = db.add_stateset(stateset_filename, crank, githash, username, orig_filename, training_filename)
+            num_train_rows = db.add_training(os.path.join(app.config[PERSISTENT_STORAGE], training_filename), githash, crank)
 
             out="Successfully updated to crank %s and stateset %s with %d rows" % (crank, githash,num_rows)
             app.logger.info(out)
@@ -127,7 +128,7 @@ def admin():
                     flash(out)
                     app.logger.info(out)
                     
-    if request.method == 'POST' and  request.form['submit'] == 'Update Database' :
+    if request.method == 'POST' and request.form['submit'] == 'Update Database':
         for k in request.form:
             app.logger.info(k)
         if request.form['adminkey'] != app.config['ADMIN_KEY']:
@@ -166,3 +167,5 @@ def admin():
         return jsonify({'success':"Added %d chemicals" % len(inchi_arr)})
             
     return render_template('admin.html',cranks=db.get_cranks(),session=session,chem_table=db.get_chemicals())
+
+
