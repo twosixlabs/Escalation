@@ -1,21 +1,21 @@
-from collections import OrderedDict
 import os
-from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for, send_file
-)
+from flask import  Blueprint, flash, render_template, request, send_file
 from flask import current_app as app
 from . import database as db
 from .files import download_zip
 from .policy import download_uniform_policy, default_models
-from .dashboard import update_auto, update_science
-from escalation import scheduler
+from .dashboard import update_auto
+from escalation import scheduler, PERSISTENT_STORAGE
 
 bp = Blueprint('view', __name__)
+
+DOWNLOAD_STATESET = 'Download training data'
 
 
 @bp.route('/', methods=('GET', 'POST'))
 def view():
     cranks = db.get_unique_cranks()
+    training_data_available_to_download = db.get_cranks_available_for_download()
     curr_crank = 'all'
     policy_crank = cranks[0]
     models = db.get_submissions(policy_crank)
@@ -39,8 +39,11 @@ def view():
         submissions = [sub for sub in submissions if sub.id in requested]
         app.logger.info(
             "Downloading %d submissions of %d requested for crank %s" % (len(submissions), len(requested), curr_crank))
-        zipfile = download_zip(app.config['UPLOAD_FOLDER'], submissions, curr_crank)
-        return send_file(os.path.join(app.config['UPLOAD_FOLDER'], zipfile), as_attachment=True)
+        zipfile = download_zip(app.config[PERSISTENT_STORAGE], submissions, curr_crank)
+        return send_file(os.path.join(app.config[PERSISTENT_STORAGE], zipfile), as_attachment=True)
+
+    if request.method == 'POST' and request.form.get('submit') == DOWNLOAD_STATESET:
+        return send_file(request.form['crank'], as_attachment=True)
 
     if request.method == 'POST' and 'policy_submit' in request.form:
         policy_crank = request.form['policy_crank']
@@ -61,13 +64,19 @@ def view():
         if err:
             flash(err)
         else:
-            zipfile, explanation = download_uniform_policy(app.config['UPLOAD_FOLDER'], submissions, size, policy_crank)
+            zipfile, explanation = download_uniform_policy(app.config[PERSISTENT_STORAGE], submissions, size, policy_crank)
             flash(explanation)
             app.logger.info(explanation)
-            return send_file(os.path.join(app.config['UPLOAD_FOLDER'], zipfile), as_attachment=True)
+            return send_file(os.path.join(app.config[PERSISTENT_STORAGE], zipfile), as_attachment=True)
 
     elif request.method == 'POST' and 'policy_crank' in request.form:
         policy_crank = request.form['policy_crank']
         models = db.get_submissions(policy_crank)
-    return render_template('index.html', submissions=submissions, cranks=cranks, curr_crank=curr_crank, models=models,
-                           policy_crank=policy_crank, defaults=default_models)
+    return render_template('index.html',
+                           submissions=submissions,
+                           cranks=cranks,
+                           curr_crank=curr_crank,
+                           models=models,
+                           policy_crank=policy_crank,
+                           defaults=default_models,
+                           training_data_available_to_download=training_data_available_to_download)

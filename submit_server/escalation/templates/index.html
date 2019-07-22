@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 
 {% block header %}
-<h1>{% block title %}Submissions{% endblock %}</h1>
 
 <script language="javascript">
 
@@ -53,7 +52,27 @@ function checkAllModels(ele) {
 </script>
 {% endblock %}
 
-  {% block content %}
+
+{% block content %}
+<h2>Training Data</h2>
+
+<div style="max-width:1000px;">
+<form method="post">
+  <label for="crank">Download the training data csv corresponding to the checked crank.</label>
+  <select name="crank"   onchange="this.form.submit()">
+    <option value="all">All</option>
+    {% for crank, crank_filename in training_data_available_to_download %}
+    <option value="{{ crank_filename }}" {% if crank == curr_crank %} selected {% endif %} >{{ crank }}</option>
+    {% endfor %}
+  </select>
+  <input type="hidden" value="{{ curr_crank }}" name="crank">
+  <div>
+    <input type="submit" value="Download training data" name="submit">
+  </div>
+</form>
+
+<h2>Submissions</h2>
+
 <div style="max-width:1000px;">
 <form method="post">
   <label for="crank">Select specific crank</label>
