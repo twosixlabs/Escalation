@@ -1,6 +1,6 @@
 
 import os
-from flask import Flask, render_template
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_apscheduler import APScheduler
@@ -10,6 +10,8 @@ import click
 import logging
 from logging.handlers import RotatingFileHandler
 
+from .constants import PERSISTENT_STORAGE, TRAINING_DATA_PATH, STATESETS_PATH
+
 
 # create and configure the app
 
@@ -18,14 +20,27 @@ migrate = Migrate()
 scheduler = APScheduler()
 atexit.register(lambda: scheduler.shutdown())
 
+
+def build_persistent_storage_dirs(app):
+    # ensure the instance folder exists
+    for path_ in (
+            app.config[PERSISTENT_STORAGE],
+            app.instance_path,
+            os.path.join(app.config[PERSISTENT_STORAGE], STATESETS_PATH),
+            os.path.join(app.config[PERSISTENT_STORAGE], TRAINING_DATA_PATH)
+    ):
+        if not os.path.exists(path_):
+            os.makedirs(path_)
+
+
 def create_app():
     app = Flask(__name__, instance_relative_config=True)
 
-    
     app.config.from_mapping(
         SECRET_KEY='dev',
-        #        DATABASE=os.path.join(app.instance_path, 'escalation.sqlite'),
-        UPLOAD_FOLDER = os.path.join(app.instance_path,'submissions'),
+        # PERSISTENT_STORAGE=os.environ.get('ESCALATION_PERSISTENT_DATA_PATH', '../escalation_data'),
+        # add local development persistent storage option
+        PERSISTENT_STORAGE=os.environ.get('ESCALATION_PERSISTENT_DATA_PATH'),
         SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///' + os.path.join(app.instance_path,'escalation.sqlite'),
         #1GB max upload
         MAX_CONTENT_LENGTH = 1024 * 1024 * 1024,
@@ -33,7 +48,6 @@ def create_app():
         SQLALCHEMY_TRACK_MODIFICATIONS=False
     )
 
-    
     db.init_app(app)
     migrate.init_app(app,db)
 
@@ -41,15 +55,7 @@ def create_app():
         scheduler.init_app(app)        
         scheduler.start()
 
-        
-    # ensure the instance folder exists
-    try:
-        if not os.path.exists(app.config['UPLOAD_FOLDER']):
-            os.makedirs(app.config['UPLOAD_FOLDER'])
-        if not os.path.exists(app.instance_path):
-            os.makedirs(app.instance_path)
-    except OSError:
-        pass
+    build_persistent_storage_dirs(app)
 
     from .submission import bp as sub_bp
     app.register_blueprint(sub_bp)
