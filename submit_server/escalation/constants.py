@@ -1,3 +1,4 @@
 PERSISTENT_STORAGE = 'PERSISTENT_STORAGE'
 STATESETS_PATH = 'statesets'
 TRAINING_DATA_PATH = 'training_data'
+LEADERBOARDS = 'leaderboards'

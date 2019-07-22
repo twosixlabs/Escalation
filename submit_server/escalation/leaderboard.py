@@ -1,14 +1,12 @@
-from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for, jsonify, send_file
-)
+from flask import Blueprint, flash, render_template, request, jsonify, send_file
 from flask import current_app as app
 from . import database as db
 import os
 import csv
 import time
 
-from .dashboard import update_ml, update_auto, update_science
-from escalation import scheduler
+from .dashboard import update_ml
+from escalation import scheduler, PERSISTENT_STORAGE, LEADERBOARDS
 
 
 def create_leaderboard_csv():
@@ -18,7 +16,8 @@ def create_leaderboard_csv():
                   'samples_in_train', 'samples_in_test', 'model_description', 'column_predicted', 'num_features_used',
                   'data_and_split_description', 'normalized', 'num_features_normalized', 'feature_extraction',
                   'was_untested_data_predicted']
-    csvfile = os.path.join(app.config['UPLOAD_FOLDER'],
+    csvfile = os.path.join(app.config[PERSISTENT_STORAGE],
+                           LEADERBOARDS,
                            "escalation.leaderboard.%s.csv" % time.strftime("%Y-%m-%d-%H%M%S", time.localtime()))
     with open(csvfile, 'w') as fh:
         writer = csv.DictWriter(fh, fieldnames=fieldnames, lineterminator='\n', extrasaction='ignore')
@@ -42,7 +41,7 @@ def leaderboard():
         job3 = scheduler.add_job(func=update_ml, args=[], id='update_ml')
     elif request.method == 'POST' and request.form['submit'] == 'Download CSV':
         csvfile = create_leaderboard_csv()
-        return send_file(os.path.join(app.config['UPLOAD_FOLDER'], csvfile), as_attachment=True)
+        return send_file(os.path.join(app.config[PERSISTENT_STORAGE], csvfile), as_attachment=True)
     elif request.method == 'POST' and 'submit' in request.form and request.form['submit'] == 'Delete':
         if request.form['adminkey'] != app.config['ADMIN_KEY']:
             flash("Incorrect admin code")

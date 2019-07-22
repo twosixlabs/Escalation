@@ -10,7 +10,7 @@ import click
 import logging
 from logging.handlers import RotatingFileHandler
 
-from .constants import PERSISTENT_STORAGE, TRAINING_DATA_PATH, STATESETS_PATH
+from .constants import PERSISTENT_STORAGE, TRAINING_DATA_PATH, STATESETS_PATH, LEADERBOARDS
 
 
 # create and configure the app
