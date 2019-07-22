@@ -1,8 +1,11 @@
-from escalation import db
+import csv
+import os
+
+from flask import current_app as app
 from sqlalchemy import and_, sql, create_engine, text
 from sqlalchemy.orm import deferred, column_property
-from flask import current_app as app
-import csv
+
+from escalation import db, PERSISTENT_STORAGE, STATESETS_PATH, TRAINING_DATA_PATH
 # Leaderboard statistics
 
 class FeatureImportance(db.Model):
@@ -238,6 +241,17 @@ def get_cranks():
     
 def get_unique_cranks():
     return sorted([x[0] for x in db.session.query(Crank.crank).distinct().all()],reverse=True)
+
+def get_cranks_available_for_download():
+    # get tuples of (crank#, training_data_filename) that are marked as active in db
+    active_cranks = [x for x in db.session.query(Crank.crank, Crank.train_filename).filter(Crank.active == 1).distinct().all()]
+    # saved_training_data = os.listdir(os.path.join(app.config[PERSISTENT_STORAGE], TRAINING_DATA_PATH))
+    available_cranks = []
+    for crank in active_cranks:
+        # look for a matching training data filename
+        if os.path.exists(crank[1]):
+            available_cranks.append(crank)
+    return sorted(available_cranks, reverse=True, key=lambda x: x[0])
 
 def get_active_cranks():
     return Crank.query.filter_by(active=True).all()
