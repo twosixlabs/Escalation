@@ -84,13 +84,17 @@ def create_app():
 
         app.logger.info("Writing to %s" % app.config['SQLALCHEMY_DATABASE_URI'])
 
-
     from .database import delete_db, create_db, Run, Submission, Crank, Prediction
 
     @app.cli.command('reset-db')
     def reset_db():
         delete_db()
         click.echo("Deleted db entries")
+
+    @app.cli.command('init-db')
+    def init_db():
+        create_db()
+        click.echo("Created db")
 
     @app.cli.command('update-ml')
     def update_ml_cli():
