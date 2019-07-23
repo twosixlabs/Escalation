@@ -38,12 +38,12 @@ def create_app():
 
     app.config.from_mapping(
         SECRET_KEY='dev',
-        # PERSISTENT_STORAGE=os.environ.get('ESCALATION_PERSISTENT_DATA_PATH', '../escalation_data'),
         # add local development persistent storage option
+        # PERSISTENT_STORAGE=os.environ.get('ESCALATION_PERSISTENT_DATA_PATH', '../escalation_data'),
         PERSISTENT_STORAGE=os.environ.get('ESCALATION_PERSISTENT_DATA_PATH'),
-        SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///' + os.path.join(app.instance_path,'escalation.sqlite'),
+        SQLALCHEMY_DATABASE_URI=os.environ.get('DATABASE_URL') or 'sqlite:///' + os.path.join(app.instance_path,'escalation.sqlite'),
         #1GB max upload
-        MAX_CONTENT_LENGTH = 1024 * 1024 * 1024,
+        MAX_CONTENT_LENGTH=1024 * 1024 * 1024,
         ADMIN_KEY='Trompdoy',
         SQLALCHEMY_TRACK_MODIFICATIONS=False
     )
