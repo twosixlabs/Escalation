@@ -30,7 +30,11 @@ def build_persistent_storage_dirs(app):
             os.path.join(app.config[PERSISTENT_STORAGE], TRAINING_DATA_PATH)
     ):
         if not os.path.exists(path_):
-            os.makedirs(path_)
+            try:
+                os.makedirs(path_)
+            except PermissionError:
+                print("Permission denied.  Unable to create path: %s" % path_)
+                continue
 
 
 def create_app():

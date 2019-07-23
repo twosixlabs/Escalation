@@ -58,10 +58,11 @@ You can also run the web server outside of docker. There are a couple useful com
 1. setup the virtual environment venv (instructions incomplete, I know, I know)
 2. `source venv/bin/activate`
 3. `pip install -r requirements-dev.txt`
-4.  `flask init-db` creates the tables in the database (run once)
-5. `flask run`
+4. `flask init-db` creates the tables in the database (run once)
+5. `export ESCALATION_PERSISTENT_DATA_PATH='/Users/nick.leiby/escalation_data'` tells the app where to store persistent data 
+6. `flask run`
 
-Step 3 should use the environment variables in `.env`. If not, then source the variables inside there directly.
+Steps 4 and 6 should use the environment variables in `.env`. If not, then source the variables inside there directly.
 
 There are two other useful commands:
 - `flask demo-data` loads fake demo data into the db.
