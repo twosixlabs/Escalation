@@ -26,7 +26,8 @@ def build_persistent_storage_dirs(app):
             app.config[PERSISTENT_STORAGE],
             app.instance_path,
             os.path.join(app.config[PERSISTENT_STORAGE], STATESETS_PATH),
-            os.path.join(app.config[PERSISTENT_STORAGE], TRAINING_DATA_PATH)
+            os.path.join(app.config[PERSISTENT_STORAGE], TRAINING_DATA_PATH),
+            os.path.join(app.config[PERSISTENT_STORAGE], LEADERBOARDS),
     ):
         if not os.path.exists(path_):
             try:
@@ -53,7 +54,7 @@ def create_app():
     migrate.init_app(app,db)
 
     if not scheduler.running:
-        scheduler.init_app(app)        
+        scheduler.init_app(app)
         scheduler.start()
 
     build_persistent_storage_dirs(app)
@@ -63,14 +64,14 @@ def create_app():
 
     from .feature_analysis import bp as feat_bp
     app.register_blueprint(feat_bp)
-    
+
     from .view import bp as view_bp
     app.register_blueprint(view_bp)
-    
+
     from .admin import bp as admin_bp
     app.register_blueprint(admin_bp)
 
-    from . import dashboard    
+    from . import dashboard
     app.register_blueprint(dashboard.bp)
 
     from . import leaderboard
@@ -87,7 +88,7 @@ def create_app():
         app.logger.addHandler(file_handler)
 
         app.logger.setLevel(logging.INFO)
-        app.logger.info('ESCALATion started')    
+        app.logger.info('ESCALATion started')
 
         app.logger.info("Writing to %s" % app.config['SQLALCHEMY_DATABASE_URI'])
 
@@ -112,7 +113,7 @@ def create_app():
     def do_job():
         from .plot import update_repo_table
         update_repo_table()
-        
+
     # Shut down the scheduler when exiting the app
     return app
 

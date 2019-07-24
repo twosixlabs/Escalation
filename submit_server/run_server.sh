@@ -1,7 +1,9 @@
+# NB: have to define your own persistent data path /Users/nick.leiby/escalation_data
 
  # link the db container to the app
  # mount a local directory as a volume
  # define where the flask app can find the persistent data volume
+
 
 docker run --name escalation -it --rm \
     -e TZ=`ls -la /etc/localtime | cut -d/ -f8-9` \
