@@ -202,7 +202,7 @@ def delete_db():
 
 def read_in_stateset(filename,crank,githash):
     Run.query.filter(and_(Run.dataset == crank, Run.githash == githash)).delete()
-    with open(filename) as csvfile:
+    with open(os.path.join(app.config[PERSISTENT_STORAGE], filename)) as csvfile:
         csvreader = csv.DictReader(filter(lambda row: row[0]!='#', csvfile))
         objs=[]
         for r in csvreader:
@@ -249,8 +249,9 @@ def get_cranks_available_for_download():
     available_cranks = []
     for crank in active_cranks:
         # look for a matching training data filename
-        if os.path.exists(crank[1]):
-            available_cranks.append(crank)
+        persistent_file_path = os.path.join(app.config[PERSISTENT_STORAGE], crank[1])
+        if os.path.exists(persistent_file_path):
+            available_cranks.append((crank[0], persistent_file_path))
     return sorted(available_cranks, reverse=True, key=lambda x: x[0])
 
 def get_active_cranks():

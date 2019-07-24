@@ -23,7 +23,7 @@ def validate(adminkey,githash,filename):
 
     header=""
     #make sure file is comma  delimited
-    with open(filename, 'r') as fh:
+    with open(os.path.join(app.config[PERSISTENT_STORAGE], filename), 'r') as fh:
         for header in fh:
             if header[0] != '#':
                 break
