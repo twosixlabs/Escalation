@@ -73,7 +73,7 @@ def admin():
         githash = request.form['githash']
         orig_filename = request.form['filename']
         app.logger.info("Received request: {} {} {} {} {}".format(stateset_filename, training_filename, username, crank, githash))
-K
+
         if db.is_stateset_stored(crank,githash):
             error = 'Crank and githash already stored in database'
         else:
