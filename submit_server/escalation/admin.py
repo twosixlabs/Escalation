@@ -62,23 +62,23 @@ def admin():
     if request.method == 'POST' and request.headers.get('User-Agent') == 'escalation' and request.form['submit'] == 'stateset':
         stateset = request.files['stateset']
         # note- this is a tmp filename because it is only a portion of the stateset, subsetted by the upload script
-        stateset_filename = os.path.join(app.config[PERSISTENT_STORAGE], STATESETS_PATH, secure_filename(stateset.filename))
+        stateset_filename = os.path.join(STATESETS_PATH, secure_filename(stateset.filename))
 
         training = request.files['perovskitedata']
         original_training_filename = training.filename
-        training_filename = os.path.join(app.config[PERSISTENT_STORAGE], TRAINING_DATA_PATH, secure_filename(original_training_filename))
+        training_filename = os.path.join(TRAINING_DATA_PATH, secure_filename(original_training_filename))
                 
         username = request.form['username']
         crank = request.form['crank']                
-        githash  = request.form['githash']
+        githash = request.form['githash']
         orig_filename = request.form['filename']
         app.logger.info("Received request: {} {} {} {} {}".format(stateset_filename, training_filename, username, crank, githash))
 
         if db.is_stateset_stored(crank,githash):
             error = 'Crank and githash already stored in database'
         else:
-            stateset.save(stateset_filename)
-            training.save(training_filename)
+            stateset.save(os.path.join(app.config[PERSISTENT_STORAGE]. stateset_filename))
+            training.save(os.path.join(app.config[PERSISTENT_STORAGE]. training_filename))
             error = validate(request.form['adminkey'], githash, stateset_filename)
 
         if error is None:
