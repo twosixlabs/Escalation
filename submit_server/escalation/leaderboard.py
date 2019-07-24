@@ -16,10 +16,9 @@ def create_leaderboard_csv():
                   'samples_in_train', 'samples_in_test', 'model_description', 'column_predicted', 'num_features_used',
                   'data_and_split_description', 'normalized', 'num_features_normalized', 'feature_extraction',
                   'was_untested_data_predicted']
-    csv_filename = os.path.join(app.config[PERSISTENT_STORAGE],
-                           LEADERBOARDS,
-                           "escalation.leaderboard.%s.csv" % time.strftime("%Y-%m-%d-%H%M%S", time.localtime()))
-    with open(csv_filename, 'w') as fh:
+    csv_filename = os.path.join(LEADERBOARDS,
+                                "escalation.leaderboard.%s.csv" % time.strftime("%Y-%m-%d-%H%M%S", time.localtime()))
+    with open(os.path.join(app.config[PERSISTENT_STORAGE], csv_filename), 'w') as fh:
         writer = csv.DictWriter(fh, fieldnames=fieldnames, lineterminator='\n', extrasaction='ignore')
         writer.writeheader()
         for elem in rows:
@@ -41,7 +40,7 @@ def leaderboard():
         job3 = scheduler.add_job(func=update_ml, args=[], id='update_ml')
     elif request.method == 'POST' and request.form['submit'] == 'Download CSV':
         csv_filename = create_leaderboard_csv()
-        return send_file(csv_filename, as_attachment=True)
+        return send_file(os.path.join(app.config[PERSISTENT_STORAGE], csv_filename), as_attachment=True)
     elif request.method == 'POST' and 'submit' in request.form and request.form['submit'] == 'Delete':
         if request.form['adminkey'] != app.config['ADMIN_KEY']:
             flash("Incorrect admin code")
