@@ -58,14 +58,14 @@ function checkAllModels(ele) {
 
 <div style="max-width:1000px;">
 <form method="post">
-  <label for="crank">Download the training data csv corresponding to the checked crank.</label>
-  <select name="crank"   onchange="this.form.submit()">
+  <label for="training_crank">Download the training data csv corresponding to the checked crank.</label>
+  <select name="training_crank"   onchange="this.form.submit()">
     <option value="blank">None</option>
     {% for crank, crank_filename in training_data_available_to_download %}
-    <option value="{{ crank_filename }}" {% if crank == curr_crank %} selected {% endif %} >{{ crank }}</option>
+    <option value="{{ crank_filename }}" {% if crank == training_crank %} selected {% endif %} >{{ crank }}</option>
     {% endfor %}
   </select>
-  <input type="hidden" value="{{ curr_crank }}" name="crank">
+  <input type="hidden" value="{{ training_crank }}" name="training_crank">
   <div>
     <input type="submit" value="Download training data" name="submit">
   </div>

@@ -43,8 +43,8 @@ def view():
         return send_file(os.path.join(app.config[UPLOAD_FOLDER], zipfile), as_attachment=True)
 
     if request.method == 'POST' and request.form.get('submit') == DOWNLOAD_TRAINING_DATA:
-        if request.form['crank'] != 'blank':
-            return send_file(request.form['crank'], as_attachment=True)
+        if request.form['training_crank'] != 'blank':
+            return send_file(request.form['training_crank'], as_attachment=True)
 
     if request.method == 'POST' and 'policy_submit' in request.form:
         policy_crank = request.form['policy_crank']
