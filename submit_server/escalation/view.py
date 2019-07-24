@@ -5,7 +5,7 @@ from . import database as db
 from .files import download_zip
 from .policy import download_uniform_policy, default_models
 from .dashboard import update_auto
-from escalation import scheduler, PERSISTENT_STORAGE
+from escalation import scheduler, PERSISTENT_STORAGE, UPLOAD_FOLDER
 
 bp = Blueprint('view', __name__)
 
@@ -39,8 +39,8 @@ def view():
         submissions = [sub for sub in submissions if sub.id in requested]
         app.logger.info(
             "Downloading %d submissions of %d requested for crank %s" % (len(submissions), len(requested), curr_crank))
-        zipfile = download_zip(app.config[PERSISTENT_STORAGE], submissions, curr_crank)
-        return send_file(os.path.join(app.config[PERSISTENT_STORAGE], zipfile), as_attachment=True)
+        zipfile = download_zip(app.config[UPLOAD_FOLDER], submissions, curr_crank)
+        return send_file(os.path.join(app.config[UPLOAD_FOLDER], zipfile), as_attachment=True)
 
     if request.method == 'POST' and request.form.get('submit') == DOWNLOAD_TRAINING_DATA:
         if request.form['crank'] != 'blank':
@@ -65,10 +65,10 @@ def view():
         if err:
             flash(err)
         else:
-            zipfile, explanation = download_uniform_policy(app.config[PERSISTENT_STORAGE], submissions, size, policy_crank)
+            zipfile, explanation = download_uniform_policy(app.config[UPLOAD_FOLDER], submissions, size, policy_crank)
             flash(explanation)
             app.logger.info(explanation)
-            return send_file(os.path.join(app.config[PERSISTENT_STORAGE], zipfile), as_attachment=True)
+            return send_file(os.path.join(app.config[UPLOAD_FOLDER], zipfile), as_attachment=True)
 
     elif request.method == 'POST' and 'policy_crank' in request.form:
         policy_crank = request.form['policy_crank']

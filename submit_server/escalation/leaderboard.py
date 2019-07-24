@@ -6,7 +6,7 @@ import csv
 import time
 
 from .dashboard import update_ml
-from escalation import scheduler, PERSISTENT_STORAGE, LEADERBOARDS
+from escalation import scheduler, LEADERBOARDS, UPLOAD_FOLDER
 
 
 def create_leaderboard_csv():
@@ -18,7 +18,7 @@ def create_leaderboard_csv():
                   'was_untested_data_predicted']
     csv_filename = os.path.join(LEADERBOARDS,
                                 "escalation.leaderboard.%s.csv" % time.strftime("%Y-%m-%d-%H%M%S", time.localtime()))
-    with open(os.path.join(app.config[PERSISTENT_STORAGE], csv_filename), 'w') as fh:
+    with open(os.path.join(app.config[UPLOAD_FOLDER], csv_filename), 'w') as fh:
         writer = csv.DictWriter(fh, fieldnames=fieldnames, lineterminator='\n', extrasaction='ignore')
         writer.writeheader()
         for elem in rows:
@@ -40,7 +40,7 @@ def leaderboard():
         job3 = scheduler.add_job(func=update_ml, args=[], id='update_ml')
     elif request.method == 'POST' and request.form['submit'] == 'Download CSV':
         csv_filename = create_leaderboard_csv()
-        return send_file(os.path.join(app.config[PERSISTENT_STORAGE], csv_filename), as_attachment=True)
+        return send_file(os.path.join(app.config[UPLOAD_FOLDER], csv_filename), as_attachment=True)
     elif request.method == 'POST' and 'submit' in request.form and request.form['submit'] == 'Delete':
         if request.form['adminkey'] != app.config['ADMIN_KEY']:
             flash("Incorrect admin code")

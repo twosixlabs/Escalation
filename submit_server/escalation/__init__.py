@@ -10,7 +10,7 @@ import click
 import logging
 from logging.handlers import RotatingFileHandler
 
-from .constants import PERSISTENT_STORAGE, TRAINING_DATA_PATH, STATESETS_PATH, LEADERBOARDS
+from .constants import PERSISTENT_STORAGE, TRAINING_DATA_PATH, STATESETS_PATH, LEADERBOARDS, SUBMISSIONS
 
 # create and configure the app
 
@@ -43,6 +43,7 @@ def create_app():
     app.config.from_mapping(
         SECRET_KEY='dev',
         PERSISTENT_STORAGE=os.environ.get('ESCALATION_PERSISTENT_DATA_PATH'),
+        UPLOAD_FOLDER=os.path.join(app.instance_path, 'submissions'),
         SQLALCHEMY_DATABASE_URI=os.environ.get('DATABASE_URL') or 'sqlite:///' + os.path.join(app.instance_path,'escalation.sqlite'),
         #1GB max upload
         MAX_CONTENT_LENGTH=1024 * 1024 * 1024,
