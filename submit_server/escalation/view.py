@@ -9,7 +9,7 @@ from escalation import scheduler, PERSISTENT_STORAGE
 
 bp = Blueprint('view', __name__)
 
-DOWNLOAD_STATESET = 'Download training data'
+DOWNLOAD_TRAINING_DATA = 'Download training data'
 
 
 @bp.route('/', methods=('GET', 'POST'))
@@ -42,8 +42,9 @@ def view():
         zipfile = download_zip(app.config[PERSISTENT_STORAGE], submissions, curr_crank)
         return send_file(os.path.join(app.config[PERSISTENT_STORAGE], zipfile), as_attachment=True)
 
-    if request.method == 'POST' and request.form.get('submit') == DOWNLOAD_STATESET:
-        return send_file(request.form['crank'], as_attachment=True)
+    if request.method == 'POST' and request.form.get('submit') == DOWNLOAD_TRAINING_DATA:
+        if request.form['crank'] != 'blank':
+            return send_file(request.form['crank'], as_attachment=True)
 
     if request.method == 'POST' and 'policy_submit' in request.form:
         policy_crank = request.form['policy_crank']

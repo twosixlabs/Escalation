@@ -9,7 +9,6 @@ RUN echo "**** install Python ****" && \
     pip3 install --no-cache --upgrade pip setuptools wheel && \
     if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi
 
-RUN echo "America/New_York" > /etc/timezone
 RUN adduser -D escalation
 
 WORKDIR /home/escalation
@@ -40,6 +39,10 @@ RUN chmod +x boot.sh
 COPY escalation escalation
 COPY migrations migrations
 RUN chown -R escalation:escalation ./
+
+RUN apk add -U tzdata
+ENV TZ America/New_York
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 USER escalation
 

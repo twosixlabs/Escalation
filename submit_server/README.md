@@ -21,7 +21,7 @@ docker run \
     --name escalation-mysql \
     mysql:latest
 ```
-3. If desired, connect to the db directly with  ` mysql -h localhost -P 3306 --protocol=tcp -u escalation -pperovskites -D escalation`
+3. If desired, connect to the db directly with  `mysql -h localhost -P 3306 --protocol=tcp -u escalation -pperovskites -D escalation`
 
 ## Build the web server container
 
@@ -45,11 +45,10 @@ This will create the server on `127.0.0.1:8000` and connect to the mysql server 
 docker run --name escalation -d -p 8000:5000 --rm -e SECRET_KEY=perovskites-rule \
     --link escalation-mysql:dbserver \
     -e DATABASE_URL=mysql+pymysql://escalation:perovskites@dbserver/escalation \
-    escalation:latest
+    escalation-server:latest
 ```
 
-Go to `http://127.0.0.1:8000` in your brower
-
+Go to `http://127.0.0.1:8000` in your browser
 
 ## Debug with flask
 
@@ -95,3 +94,5 @@ csv submit_server/tests/0017_train_c4844e9_snovotney.csv
 200 OK <Response [200]>
 {'success': 'Added submission'}
 ```
+
+# todo: tag code on gitlab with version once I push
