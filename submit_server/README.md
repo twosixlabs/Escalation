@@ -25,28 +25,19 @@ docker run \
 
 ## Build the web server container
 
-This assumes you have a public docker hub account. If not, go make one at https://hub.docker.com/
+To build a local image from your code:
 
 ```
-# set your escalation app version (should be tracked in VERSION.py
-ESCALATION_VERSION=0.2
-# change to your Docker user ID
-DOCKERUSER=snovotney
 docker build -t escalation-server .
-docker tag escalation-server:latest $DOCKERUSER/escalation:ESCALATION_VERSION
-docker push $DOCKERUSER/escalation:ESCALATION_VERSION
 ```
+
+To deploy the container, you'll need to upload an image to dockerhub.  You need a public docker hub account. If not, go make one at https://hub.docker.com/ . You'll also need access to the `snovotney/escalation-server` repo- talk to Scott.
+
+
 
 ## Run the web server locally in a docker container
 
-This will create the server on `127.0.0.1:8000` and connect to the mysql server you stood up before.
-
-```
-docker run --name escalation -d -p 8000:5000 --rm -e SECRET_KEY=perovskites-rule \
-    --link escalation-mysql:dbserver \
-    -e DATABASE_URL=mysql+pymysql://escalation:perovskites@dbserver/escalation \
-    escalation-server:latest
-```
+Run `run_server.sh`. This will create the server on `127.0.0.1:8000` and connect to the mysql server you stood up before.
 
 Go to `http://127.0.0.1:8000` in your browser
 

@@ -40,6 +40,10 @@ COPY escalation escalation
 COPY migrations migrations
 RUN chown -R escalation:escalation ./
 
+# create the filepaths that will be linked to external volumes, and give permission to the flask app user
+RUN mkdir /data
+RUN chown -R escalation /data
+
 RUN apk add -U tzdata
 ENV TZ America/New_York
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
