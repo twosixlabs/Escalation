@@ -1,6 +1,5 @@
 # Building the web server and mysql server locally
 
-
 ## MYSQL
 
 1. Install mysql on your local machine
@@ -31,9 +30,13 @@ To build a local image from your code:
 docker build -t escalation-server .
 ```
 
-To deploy the container, you'll need to upload an image to dockerhub.  You need a public docker hub account. If not, go make one at https://hub.docker.com/ . You'll also need access to the `snovotney/escalation-server` repo- talk to Scott.
+## Make database changes
 
+We track the db with alembic.  To make changes to the db table schemas:
 
+1. edit the models in database.py
+2. run `flask db migrate` to create the revision file that will implement the changes to the table
+3. (for local development) run `flask db upghrade` to propagate changes to your local db
 
 ## Run the web server locally in a docker container
 
@@ -87,4 +90,9 @@ csv submit_server/tests/0017_train_c4844e9_snovotney.csv
 {'success': 'Added submission'}
 ```
 
-# todo: tag code on gitlab with version once I push
+
+# Deploy the image to the web
+
+To deploy the container, you'll need to upload an image to dockerhub.  You need a public docker hub account. If not, go make one at https://hub.docker.com/ . You'll also need access to the `snovotney/escalation-server` repo- talk to Scott.
+
+We have a dev and a prd site at `http://escalation-dev.sd2e.org` and `http://escalation.sd2e.org`.  These are hosted using the Portainer service at `https://chombo.sd2e.org/#/auth`.  
