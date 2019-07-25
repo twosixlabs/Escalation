@@ -1,8 +1,11 @@
-from escalation import db
-from sqlalchemy import and_, sql, create_engine, text
-from sqlalchemy.orm import deferred, column_property
-from flask import current_app as app
 import csv
+import os
+
+from flask import current_app as app
+from sqlalchemy import and_, sql, create_engine, text, func
+from sqlalchemy.orm import deferred, column_property
+
+from escalation import db, PERSISTENT_STORAGE, STATESETS_PATH, TRAINING_DATA_PATH
 # Leaderboard statistics
 
 class FeatureImportance(db.Model):
@@ -142,6 +145,7 @@ class Crank(db.Model):
     created         = db.Column(db.DateTime(timezone=True), server_default=sql.func.now())
     upload_filename = db.Column(db.String(256)) #uploaded file name for comparison
     train_filename  = db.Column(db.String(256)) #perovskitedata filename
+    num_training_rows = db.Column(db.Integer)
 
     def  __repr__(self):
         return '<Crank {} {} {} {}>'.format(self.crank,self.githash,self.active,self.created)
@@ -199,7 +203,7 @@ def delete_db():
 
 def read_in_stateset(filename,crank,githash):
     Run.query.filter(and_(Run.dataset == crank, Run.githash == githash)).delete()
-    with open(filename) as csvfile:
+    with open(os.path.join(app.config[PERSISTENT_STORAGE], filename)) as csvfile:
         csvreader = csv.DictReader(filter(lambda row: row[0]!='#', csvfile))
         objs=[]
         for r in csvreader:
@@ -208,15 +212,17 @@ def read_in_stateset(filename,crank,githash):
     db.session.commit()
     app.logger.info("Added %d runs for stateset" % len(objs))
     return len(objs)
-    
-def add_stateset(filename,crank,githash,username,orig_filename,train_filename):
-    num_runs= read_in_stateset(filename,crank,githash)
 
-    #retire other entries that have the same crank
-    Crank.query.filter_by(crank=crank).update({'active':False})
-    
-    db.session.add(Crank(crank=crank,githash=githash,username=username,num_runs=num_runs,active=True,
-                         upload_filename=orig_filename,train_filename=train_filename))
+
+def add_stateset(filename, crank, githash, username, orig_filename, train_filename, num_train_rows):
+    num_runs = read_in_stateset(filename, crank, githash)
+
+    # retire other entries that have the same crank
+    Crank.query.filter_by(crank=crank).update({'active': False})
+
+    db.session.add(Crank(crank=crank, githash=githash, username=username, num_runs=num_runs, active=True,
+                         upload_filename=orig_filename, train_filename=train_filename,
+                         num_training_rows=num_train_rows))
     db.session.commit()
     return num_runs
 
@@ -238,6 +244,31 @@ def get_cranks():
     
 def get_unique_cranks():
     return sorted([x[0] for x in db.session.query(Crank.crank).distinct().all()],reverse=True)
+
+def get_cranks_available_for_download():
+    """
+    Returns sorted list of dicts for an intersection of active cranks with training files we have cached for download
+    """
+    # select dataset, count(distinct inchikey) from training_run right join crank on crank.crank=training_run.dataset where crank.active=1 group by dataset;
+    # inchi_key_counts = db.session.query(TrainingRun.dataset, func.count(func.distinct(TrainingRun.inchikey))).group_by(TrainingRun.dataset).all()
+    return_columns = ('crank', 'githash', 'created', 'num_training_rows', 'num_inchi_keys', 'file_path')
+    active_crank_results = db.session.query(Crank.crank,
+                                     Crank.githash,
+                                     Crank.created,
+                                     Crank.num_training_rows,
+                                     func.count(func.distinct(TrainingRun.inchikey)),
+                                     Crank.train_filename).\
+        join(TrainingRun, TrainingRun.dataset == Crank.crank).\
+        filter(Crank.active == 1).\
+        group_by(Crank.crank, Crank.githash, Crank.created, Crank.num_training_rows, Crank.train_filename).all()
+    available_cranks = []
+    for query_result in active_crank_results:
+        crank_dict = dict(zip(return_columns, query_result))
+        # look for a matching training data filename
+        persistent_file_path = os.path.join(app.config[PERSISTENT_STORAGE], crank_dict['file_path'])
+        if os.path.exists(persistent_file_path):
+            available_cranks.append(crank_dict)
+    return sorted(available_cranks, reverse=True, key=lambda x: x['crank'])
 
 def get_active_cranks():
     return Crank.query.filter_by(active=True).all()
@@ -306,23 +337,32 @@ def get_training(dataset='all'):
         return TrainingRun.query.all()
     else:
         return TrainingRun.query.filter_by(dataset=dataset).all()
-    
-def add_training(filename,githash,crank):
+
+
+def add_training(filename, githash, crank):
     app.logger.info("Adding training runs")
 
-    TrainingRun.query.filter(TrainingRun.dataset==crank).delete()
+    TrainingRun.query.filter(TrainingRun.dataset == crank).delete()
     with open(filename) as csvfile:
-        csvreader = csv.DictReader(filter(lambda row: row[0]!='#', csvfile))
-        objs=[]
+        csvreader = csv.DictReader(filter(lambda row: row[0] != '#', csvfile))
+        objs = []
         for r in csvreader:
-            objs.append(TrainingRun(dataset=r['dataset'],name=r['name'],githash=githash,
-                                    _rxn_M_inorganic=r['_rxn_M_inorganic'],_rxn_M_organic=r['_rxn_M_organic'],_rxn_M_acid=r['_rxn_M_acid'],
-                                    _out_crystalscore=r['_out_crystalscore'],inchikey=r['_rxn_organic-inchikey'], _rxn_temperatureC_actual_bulk=r['_rxn_temperatureC_actual_bulk'],
-            ))
+            objs.append(TrainingRun(dataset=r['dataset'],
+                                    name=r['name'],
+                                    githash=githash,
+                                    _rxn_M_inorganic=r['_rxn_M_inorganic'],
+                                    _rxn_M_organic=r['_rxn_M_organic'],
+                                    _rxn_M_acid=r['_rxn_M_acid'],
+                                    _out_crystalscore=r['_out_crystalscore'],
+                                    inchikey=r['_rxn_organic-inchikey'],
+                                    _rxn_temperatureC_actual_bulk=r['_rxn_temperatureC_actual_bulk'],
+                                    ))
         db.session.bulk_save_objects(objs)
         db.session.commit()
-    app.logger.info("Added %d training runs" % len(objs))
-    return len(objs)
+    number_of_training_rows = len(objs)
+    app.logger.info("Added %d training rows" % number_of_training_rows)
+    return number_of_training_rows
+
 
 def get_leaderboard(dataset='all'):
     if dataset == 'all':

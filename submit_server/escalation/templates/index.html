@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 
 {% block header %}
-<h1>{% block title %}Submissions{% endblock %}</h1>
 
 <script language="javascript">
 
@@ -53,7 +52,44 @@ function checkAllModels(ele) {
 </script>
 {% endblock %}
 
-  {% block content %}
+
+{% block content %}
+<h2>Training Data</h2>
+
+<div style="max-width:1000px;">
+<form method="post">
+  <label for="training_crank">Download the training data csv corresponding to the checked crank.</label>
+  <table  id="training_dataset_table" class="compact hover order-column row-border" style="width:100%">
+  <thead>
+  <tr>
+    <th></th>
+    <th>Crank</th>
+    <th>Versioned Repo Hash</th>
+    <th>Upload Time</th>
+    <th>Number of rows</th>
+    <th>Number of InChI Keys</th>
+  </tr>
+  </thead>
+  <tbody>
+  {% for training_crank in training_data_available_to_download %}
+    <tr>
+      <td> <input type="radio" name="download_training_crank" value="{{ training_crank['file_path'] }}" checked> </td>
+      <td> {{ training_crank['crank'] }} </td>
+      <td> {{ training_crank['githash'] }} </td>
+      <td> {{ training_crank['created'].strftime('%m-%d-%y %H:%M') }} </td>
+      <td> {{ training_crank['num_training_rows'] }} </td>
+      <td> {{ training_crank['num_inchi_keys'] }} </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  </table>
+  <div>
+    <input type="submit" value="Download training data" name="submit">
+  </div>
+</form>
+
+<h2>Submissions</h2>
+
 <div style="max-width:1000px;">
 <form method="post">
   <label for="crank">Select specific crank</label>

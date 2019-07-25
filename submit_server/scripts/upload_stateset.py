@@ -1,12 +1,11 @@
-import hashlib
-import tempfile
+import argparse
+from distutils.util import strtobool
 import os
-import git
-import yaml
+import tempfile
+import sys
+
 import requests
 import pandas as pd
-import argparse
-import sys
 
 #don't judge me -- cute way to import the utils module from two dirs up
 base=os.path.dirname(os.path.realpath(__file__))
@@ -45,13 +44,10 @@ versioned_datasets_repo_path = utils.get_versioned_data_repo_directory()
 git_sha, git_username = utils.get_git_info(versioned_datasets_repo_path)
 files = utils.get_files_of_necessary_types(versioned_datasets_repo_path,args.debug)
 
-def y_or_no():
+def y_or_no(crank):
     while True:
-        a = input("Do you want to upload crank %s [yes/no]:" % crank)
-        if a == "yes":
-            return True
-        elif a == "no":
-            return False
+        ans = input("Do you want to upload crank %s [yes/no]:" % crank)
+        return strtobool(ans)
     
 if args.githash:
     git_sha = args.githash
@@ -59,7 +55,7 @@ if args.githash:
 
 for crank in files:
     # very hardcoded pths
-    if not y_or_no():
+    if not y_or_no(crank):
         continue
     
     stateset       = os.path.join(versioned_datasets_repo_path,'data','perovskite',files[crank]['stateset'])
@@ -98,11 +94,20 @@ for crank in files:
 
     print("crank:",crank)
     print("githash:", git_sha[:7])
-    print("username:",git_username)
-    r = requests.post(args.endpoint, headers={'User-Agent':'escalation'},
-                      data={'crank':crank,'githash':git_sha[:7], 'username':git_username,'adminkey':args.key,'submit':'stateset','filename':orig_filename},
-                      files={'stateset':open(stateset_csv,'rb'), 'perovskitedata':open(perovskite_csv,'rb')},timeout=600)
-    print(r.status_code, r.reason,r)
+    print("username:", git_username)
+    r = requests.post(args.endpoint,
+                      headers={'User-Agent': 'escalation'},
+                      data={
+                          'crank': crank,
+                          'githash': git_sha[:7],
+                          'username': git_username,
+                          'adminkey': args.key,
+                          'submit': 'stateset',
+                          'filename': orig_filename
+                      },
+                      files={'stateset': open(stateset_csv, 'rb'), 'perovskitedata':open(perovskite_csv, 'rb')},
+                      timeout=600)
+    print(r.status_code, r.reason, r)
     try:
         print(r.json())
     except:

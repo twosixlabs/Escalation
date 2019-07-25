@@ -1,6 +1,5 @@
 # Building the web server and mysql server locally
 
-
 ## MYSQL
 
 1. Install mysql on your local machine
@@ -21,35 +20,29 @@ docker run \
     --name escalation-mysql \
     mysql:latest
 ```
-3. If desired, connect to the db directly with  ` mysql -h localhost -P 3306 --protocol=tcp -u escalation -pperovskites`
+3. If desired, connect to the db directly with  `mysql -h localhost -P 3306 --protocol=tcp -u escalation -pperovskites -D escalation`
 
 ## Build the web server container
 
-This assumes you have a public docker hub account. If not, go make one at https://hub.docker.com/
+To build a local image from your code:
 
 ```
-# select your version
-VERSION=0.2
-# change to your Docker user ID
-DOCKERUSER=snovotney
-docker build -t escalation-server 
-docker tag escalation-server:latest $DOCKERUSER/escalation:$VERSION
-docker push $DOCKERUSER/escalation:$VERSION
+docker build -t escalation-server .
 ```
+
+## Make database changes
+
+We track the db with alembic.  To make changes to the db table schemas:
+
+1. edit the models in database.py
+2. run `flask db migrate` to create the revision file that will implement the changes to the table
+3. (for local development) run `flask db upghrade` to propagate changes to your local db
 
 ## Run the web server locally in a docker container
 
-This will create the server on `127.0.0.1:8000` and connect to the mysql server you stood up before.
+Run `run_server.sh`. This will create the server on `127.0.0.1:8000` and connect to the mysql server you stood up before.
 
-```
-docker run --name escalation -d -p 8000:5000 --rm -e SECRET_KEY=perovskites-rule \
-    --link escalation-mysql:dbserver \
-    -e DATABASE_URL=mysql+pymysql://escalation:perovskites@dbserver/escalation \
-    escalation:latest
-```
-
-Go to `http://127.0.0.1:8000` in your brower
-
+Go to `http://127.0.0.1:8000` in your browser
 
 ## Debug with flask
 
@@ -57,34 +50,36 @@ You can also run the web server outside of docker. There are a couple useful com
 
 1. setup the virtual environment venv (instructions incomplete, I know, I know)
 2. `source venv/bin/activate`
-3 `flask init-db` creates the tables in the database (run once)
-4. `flask run`
+3. `pip install -r requirements-dev.txt`
+4. `flask init-db` creates the tables in the database (run once)
+5. `flask db stamp head` Tells the db that it is up to date with revisions
+5. `export ESCALATION_PERSISTENT_DATA_PATH='/Users/nick.leiby/escalation_data'` tells the app where to store persistent data 
+6. `flask run`
 
-Step 3 should use the environment variables in `.env`. If not, then source the variables inside there directly.
+Steps 4 and 6 should use the environment variables in `.env`. If not, then source the variables inside there directly.
 
 There are two other useful commands:
 - `flask demo-data` loads fake demo data into the db.
 - `flask reset-db` deletes all data from the tables.
 
 
+## Update stateset from current perovskites versioned data manifest
 
-# Upload submissions on the command line
+`python3 submit_server/scripts/upload_stateset.py --endpoint http://127.0.0.1:5000/admin --dev`
+
+## Upload submissions on the command line
 
 1. Run `make_perovskites_blank_submission.py`
-2. Run `python3 submit_server/scripts/upload_submission.py --csv submit_server/tests/0017_train_c4844e9_snovotney.csv --expname first --notes "These are my awesome notes"`
-
-# Update stateset from current perovskites versioned data manifest
-
-`python3 submit_server/scripts/upload_stateset.py  --data ../versioned-datasets/`
+2. Run `python3 submit_server/scripts/upload_submission.py --endpoint http://127.0.0.1:5000/submission --dev --csv 0038_train_12f4ffd_NickLeiby.csv --expname first --notes "These are my awesome notes"`
 
 Here's example output of running both
 ```
-python3 submit_server/scripts/upload_stateset.py  --data ../versioned-datasets/
+python3 submit_server/scripts/upload_stateset.py --endpoint http://127.0.0.1:5000/admin --dev
 Filtering ../versioned-datasets/data/perovskite/stateset/0017.stateset.csv to /var/folders/08/cb19qzd92wsbhh3n4cz145v00000gp/T/tmpbx31mcn6
 Pushing filtered csv to http://escalation.sd2e.org/admin
 200 OK <Response [200]>
 {'success': 'updated to crank 0017 and stateset hash a301494d902 with 465426 rows'}
-(venv) scott.novotney@mac0561:~/trunk/sd2/escalation$ python3 submit_server/scripts/upload_submission.py --csv submit_server/tests/0017_train_c4844e9_snovotney.csv --expname first
+(venv) scott.novotney@mac0561:~/trunk/sd2/escalation$ python3 submit_server/scripts/upload_submission.py --endpoint http://127.0.0.1:5000/submission --dev --csv submit_server/tests/0017_train_c4844e9_snovotney.csv --expname first
 0017 c4844e9 snovotney
 crank 0017
 username snovotney
@@ -94,3 +89,10 @@ csv submit_server/tests/0017_train_c4844e9_snovotney.csv
 200 OK <Response [200]>
 {'success': 'Added submission'}
 ```
+
+
+# Deploy the image to the web
+
+To deploy the container, you'll need to upload an image to dockerhub.  You need a public docker hub account. If not, go make one at https://hub.docker.com/ . You'll also need access to the `snovotney/escalation-server` repo- talk to Scott.
+
+We have a dev and a prd site at `http://escalation-dev.sd2e.org` and `http://escalation.sd2e.org`.  These are hosted using the Portainer service at `https://chombo.sd2e.org/#/auth`.  

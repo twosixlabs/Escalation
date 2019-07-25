@@ -1,43 +1,33 @@
-FROM frolvlad/alpine-python-machinelearning
+FROM alpine:3.10
 
-#xgboost
-RUN apk add --update --no-cache \
-    --virtual=.build-dependencies \
-    git && \
-    mkdir /src && \
-    cd /src && \
-    git clone --recursive -b v0.81 https://github.com/dmlc/xgboost && \
-    sed -i '/#define DMLC_LOG_STACK_TRACE 1/d' /src/xgboost/dmlc-core/include/dmlc/base.h && \
-    sed -i '/#define DMLC_LOG_STACK_TRACE 1/d' /src/xgboost/rabit/include/dmlc/base.h && \
-    apk del .build-dependencies
+RUN echo "**** install Python ****" && \
+    apk add --no-cache python3 && \
+    if [ ! -e /usr/bin/python ]; then ln -sf python3 /usr/bin/python ; fi && \
+    echo "**** install pip ****" && \
+    python3 -m ensurepip && \
+    rm -r /usr/lib/python*/ensurepip && \
+    pip3 install --no-cache --upgrade pip setuptools wheel && \
+    if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi
 
-RUN apk add --update --no-cache \
-    --virtual=.build-dependencies \
-    make gfortran \
-    python3-dev \
-    py-setuptools g++ && \
-    apk add --no-cache openblas lapack-dev libexecinfo-dev libstdc++ libgomp && \
-    ln -s locale.h /usr/include/xlocale.h && \
-    cd /src/xgboost; make -j4 && \
-    cd /src/xgboost/python-package && \
-    python3 setup.py install && \
-    rm /usr/include/xlocale.h && \
-    apk del .build-dependencies
-
-
-RUN echo "America/New_York" > /etc/timezone
 RUN adduser -D escalation
 
 WORKDIR /home/escalation
 
-RUN apk add g++ libstdc++ python3-dev bash git gcc libffi-dev libressl-dev
-# RUN apk update && apk add libressl-dev libffi-dev gcc musl-dev python3-dev
+RUN apk add g++ libstdc++ python3-dev bash git gcc libffi-dev libressl-dev py-virtualenv
 
-COPY requirements.txt requirements.txt
-RUN python3 -m venv venv --system-site-packages
-RUN venv/bin/pip3 install --upgrade pip
-RUN venv/bin/pip3 install -r requirements.txt
-RUN venv/bin/pip3 install gunicorn pymysql 
+COPY requirements-app.txt requirements-app.txt
+RUN python3 -m venv venv --system-site-packages --without-pip
+RUN source venv/bin/activate
+RUN pip3 install --upgrade pip
+RUN pip3 install -r requirements-app.txt
+RUN pip3 install gunicorn pymysql
+
+# use pre-built numpy and pandas Alpine Linux packages instead of installing wheels via pip
+
+RUN echo '@testing http://dl-cdn.alpinelinux.org/alpine/edge/testing/' >> /etc/apk/repositories
+RUN echo '@community http://dl-cdn.alpinelinux.org/alpine/v3.10/community' >> /etc/apk/repositories
+RUN apk add py3-numpy@community
+RUN apk add py3-pandas@testing
 
 ENV FLASK_APP escalation
 ENV SECRET_KEY perovskite52cb883e323b48d
@@ -49,6 +39,14 @@ RUN chmod +x boot.sh
 COPY escalation escalation
 COPY migrations migrations
 RUN chown -R escalation:escalation ./
+
+# create the filepaths that will be linked to external volumes, and give permission to the flask app user
+RUN mkdir /data
+RUN chown -R escalation /data
+
+RUN apk add -U tzdata
+ENV TZ America/New_York
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 USER escalation
 
