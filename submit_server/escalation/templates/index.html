@@ -67,6 +67,7 @@ function checkAllModels(ele) {
     <th>Versioned Repo Hash</th>
     <th>Upload Time</th>
     <th>Number of rows</th>
+    <th>Number of InChI Keys</th>
   </tr>
   </thead>
   <tbody>
@@ -77,6 +78,7 @@ function checkAllModels(ele) {
       <td> {{ training_crank['githash'] }} </td>
       <td> {{ training_crank['created'].strftime('%m-%d-%y %H:%M') }} </td>
       <td> {{ training_crank['num_training_rows'] }} </td>
+      <td> {{ training_crank['num_inchi_keys'] }} </td>
     </tr>
   {% endfor %}
   </tbody>
