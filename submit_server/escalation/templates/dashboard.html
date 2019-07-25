@@ -118,10 +118,23 @@ window.onload = function() {
     <h3>Predictive Features</h3>
     <p>Informative features are determined by estimating a <a href="https://machinelearningmastery.com/gentle-introduction-gradient-boosting-algorithm-machine-learning/">Gradient Boosted Tree</a> either 10 times on sampling randomly across all chemicals, or by holding out each chemical. Importance is computed as the average improvement in classification purity across the boosted trees as explained <a href="https://stats.stackexchange.com/questions/162162/relative-variable-importance-for-boosting">here</a>.
     </p>
-    <div id="feature_importance" class="chart"></div>
+
+    <div id="feature_importance_xgboost" class="chart"></div>
     <script type="text/javascript">
       var graph = {{feature_importance | safe}};
-      Plotly.newPlot("feature_importance",graph.data,graph.layout, {responsive: true});        
+      Plotly.newPlot("feature_importance_xgboost", graph['xgboost-importance'].data, graph['xgboost-importance'].layout, {responsive: true});
+    </script>
+
+    <div id="feature_importance_shap" class="chart"></div>
+    <script type="text/javascript">
+      var graph = {{feature_importance | safe}};
+      Plotly.newPlot("feature_importance_shap", graph['shap'].data, graph['shap'].layout, {responsive: true});
+    </script>
+
+    <div id="feature_importance_bba" class="chart"></div>
+    <script type="text/javascript">
+      var graph = {{feature_importance | safe}};
+      Plotly.newPlot("feature_importance_bba", graph['bba'].data, graph['bba'].layout, {responsive: true});
     </script>
 
   </div> <!-- end science features -->

@@ -10,8 +10,7 @@ from collections import defaultdict, Counter
 from flask import current_app as app
 from sqlalchemy import text
 from escalation import db
-from .database import Submission, get_chemicals, get_leaderboard, get_perovskites_data, get_feature_analysis, \
-    get_features, get_training, RepoStat, TrainingRun
+from .database import (Submission, get_chemicals, get_leaderboard, get_feature_analysis, get_features, RepoStat)
 
 import numpy as np
 import pandas as pd
@@ -887,16 +886,23 @@ def feature_importance():
     if name not in plot_data:
         update_feature_importance()
 
+    # create one graph per feature_importance method
+    graphs = {}
+
     heldout = plot_data['heldout']
     general = plot_data['general']
-
-    traces = []
-    method_traces = {}
-
     cranks = sorted(heldout.keys(), reverse=True)
-    crank = cranks[0]  # only plot the first crank
+    if not cranks:
+        # there is nothing in the db
+        return {}
 
-    for method in heldout[crank]:
+    crank = cranks[0]  # only plot the first crank
+    method_types = heldout[crank].keys() # heldout and general should be the same list
+
+    for method in method_types:
+
+        traces = []
+        method_traces = {}
 
         method_traces[method + "-heldout"] = []
         method_traces[method + "-general"] = []
@@ -916,75 +922,76 @@ def feature_importance():
                                  ))
             method_traces[method + "-general"].append(len(traces) - 1)  # assumes 1 crank!!
 
-    buttons = []
-    method_names = sorted(method_traces.keys())
+        buttons = []
+        method_names = sorted(method_traces.keys())
 
-    for m in method_names:
-        if 'general' in m:
-            title = "Important Features for Crank %s Across All Chemicals" % crank
+        for m in method_names:
+            if 'general' in m:
+                title = "%s Features for Crank %s Across All Chemicals" % (method, crank)
 
-        elif 'heldout' in m:
-            title = "Important Features for Crank %s Heldout By Chemical" % crank
-        else:
-            title = "Feature Importances"
+            elif 'heldout' in m:
+                title = "%s Features for Crank %s Heldout By Chemical" % (method, crank)
+            else:
+                title = "%s Features" % method
 
-        b = dict(
-            label=m,
-            method='update',
-            args=list([
-                dict(visible=[False] * len(traces)),
-                dict(
-                    title=title,
-                    xaxis=dict(
-                        showgrid=False,
-                        title="Feature Importance",
-                        rangemode='nonnegative',
-                        autorange=True
+            b = dict(
+                label=m,
+                method='update',
+                args=list([
+                    dict(visible=[False] * len(traces)),
+                    dict(
+                        title=title,
+                        xaxis=dict(
+                            showgrid=False,
+                            title="Feature Importance",
+                            rangemode='nonnegative',
+                            autorange=True
+                        ),
                     ),
+                ]),
+            )
+
+            for i in method_traces[m]:
+                b['args'][0]['visible'][i] = True
+
+            buttons.append(b)
+
+            # initialize first method to true
+            m = method_names[0]
+            for i in method_traces[m]:
+                traces[i]['visible'] = True
+
+        layout = go.Layout(
+            showlegend=False,
+            title=buttons[0]['args'][1]['title'],
+            yaxis=dict(
+                automargin=True,
+            ),
+
+            xaxis=dict(
+                showgrid=True,
+                title="Feature Importance",
+                rangemode='nonnegative',
+                autorange=True
+            ),
+            height=600,
+            updatemenus=list([
+                dict(
+                    buttons=buttons,
+                    direction='down',
+                    showactive=True,
+                    active=0,
+                    y=1.4,
+                    yanchor='top'
+
                 ),
             ]),
+            hovermode=False,
         )
 
-        for i in method_traces[m]:
-            b['args'][0]['visible'][i] = True
-
-        buttons.append(b)
-
-        # initialize first method to true
-        m = method_names[0]
-        for i in method_traces[m]:
-            traces[i]['visible'] = True
-
-    layout = go.Layout(
-        showlegend=False,
-        title=buttons[0]['args'][1]['title'],
-        yaxis=dict(
-            automargin=True,
-        ),
-
-        xaxis=dict(
-            showgrid=True,
-            title="Feature Importance",
-            rangemode='nonnegative',
-            autorange=True
-        ),
-        height=600,
-        updatemenus=list([
-            dict(
-                buttons=buttons,
-                direction='down',
-                showactive=True,
-                active=0,
-                y=1.4,
-                yanchor='top'
-
-            ),
-        ]),
-        hovermode=False,
-    )
-
-    graph = {'data': traces, 'layout': layout}
-    return json.dumps(graph, cls=plotly.utils.PlotlyJSONEncoder)
+        graph = {'data': traces, 'layout': layout}
+        graphs[method] = graph
+    return json.dumps(graphs, cls=plotly.utils.PlotlyJSONEncoder)
 
 
 def repo_cluster(df, prec):
