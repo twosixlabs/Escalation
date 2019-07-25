@@ -49,6 +49,7 @@ You can also run the web server outside of docker. There are a couple useful com
 2. `source venv/bin/activate`
 3. `pip install -r requirements-dev.txt`
 4. `flask init-db` creates the tables in the database (run once)
+5. `flask db stamp head` Tells the db that it is up to date with revisions
 5. `export ESCALATION_PERSISTENT_DATA_PATH='/Users/nick.leiby/escalation_data'` tells the app where to store persistent data 
 6. `flask run`
 
