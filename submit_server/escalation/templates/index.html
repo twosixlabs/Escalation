@@ -83,15 +83,6 @@ function checkAllModels(ele) {
   {% endfor %}
   </tbody>
   </table>
-
-
-  <!--<select name="training_crank"   onchange="this.form.submit()">-->
-    <!--<option value="blank">None</option>-->
-    <!--{% for training_crank in training_data_available_to_download %}-->
-    <!--<option value="{{ crank_filename }}" {% if crank == training_crank %} selected {% endif %} >{{ crank }}</option>-->
-    <!--{% endfor %}-->
-  <!--</select>-->
-  <!--<input type="hidden" value="{{ training_crank }}" name="num_runs">-->
   <div>
     <input type="submit" value="Download training data" name="submit">
   </div>
