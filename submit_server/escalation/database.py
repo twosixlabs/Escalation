@@ -145,6 +145,7 @@ class Crank(db.Model):
     created         = db.Column(db.DateTime(timezone=True), server_default=sql.func.now())
     upload_filename = db.Column(db.String(256)) #uploaded file name for comparison
     train_filename  = db.Column(db.String(256)) #perovskitedata filename
+    num_training_rows = db.Column(db.Integer)
 
     def  __repr__(self):
         return '<Crank {} {} {} {}>'.format(self.crank,self.githash,self.active,self.created)
@@ -211,15 +212,17 @@ def read_in_stateset(filename,crank,githash):
     db.session.commit()
     app.logger.info("Added %d runs for stateset" % len(objs))
     return len(objs)
-    
-def add_stateset(filename,crank,githash,username,orig_filename,train_filename):
-    num_runs= read_in_stateset(filename,crank,githash)
 
-    #retire other entries that have the same crank
-    Crank.query.filter_by(crank=crank).update({'active':False})
-    
-    db.session.add(Crank(crank=crank,githash=githash,username=username,num_runs=num_runs,active=True,
-                         upload_filename=orig_filename,train_filename=train_filename))
+
+def add_stateset(filename, crank, githash, username, orig_filename, train_filename, num_train_rows):
+    num_runs = read_in_stateset(filename, crank, githash)
+
+    # retire other entries that have the same crank
+    Crank.query.filter_by(crank=crank).update({'active': False})
+
+    db.session.add(Crank(crank=crank, githash=githash, username=username, num_runs=num_runs, active=True,
+                         upload_filename=orig_filename, train_filename=train_filename,
+                         num_training_rows=num_train_rows))
     db.session.commit()
     return num_runs
 
@@ -243,16 +246,23 @@ def get_unique_cranks():
     return sorted([x[0] for x in db.session.query(Crank.crank).distinct().all()],reverse=True)
 
 def get_cranks_available_for_download():
+    """
+    Returns sorted list of dicts for an intersection of active cranks with training files we have cached for download
+    """
     # get tuples of (crank#, training_data_filename) that are marked as active in db
-    active_cranks = [x for x in db.session.query(Crank.crank, Crank.train_filename).filter(Crank.active == 1).distinct().all()]
+    active_cranks = [x for x in db.session.query(Crank).filter(Crank.active == 1).distinct().all()]
     # saved_training_data = os.listdir(os.path.join(app.config[PERSISTENT_STORAGE], TRAINING_DATA_PATH))
     available_cranks = []
     for crank in active_cranks:
         # look for a matching training data filename
-        persistent_file_path = os.path.join(app.config[PERSISTENT_STORAGE], crank[1])
+        persistent_file_path = os.path.join(app.config[PERSISTENT_STORAGE], crank.train_filename)
         if os.path.exists(persistent_file_path):
-            available_cranks.append((crank[0], persistent_file_path))
-    return sorted(available_cranks, reverse=True, key=lambda x: x[0])
+            available_cranks.append({'crank': crank.crank,
+                                     'githash': crank.githash,
+                                     'created': crank.created,
+                                     'num_training_rows': crank.num_training_rows,
+                                     'file_path': persistent_file_path})
+    return sorted(available_cranks, reverse=True, key=lambda x: x['crank'])
 
 def get_active_cranks():
     return Crank.query.filter_by(active=True).all()
