@@ -375,7 +375,7 @@ def results_by_model():
 
     number_of_cranks = 0
     if plot_data[name]['auc']:
-        number_of_cranks = plot_data[name]['auc'][0]
+        number_of_cranks = len(plot_data[name]['auc'][0])
 
     layout = go.Layout(
         xaxis={'title': '<b>AUC</b>',
