@@ -82,8 +82,8 @@ def admin():
             error = validate(request.form['adminkey'], githash, stateset_filename)
 
         if error is None:
-            num_rows = db.add_stateset(stateset_filename, crank, githash, username, orig_filename, training_filename)
             num_train_rows = db.add_training(os.path.join(app.config[PERSISTENT_STORAGE], training_filename), githash, crank)
+            num_rows = db.add_stateset(stateset_filename, crank, githash, username, orig_filename, training_filename, num_train_rows)
 
             out="Successfully updated to crank %s and stateset %s with %d rows" % (crank, githash,num_rows)
             app.logger.info(out)

@@ -59,13 +59,37 @@ function checkAllModels(ele) {
 <div style="max-width:1000px;">
 <form method="post">
   <label for="training_crank">Download the training data csv corresponding to the checked crank.</label>
-  <select name="training_crank"   onchange="this.form.submit()">
-    <option value="blank">None</option>
-    {% for crank, crank_filename in training_data_available_to_download %}
-    <option value="{{ crank_filename }}" {% if crank == training_crank %} selected {% endif %} >{{ crank }}</option>
-    {% endfor %}
-  </select>
-  <input type="hidden" value="{{ training_crank }}" name="training_crank">
+  <table  id="training_dataset_table" class="compact hover order-column row-border" style="width:100%">
+  <thead>
+  <tr>
+    <th></th>
+    <th>Crank</th>
+    <th>Versioned Repo Hash</th>
+    <th>Upload Time</th>
+    <th>Number of rows</th>
+  </tr>
+  </thead>
+  <tbody>
+  {% for training_crank in training_data_available_to_download %}
+    <tr>
+      <td> <input type="radio" name="download_training_crank" value="{{ training_crank['file_path'] }}" checked> </td>
+      <td> {{ training_crank['crank'] }} </td>
+      <td> {{ training_crank['githash'] }} </td>
+      <td> {{ training_crank['created'].strftime('%m-%d-%y %H:%M') }} </td>
+      <td> {{ training_crank['num_training_rows'] }} </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  </table>
+
+
+  <!--<select name="training_crank"   onchange="this.form.submit()">-->
+    <!--<option value="blank">None</option>-->
+    <!--{% for training_crank in training_data_available_to_download %}-->
+    <!--<option value="{{ crank_filename }}" {% if crank == training_crank %} selected {% endif %} >{{ crank }}</option>-->
+    <!--{% endfor %}-->
+  <!--</select>-->
+  <!--<input type="hidden" value="{{ training_crank }}" name="num_runs">-->
   <div>
     <input type="submit" value="Download training data" name="submit">
   </div>
