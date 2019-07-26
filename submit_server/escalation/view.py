@@ -17,8 +17,11 @@ def view():
     cranks = db.get_unique_cranks()
     training_data_available_to_download = db.get_cranks_available_for_download()
     curr_crank = 'all'
-    policy_crank = cranks[0]
-    models = db.get_submissions(policy_crank)
+    models = []
+    policy_crank = None
+    if cranks:
+        policy_crank = cranks[0]
+        models = db.get_submissions(policy_crank)
 
     if request.method == 'POST' and 'crank' in request.form:
         curr_crank = request.form['crank']
@@ -43,7 +46,8 @@ def view():
         return send_file(os.path.join(app.config[UPLOAD_FOLDER], zipfile), as_attachment=True)
 
     if request.method == 'POST' and request.form.get('submit') == DOWNLOAD_TRAINING_DATA:
-        return send_file(request.form['download_training_crank'], as_attachment=True)
+        if request.form.get('download_training_crank'):
+            return send_file(request.form['download_training_crank'], as_attachment=True)
 
     if request.method == 'POST' and 'policy_submit' in request.form:
         policy_crank = request.form['policy_crank']

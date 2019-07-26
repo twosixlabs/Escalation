@@ -8,8 +8,8 @@
 docker run --name escalation -it --rm \
     -e TZ=`ls -la /etc/localtime | cut -d/ -f8-9` \
     -e DATABASE_URL=mysql+pymysql://escalation:perovskites@dbserver/escalation --link escalation-mysql:dbserver \
-    -v /Users/nick.leiby/escalation_data:/persistent_data/escalation_data \
-    -e ESCALATION_PERSISTENT_DATA_PATH=/persistent_data/escalation_data \
+    -v /Users/nick.leiby/escalation_data:/data \
+    -e ESCALATION_PERSISTENT_DATA_PATH=/data \
     -e SECRET_KEY=perovskites-rule \
     -p 8000:5000 --rm \
     escalation-server:latest
