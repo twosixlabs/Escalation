@@ -47,7 +47,8 @@ def view():
 
     if request.method == 'POST' and request.form.get('submit') == DOWNLOAD_TRAINING_DATA:
         if request.form.get('download_training_crank'):
-            return send_file(request.form['download_training_crank'], as_attachment=True)
+            return send_file(os.path.join(app.config[PERSISTENT_STORAGE], request.form['download_training_crank']),
+                             as_attachment=True)
 
     if request.method == 'POST' and 'policy_submit' in request.form:
         policy_crank = request.form['policy_crank']
