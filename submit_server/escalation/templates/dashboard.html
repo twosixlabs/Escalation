@@ -116,7 +116,8 @@ window.onload = function() {
   <a name="science.features"></a>
   <div id="sci_features">
     <h3>Predictive Features</h3>
-    <p>SHAP: SHapley Additive exPlanations is a model-agnostic direct influence technique that measures the additive contribution of a feature and value to the model’s outcome.  More info links: <A HREF="https://github.com/slundberg/shap">Code</A>, <A HREF="http://papers.nips.cc/paper/7062-a-unified-approach-to-interpreting-model-predictions">Paper</A></p>
+      <p><b>SHAP:</b></p>
+      <p>SHapley Additive exPlanations is a model-agnostic direct influence technique that measures the additive contribution of a feature and value to the model’s outcome.  More info links: <A HREF="https://github.com/slundberg/shap">Code</A>, <A HREF="http://papers.nips.cc/paper/7062-a-unified-approach-to-interpreting-model-predictions">Paper</A></p>
     <div id="feature_importance_xgboost" class="chart"></div>
     <script type="text/javascript">
       var graph = {{feature_importance | safe}};
@@ -129,7 +130,8 @@ window.onload = function() {
       Plotly.newPlot("feature_importance_shap", graph['shap'].data, graph['shap'].layout, {responsive: true});
     </script>
 
-    <p>BBA:  Black Box Auditing is a model-agnostic indirect influence technique that measures the drop in accuracy when the model is re-run on a modified version of the test data where a specific feature and all pair-wise correlations with other features are removed. More info links: <A HREF="https://github.com/algofairness/BlackBoxAuditing">Code</A>, <A HREF="https://arxiv.org/abs/1602.07043">Paper</A></p>
+      <p><b>BBA:</b></p>
+      <p>Black Box Auditing is a model-agnostic indirect influence technique that measures the drop in accuracy when the model is re-run on a modified version of the test data where a specific feature and all pair-wise correlations with other features are removed. More info links: <A HREF="https://github.com/algofairness/BlackBoxAuditing">Code</A>, <A HREF="https://arxiv.org/abs/1602.07043">Paper</A></p>
     <div id="feature_importance_bba" class="chart"></div>
     <script type="text/javascript">
       var graph = {{feature_importance | safe}};
