@@ -46,6 +46,7 @@
                 2,
                 2,
                 2,
+                2,
                 2
             ],
             "value": [
@@ -2594,7 +2595,7 @@
         }
     },
     "method": "bba",
-    "crank": "0038",
+    "crank": "0024",
     "notes": "predict out_crystal_score = 4 using gradient boosted classifier, default params",
     "run_id": "2019-6-13-laptop",
     "chem_heldout": {
