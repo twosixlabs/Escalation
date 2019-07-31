@@ -479,6 +479,10 @@ def add_feature_analysis(obj):
                 return "%s,%s: does not have 3+ samples" % (x,f)
             elif len(obj[x][f]['rank']) != len(obj[x][f]['value']):
                 return "%s,%s: does not have equal length ranks and values" % (x,f)
+
+    allowable_featuree_importance_methods = {'shap', 'bba'}
+    if obj.get('method') not in allowable_featuree_importance_methods:
+        return "Method should be one of %s" % allowable_featuree_importance_methods
         
     #add features if new
     heldout_entry=FeatureImportance(method=obj['method'],
