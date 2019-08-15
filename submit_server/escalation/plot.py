@@ -10,7 +10,7 @@ from collections import defaultdict, Counter
 from flask import current_app as app
 from sqlalchemy import text
 from escalation import db
-from .database import (Submission, get_chemicals, get_leaderboard, get_feature_analysis, get_features, RepoStat)
+from .database import (Submission, get_chemicals, get_leaderboard, get_feature_analysis, get_features, ReproducibilityStat)
 
 import numpy as np
 import pandas as pd
@@ -1035,12 +1035,12 @@ def repo_cluster(df, prec):
     return data
 
 
-def update_repo_table(prec=0.25, inchi='all'):
+def update_reproducibility_table(prec=0.25, inchi='all'):
     app.logger.info("Updating reproducibility table")
     global plot_data
-    name = 'exp_repo'
+    name = 'exp_repro'
     # update reproducibility
-    RepoStat.query.delete()
+    ReproducibilityStat.query.delete()
 
     sql = "select max(dataset) dataset from training_run"
     rows = list(db.engine.execute(sql))
@@ -1058,14 +1058,14 @@ def update_repo_table(prec=0.25, inchi='all'):
     mean_cs = 0
     mean_purity = 0
     for row in data:
-        objs.append(RepoStat(inorganic=row['inorganic'],
-                             organic=row['organic'],
-                             acid=row['acid'],
-                             temp=row['temp'],
-                             size=row['size'],
-                             score=row['cs'],
-                             repo=round(row['purity'], 2)
-                             ))
+        objs.append(ReproducibilityStat(inorganic=row['inorganic'],
+                                        organic=row['organic'],
+                                        acid=row['acid'],
+                                        temp=row['temp'],
+                                        size=row['size'],
+                                        score=row['cs'],
+                                        repo=round(row['purity'], 2)
+                                        ))
         mean_cs += row['cs']
         mean_purity += row['purity']
 
@@ -1090,7 +1090,7 @@ def update_repo_table(prec=0.25, inchi='all'):
     plot_data[name]['expts'] = len(df)
 
 
-def repo_table_stats():
+def reproducibility_table_stats():
     global plot_data
-    name = 'exp_repo'
+    name = 'exp_repro'
     return plot_data[name]

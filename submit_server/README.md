@@ -22,6 +22,16 @@ docker run \
 ```
 3. If desired, connect to the db directly with  `mysql -h localhost -P 3306 --protocol=tcp -u escalation -pperovskites -D escalation`
 
+### Populate the database from a SQL dump 
+
+NB: You can populate the database from a SQL dump.  To get a fresh dump:
+
+1. connect to the chombo database container
+2. Create a dump of the escalation db: `mysqldump --databases escalation -u escalation -pperovskites > dump.sql`
+3. install scp if needed (`sudo apt-get install openssh-client`)
+4. scp FROM the chombo container TO your work directory (e.g., `nleiby@login1.maverick2.tacc.utexas.edu:/work/05839/nleiby/maverick2/escalation_dumps`)
+5. On your local machine, run `mysql -h localhost -P 3306 --protocol=tcp -psd2 < dump.sql`.  If you are overwriting an existing escalation db, you'll need to drop it first
+
 ## Build the web server container
 
 To build a local image from your code:
@@ -36,7 +46,7 @@ We track the db with alembic.  To make changes to the db table schemas:
 
 1. edit the models in database.py
 2. run `flask db migrate` to create the revision file that will implement the changes to the table
-3. (for local development) run `flask db upghrade` to propagate changes to your local db
+3. (for local development) run `flask db upgrade` to propagate changes to your local db
 
 ## Run the web server locally in a docker container
 

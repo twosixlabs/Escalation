@@ -26,13 +26,13 @@
     <a href="{{ url_for('submission.submission') }}">Submit</a>   
     <a href="{{ url_for('admin.admin') }}">Admin</a>
   <div class="dropdown">
-    <a id="top" href="{{ url_for('dashboard.dashboard') }}">Dashboard
+    <a id="top">Dashboard
       <i class="fa fa-caret-down"></i>
     </a>
     <div class="dropdown-content">
-      <a href="{{ url_for('dashboard.dashboard') }}#science">Science</a>
-      <a href="{{ url_for('dashboard.dashboard') }}#auto">Automation</a>
-      <a href="{{ url_for('dashboard.dashboard') }}#ml">ML</a>        
+      <a href="{{ url_for('dashboard.dashboard_science') }}">Science</a>
+      <a href="{{ url_for('dashboard.dashboard_automation') }}">Automation</a>
+      <a href="{{ url_for('dashboard.dashboard_ml') }}">ML</a>
     </div>
   </div>
   

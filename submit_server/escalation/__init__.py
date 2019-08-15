@@ -114,8 +114,8 @@ def create_app():
 
     @app.cli.command('job')
     def do_job():
-        from .plot import update_repo_table
-        update_repo_table()
+        from .plot import update_reproducibility_table
+        update_reproducibility_table()
 
     # Shut down the scheduler when exiting the app
     return app

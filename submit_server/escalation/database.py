@@ -97,7 +97,7 @@ class MLStat(db.Model):
 
 
 # reproducibility of experiments (from Alex)
-class RepoStat(db.Model):
+class ReproducibilityStat(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     inorganic = db.Column(db.Float)
     organic = db.Column(db.Float)
