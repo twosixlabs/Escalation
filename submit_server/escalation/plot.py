@@ -897,7 +897,7 @@ def feature_importance():
         return {}
 
     crank = cranks[0]  # only plot the first crank
-    method_types = heldout[crank].keys() # heldout and general should be the same list
+    method_types = heldout[crank].keys()  # heldout and general should be the same list
 
     for method in method_types:
 
