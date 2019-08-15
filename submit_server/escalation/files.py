@@ -1,4 +1,3 @@
-import traceback
 from flask import current_app as app
 from . import database as db
 
@@ -13,6 +12,11 @@ DELIMITER = ','
 VALID_CATEGORIES = set(['1', '2', '3', '4', 'null'])
 BAD_DELIMITERS = set('\t, |.') - set(DELIMITER)  # common delimiters that are disallowed
 COLUMNS = ['dataset', 'name', '_rxn_M_inorganic', '_rxn_M_organic', '_rxn_M_acid', 'predicted_out', 'score']
+
+
+class ValidationError(Exception):
+    """Exception class for when an Escalation validation step fails"""
+    pass
 
 
 def filename(sub):
@@ -38,9 +42,8 @@ def text2rows(text):
 
     if len(comments) > 0:
         comments = "\n".join(comments)
-    else:
-        comments = None
-
+    if len(data) == 0:
+        raise ValidationError("Could not extract rows from file %s" % text.filename)
     return data, comments
 
 
@@ -65,13 +68,13 @@ def validate_submission(rows, crank, githash):
         if len(rxns) != len(rows):
             app.logger.info(
                 "Only found %d of %d submitted rows in current stateset -- maybe there is a typo in the dataset or name field?" % (
-                len(rxns), len(rows)))
+                    len(rxns), len(rows)))
             arr.append(
                 "Only found %d of %d submitted rows in current stateset -- maybe there is a typo in the dataset or name field?" % (
-                len(rxns), len(rows)))
-            return arr
+                    len(rxns), len(rows)))
+            raise ValidationError('\n'.join(arr))
     except:
-        return ["Could not extract 'name' column from rows"]
+        raise ValidationError("Could not extract 'name' column from rows")
 
     num_errors = 0
     for i, row in enumerate(rows):
@@ -82,7 +85,7 @@ def validate_submission(rows, crank, githash):
         if len(row.keys()) != len(COLUMNS):
             arr.append(
                 "Row %d: Number of columns (%d) does not match expected number of %d. Maybe you are missing a comma in this row or the header?" % (
-                i, len(row.keys()), len(COLUMNS)))
+                    i, len(row.keys()), len(COLUMNS)))
             continue
         if set(row.keys()) != set(COLUMNS):
             num_errors += 1
@@ -92,7 +95,7 @@ def validate_submission(rows, crank, githash):
                     print(key)
                     not_found.append(key)
             arr.append("Row %d: columns '%s' not in expected set of columns: '%s'" % (
-            i, ",".join(not_found), ",".join(COLUMNS)))
+                i, ",".join(not_found), ",".join(COLUMNS)))
             continue
 
         if None in row.values() or '' in row.values():
@@ -116,25 +119,25 @@ def validate_submission(rows, crank, githash):
             num_errors += 1
             arr.append(
                 "Row %d '_rxn_M_inorganic' column (%s) is not a float. Did you use the values from the state set?" % (
-                i, row['_rxn_M_inorganic']))
+                    i, row['_rxn_M_inorganic']))
         try:
             float(row['_rxn_M_organic'])
         except ValueError:
             num_errors += 1
             arr.append(
                 "Row %d '_rxn_M_organic' column (%s) is not a float. Did you use the values from the state set?" % (
-                i, row['_rxn_M_organic']))
+                    i, row['_rxn_M_organic']))
         try:
             float(row['_rxn_M_acid'])
         except ValueError:
             num_errors += 1
             arr.append("Row %d '_rxn_M_acid' column (%s) is not a float. Did you use the values from the state set?" % (
-            i, row['_rxn_M_acid']))
+                i, row['_rxn_M_acid']))
 
         if str(row['predicted_out']).lower() not in VALID_CATEGORIES:
             num_errors += 1
             arr.append("Row %d 'predicted_out' column (%s) is not in %s" % (
-            i, row['predicted_out'], ",".join(VALID_CATEGORIES)))
+                i, row['predicted_out'], ",".join(VALID_CATEGORIES)))
         try:
             x = float(row['score'])
             if x < 0 or x > 1:
@@ -143,7 +146,7 @@ def validate_submission(rows, crank, githash):
         except ValueError:
             num_errors += 1
             arr.append("Row %d 'score' column (%s) is not a float. Did you use the values from the state set?" % (
-            i, row['score']))
+                i, row['score']))
 
         organic = rxns[row['name']]['organic']
         inorganic = rxns[row['name']]['inorganic']
@@ -153,23 +156,21 @@ def validate_submission(rows, crank, githash):
             num_errors += 1
             arr.append(
                 "Row %d '_rxn_M_inorganic' value %s does not match statespace value '%s' -- did you mix up rows?" % (
-                i, row['_rxn_M_inorganic'], inorganic))
+                    i, row['_rxn_M_inorganic'], inorganic))
 
         if not (isclose(float(row['_rxn_M_organic']), float(organic), 1e-03, 1e-05)):
             num_errors += 1
             arr.append(
                 "Row %d '_rxn_M_organic' value %s does not match statespace value '%s' -- did you mix up rows?" % (
-                i, row['_rxn_M_organic'], organic))
+                    i, row['_rxn_M_organic'], organic))
 
         if not (isclose(float(row['_rxn_M_acid']), float(acid), 1e-03, 1e-05)):
             num_errors += 1
             arr.append("Row %d '_rxn_M_acid' value %s does not match statespace value '%s' -- did you mix up rows?" % (
-            i, row['_rxn_M_acid'], acid))
+                i, row['_rxn_M_acid'], acid))
 
     if len(arr) > 0:
-        return arr
-    else:
-        return None
+        raise ValidationError('\n'.join(arr))
 
 
 def download_zip(basedir, submissions, pfx=""):

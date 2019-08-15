@@ -4,34 +4,36 @@ from tempfile import mkdtemp
 import os
 import csv
 import time
+
 default_models = [
     'BOGP',
     'gradient_boosted_tree',
     'support_vector_radial_basis_classifier',
     'random_forest_classification',
     'baseline_uniform'
-    ]
+]
 
-def download_uniform_policy(basedir,submissions,size,pfx=""):
+
+def download_uniform_policy(basedir, submissions, size, pfx=""):
     app.logger.info("Running uniform sampling policy")
     target_size = size // len(submissions)
-    targets=[]
+    targets = []
     remainder = size % len(submissions)
     for i in range(len(submissions)):
         targets.append(target_size + 1 if i < remainder else target_size)
     for i in range(len(targets)):
         app.logger.info("Selected %d rows for %s" % (targets[i], submissions[i].expname))
-        
-    metadata=[]
+
+    metadata = []
     for sub in submissions:
-        metadata.append({'user':sub.username,
+        metadata.append({'user': sub.username,
                          'id': sub.id,
-                         'crank':sub.crank,
-                         'created':sub.created,
-                         'expname':sub.expname,
-                         'notes':sub.notes,
-        })
-        
+                         'crank': sub.crank,
+                         'created': sub.created,
+                         'expname': sub.expname,
+                         'notes': sub.notes,
+                         })
+
     # with open(os.path.join(tmpdir,'metadata.csv'),'w') as csvfile:
     #     fieldnames = ['id','user','crank','created','expname']
     #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames,lineterminator='\n',extrasaction='ignore')
@@ -39,17 +41,18 @@ def download_uniform_policy(basedir,submissions,size,pfx=""):
     #     for elem in metadata:
     #         writer.writerow(elem)
 
-    seen={}
+    seen = {}
     if pfx:
-        filename = "escalation." + str(pfx) + "." + time.strftime("%Y%m%d-%H%M%S",time.localtime()) + ".csv"
+        filename = "escalation." + str(pfx) + "." + time.strftime("%Y%m%d-%H%M%S", time.localtime()) + ".csv"
     else:
-        filename = "escalation." + time.strftime("%Y-%m-%d-%H%M%S",time.localtime()) + ".csv"
-    filename=os.path.join(basedir,filename)
-    with open(filename,'w') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=['dataset','name','predicted_out','score','expname'],extrasaction='ignore',lineterminator='\n')        
+        filename = "escalation." + time.strftime("%Y-%m-%d-%H%M%S", time.localtime()) + ".csv"
+    filename = os.path.join(basedir, filename)
+    with open(filename, 'w') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=['dataset', 'name', 'predicted_out', 'score', 'expname'],
+                                extrasaction='ignore', lineterminator='\n')
         writer.writeheader()
         for idx, sub in enumerate(submissions):
-            preds = [p.__dict__ for p in sub.rows] #map to dict for csv.dictwriter
+            preds = [p.__dict__ for p in sub.rows]  # map to dict for csv.dictwriter
             c = 0
             for p in preds:
                 if p['name'] in seen:
@@ -58,12 +61,12 @@ def download_uniform_policy(basedir,submissions,size,pfx=""):
                 if p['predicted_out'] == 0:
                     p['predicted_out'] = 'null'
 
-                p['expname'] = sub.expname                    
+                p['expname'] = sub.expname
                 writer.writerow(p)
-                c+=1                
+                c += 1
                 if c >= targets[idx]:
                     break
-            app.logger.info("Writing %d of %d predictions for %s" % (c,len(preds), sub))
-            
+            app.logger.info("Writing %d of %d predictions for %s" % (c, len(preds), sub))
 
-    return filename, "Selected %d predictions per %d models, resulting in %d total" %(target_size, len(submissions), len(seen))
+    return filename, "Selected %d predictions per %d models, resulting in %d total" % (
+    target_size, len(submissions), len(seen))

@@ -1,4 +1,3 @@
-
 import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
@@ -55,7 +54,7 @@ def create_app():
     )
 
     db.init_app(app)
-    migrate.init_app(app,db)
+    migrate.init_app(app, db)
 
     if not scheduler.running:
         scheduler.init_app(app)
@@ -120,4 +119,3 @@ def create_app():
 
     # Shut down the scheduler when exiting the app
     return app
-
