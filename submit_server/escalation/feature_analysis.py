@@ -5,7 +5,10 @@ from escalation import database
 from escalation.dashboard import update_science
 from escalation import scheduler
 
+
 bp = Blueprint('feature_analysis', __name__)
+
+
 @bp.route('/features', methods=('GET','POST'))
 def feature_analysis():
     if request.method == 'POST' and request.headers.get('User-Agent') == 'escalation':
@@ -27,4 +30,3 @@ def feature_analysis():
             
     return render_template('feature_analysis.html',table=[x.__dict__ for x in database.get_feature_analysis()])
 
-        

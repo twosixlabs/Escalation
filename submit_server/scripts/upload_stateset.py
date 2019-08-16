@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.join(base,'../../'))
 import utils
                 
 parser = argparse.ArgumentParser()
-parser.add_argument('--endpoint',help="Rest endpoint",default='http://escalation.sd2e.org/admin')
+parser.add_argument('--endpoint',help="Rest endpoint",default='http://escalation.sd2e.org/admin/upload_stateset')
 parser.add_argument('--debug',help="Use debug manifest and dev endpoint",action='store_true')
 parser.add_argument('--dev',help="Use dev manifest and dev endpoint",action='store_true')
 parser.add_argument('--githash',help="FOR DEBUG ONLY")
@@ -24,13 +24,13 @@ if args.githash and not args.debug:
     print("Can only pass in custom githash in debug mode")
     exit()
     
-if args.debug and args.endpoint == 'http://escalation.sd2e.org/admin':
-    args.endpoint = 'http://127.0.0.1:5000/admin'
+if args.debug and args.endpoint == 'http://escalation.sd2e.org/admin/upload_stateset':
+    args.endpoint = 'http://127.0.0.1:5000/admin/upload_stateset'
 
-if args.dev and args.endpoint == 'http://escalation.sd2e.org/admin':
-    args.endpoint = 'http://escalation-dev.sd2e.org/admin'
+if args.dev and args.endpoint == 'http://escalation.sd2e.org/admin/upload_stateset':
+    args.endpoint = 'http://escalation-dev.sd2e.org/admin/upload_stateset'
     
-print("POSTing to",args.endpoint)    
+print("POSTing to", args.endpoint)
 
 if not args.debug and not args.dev:
     while True:

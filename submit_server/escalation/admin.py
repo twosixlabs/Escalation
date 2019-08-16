@@ -1,7 +1,7 @@
 import os
 
 from flask import current_app as app
-from flask import Blueprint, flash, render_template, request, session, jsonify
+from flask import Blueprint, flash, render_template, request, session, jsonify, redirect, url_for
 from werkzeug.utils import secure_filename
 
 from escalation import database, scheduler, PERSISTENT_STORAGE, STATESETS_PATH, TRAINING_DATA_PATH
@@ -37,12 +37,9 @@ def validate(adminkey, githash, filename):
 bp = Blueprint('admin', __name__)
 
 
-@bp.route('/admin', methods=('GET', 'POST'))
-def admin():
-    error = None
-
-    if request.method == 'POST' and request.headers.get('User-Agent') == 'escalation' and request.form[
-        'submit'] == 'training_run':
+@bp.route('/admin/submit_training_run', methods=('POST',))
+def submit_training_run():
+    if request.headers.get('User-Agent') == 'escalation':
         training = request.files['perovskitedata']
         training_file = os.path.join(app.config[PERSISTENT_STORAGE], secure_filename(training.filename))
 
@@ -62,8 +59,10 @@ def admin():
         job2 = scheduler.add_job(func=update_auto, args=[], id='update_auto')
         return jsonify({'success': 'added training data for %s with %d rows' % (crank, num_train_rows)}), 200
 
-    if request.method == 'POST' and request.headers.get('User-Agent') == 'escalation' and request.form[
-        'submit'] == 'stateset':
+
+@bp.route('/admin/submit_stateset', methods=('POST',))
+def submit_stateset():
+    if request.headers.get('User-Agent') == 'escalation':
         stateset = request.files['stateset']
         # note- this is a tmp filename because it is only a portion of the stateset, subsetted by the upload script
         stateset_filename = os.path.join(STATESETS_PATH, secure_filename(stateset.filename))
@@ -104,75 +103,88 @@ def admin():
             app.logger.error(error)
             return jsonify({'error': error}), 400
 
-    if request.method == 'POST' and request.form['submit'] == "Update active cranks":
-        if request.form['adminkey'] != app.config['ADMIN_KEY']:
-            flash("Incorrect admin code")
-        else:
 
-            # check that only one entry per crank is active
-            seen = {}
-            cranks = database.get_cranks()
-            for crank in cranks:
-                id = str(crank.id)
-                if id in request.form and request.form[id] == 'active':
-                    if crank.crank in seen:
-                        flash("Can only have one active row for crank %s" % crank.crank)
-                        cranks = []  # cute way to prevent updating any cranks below
-                        break
-                    seen[crank.crank] = 1
+@bp.route('/admin/update_active_cranks', methods=('POST',))
+def update_active_cranks():
+    if request.form['adminkey'] != app.config['ADMIN_KEY']:
+        flash("Incorrect admin code")
+    else:
 
-            # now update cranks (this will be empty if we break the logic)
-            for crank in cranks:
-                id = str(crank.id)
-                if id not in request.form:
-                    continue
+        # check that only one entry per crank is active
+        seen = {}
+        cranks = database.get_cranks()
+        for crank in cranks:
+            id = str(crank.id)
+            if id in request.form and request.form[id] == 'active':
+                if crank.crank in seen:
+                    flash("Can only have one active row for crank %s" % crank.crank)
+                    cranks = []  # cute way to prevent updating any cranks below
+                    break
+                seen[crank.crank] = 1
 
-                new_status = request.form[id] == 'active'
-                if new_status != crank.active:
-                    database.update_crank_status(crank.id, new_status)
-                    out = "Updating crank %s to %s" % (crank.crank, 'active' if new_status else 'inactive')
-                    flash(out)
-                    app.logger.info(out)
+        # now update cranks (this will be empty if we break the logic)
+        for crank in cranks:
+            id = str(crank.id)
+            if id not in request.form:
+                continue
 
-    if request.method == 'POST' and request.form['submit'] == 'Update Database':
-        for k in request.form:
-            app.logger.info(k)
-        if request.form['adminkey'] != app.config['ADMIN_KEY']:
-            flash("Incorrect admin code")
-        else:
-            from .database import delete_db
-            if request.form['database'] == 'reset':
-                delete_db()
-                app.logger.info("Deleted all data")
-                flash("Deleted all data")
-            else:
-                flash("Unknown command, doing nothing")
+            new_status = request.form[id] == 'active'
+            if new_status != crank.active:
+                database.update_crank_status(crank.id, new_status)
+                out = "Updating crank %s to %s" % (crank.crank, 'active' if new_status else 'inactive')
+                flash(out)
+                app.logger.info(out)
 
-    if request.method == 'POST' and request.form['submit'] == "Update Chemical Names":
-        if request.form['adminkey'] != app.config['ADMIN_KEY']:
-            return jsonify({'error': 'incorrect admin key'}), 400
+    return redirect(url_for('admin.admin'))
 
-        id_arr = request.form.getlist('id')
-        inchi_arr = request.form.getlist('inchi')
-        name_arr = request.form.getlist('common_name')
-        abbrev_arr = request.form.getlist('abbrev')
-        delete_arr = request.form.getlist('delete')
 
-        if (len(abbrev_arr) != len(inchi_arr)) or (len(abbrev_arr) != len(name_arr)):
-            app.logger.error("Missing a field somehow:inchi len=%d, name len=%d, abbrev len=%d" % (
+@bp.route('/admin/update_chemical_names', methods=('POST',))
+def update_chemical_names():
+    if request.form['adminkey'] != app.config['ADMIN_KEY']:
+        return jsonify({'error': 'incorrect admin key'}), 400
+
+    id_arr = request.form.getlist('id')
+    inchi_arr = request.form.getlist('inchi')
+    name_arr = request.form.getlist('common_name')
+    abbrev_arr = request.form.getlist('abbrev')
+    delete_arr = request.form.getlist('delete')
+
+    if (len(abbrev_arr) != len(inchi_arr)) or (len(abbrev_arr) != len(name_arr)):
+        app.logger.error("Missing a field somehow:inchi len=%d, name len=%d, abbrev len=%d" % (
             len(inchi_arr), len(name_arr), len(abbrev_arr)))
-            return jsonify({'error': "missing a field somehow:inchi len=%d, name len=%d, abbrev len=%d" % (
+        return jsonify({'error': "missing a field somehow:inchi len=%d, name len=%d, abbrev len=%d" % (
             len(inchi_arr), len(name_arr), len(abbrev_arr))}), 400
 
-        for i, id in enumerate(id_arr):
-            app.logger.info("Setting chemical %s %s %s" % (inchi_arr[i], name_arr[i], abbrev_arr[i]))
-            if inchi_arr[i] == "" or name_arr[i] == "" or abbrev_arr[i] == "":
-                app.logger.info("Skipping row %d due to blank value" % i)
-            else:
-                database.set_chemical(inchi_arr[i], name_arr[i], abbrev_arr[i])
+    for i, id in enumerate(id_arr):
+        app.logger.info("Setting chemical %s %s %s" % (inchi_arr[i], name_arr[i], abbrev_arr[i]))
+        if inchi_arr[i] == "" or name_arr[i] == "" or abbrev_arr[i] == "":
+            app.logger.info("Skipping row %d due to blank value" % i)
+        else:
+            database.set_chemical(inchi_arr[i], name_arr[i], abbrev_arr[i])
 
-        app.logger.info("Updated chemical set")
-        return jsonify({'success': "Added %d chemicals" % len(inchi_arr)})
+    app.logger.info("Updated chemical set")
+    return jsonify({'success': "Added %d chemicals" % len(inchi_arr)})
 
-    return render_template('admin.html', cranks=database.get_cranks(), session=session,
+
+@bp.route('/admin/update_database', methods=('POST',))
+def update_database():
+    for k in request.form:
+        app.logger.info(k)
+    if request.form['adminkey'] != app.config['ADMIN_KEY']:
+        flash("Incorrect admin code")
+    else:
+        from .database import delete_db
+        if request.form['database'] == 'reset':
+            delete_db()
+            app.logger.info("Deleted all data")
+            flash("Deleted all data")
+        else:
+            flash("Unknown command, doing nothing")
+
+
+@bp.route('/admin', methods=('GET',))
+def admin():
+    return render_template('admin.html',
+                           cranks=database.get_cranks(),
+                           session=session,
                            chem_table=database.get_chemicals())
