@@ -1,15 +1,6 @@
-from flask import (
-    Blueprint, flash, g, redirect, render_template, request
-)
-from flask import current_app
+from flask import Blueprint, flash, render_template, request
 from escalation import scheduler, db
 from collections import defaultdict
-from sqlalchemy import text
-from sqlalchemy.sql import func
-
-import time
-import random
-import heapq
 
 # ugh, I know
 from . import database
@@ -193,8 +184,8 @@ def dashboard_ml():
         flash("Refreshing stats...")
         app.logger.info("Refreshing stats")
         job2 = scheduler.add_job(func=update_auto, args=[], id='update_ml')
-    ml_table   = MLStat.query.all()
 
+    ml_table   = MLStat.query.all()
     return render_template('dashboard_ml.html',
                            leaderboard=get_leaderboard(),
                            ml_table=ml_table,

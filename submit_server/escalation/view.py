@@ -34,8 +34,6 @@ def view():
     if request.form.get('policy_crank'):
         policy_crank = request.form['policy_crank']
         models = db.get_submissions(policy_crank)
-    # models = request.args.get('models') or default_models
-    # policy_crank = request.args.get('policy_crank') or default_policy_crank
     return render_template('index.html',
                            submissions=submissions,
                            cranks=cranks,
@@ -50,8 +48,6 @@ def view():
 def delete_submission_files():
     if request.form['adminkey'] != app.config['ADMIN_KEY']:
         flash("Incorrect admin code")
-        # return jsonify({'failure': 'Incorrect admin code'})
-
     else:
         requested = [int(x) for x in request.form.getlist('download')]
         for id in requested:
@@ -78,6 +74,18 @@ def download_training():
                      as_attachment=True)
 
 
+def validate_policy_crank(size, requested):
+    try:
+        size = int(size)
+    except ValueError:
+        return "Passed in value '%s' for number of samples is not an integer"
+    if size < 1:
+        return "Number of samples must be greater than 0"
+    elif len(requested) == 0:
+        return "Must select a model to include"
+    return
+
+
 @bp.route('/policy/download', methods=('POST',))
 def policy_crank_download():
     policy_crank = request.form['policy_crank']
@@ -85,15 +93,7 @@ def policy_crank_download():
     submissions = db.get_submissions(policy_crank)
     requested = [int(x) for x in request.form.getlist('policy_download')]
     submissions = [sub for sub in submissions if sub.id in requested]
-    err = None
-    try:
-        size = int(size)
-    except ValueError:
-        err = "Passed in value '%s' for number of samples is not an integer"
-    if size < 1:
-        err = "Number of samples must be greater than 0"
-    elif len(requested) == 0:
-        err = "Must select a model to include"
+    err = validate_policy_crank(size, requested)
     if err:
         flash(err)
     else:
