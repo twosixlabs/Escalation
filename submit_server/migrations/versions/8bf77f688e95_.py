@@ -1,4 +1,4 @@
-"""empty message
+"""Renames repo_stat to reproducibility_stat
 
 Revision ID: 8bf77f688e95
 Revises: 4658f6697b50
