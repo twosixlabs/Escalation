@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block header %}
+
+<script src="{{ url_for('static', filename='percentbar.js') }}"></script>
+<!-- D3.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.9.2/d3.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+
+<!-- Plotly.js -->
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+<h1>{% block title %}<a class="active" href="{{ url_for('dashboard.dashboard') }}">Dashboard{% endblock title %}</a></h1>
+
+
+
+{% endblock header %}
+
+{% block content %}
+
+    <!--Dashboard navigation-->
+    <ul class="navlist">
+        <li><a href="{{ url_for('dashboard.dashboard_science') }}">Science</a></li>
+        <li><a href="{{ url_for('dashboard.dashboard_automation') }}">Automation</a></li>
+        <li><a href="{{ url_for('dashboard.dashboard_ml') }}">ML</a></li>
+    </ul>
+
+
+    <!--Science overview-->
+   <div class="dashboard">
+            <a name="science.success_by_amine"></a>
+            <div id="success_by_amine" class="chart" style="max-width:1000px; max-height:500px;"></div>
+            <script type="text/javascript">
+              var graph = {{success_by_amine | safe}};
+              Plotly.newPlot("success_by_amine",graph.data,graph.layout, {responsive: true});
+            </script>
+        </div>
+
+
+    <!--ML Overview-->
+
+    <div id="results_by_model" class="chart" style="max-width:1000px; max-height:400px;"></div>
+    <script type="text/javascript">
+        var graph = {{results_by_model | safe}};
+        Plotly.newPlot("results_by_model",graph.data,graph.layout, {responsive: true});
+    </script>
+
+
+
+    <!--Automation Overview-->
+
+    <div id="runs_by_crank" class="chart" style="max-width:1000px; max-height:500px;"></div>
+    <script type="text/javascript">
+      var graph = {{runs_by_crank | safe}};
+      Plotly.newPlot("runs_by_crank",graph.data,graph.layout, {responsive: true});
+
+    </script>
+
+{% endblock content %}

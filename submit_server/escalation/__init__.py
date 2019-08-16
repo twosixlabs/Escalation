@@ -68,7 +68,7 @@ def create_app():
     from .feature_analysis import bp as feat_bp
     app.register_blueprint(feat_bp)
 
-    from .view import bp as view_bp
+    from .submissions_overview import bp as view_bp
     app.register_blueprint(view_bp)
 
     from .admin import bp as admin_bp

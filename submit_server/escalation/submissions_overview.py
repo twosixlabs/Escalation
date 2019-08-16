@@ -7,7 +7,7 @@ from .policy import download_uniform_policy, default_models
 from .dashboard import update_auto
 from escalation import scheduler, PERSISTENT_STORAGE, UPLOAD_FOLDER
 
-bp = Blueprint('view', __name__)
+bp = Blueprint('submissions_overview', __name__)
 
 DOWNLOAD_TRAINING_DATA = 'Download training data'
 
@@ -28,13 +28,13 @@ def init_view():
     return training_data_available_to_download, models, policy_crank, submissions, curr_crank, cranks
 
 
-@bp.route('/', methods=('GET', 'POST'))
-def view():
+@bp.route('/submissions_overview', methods=('GET', 'POST'))
+def submissions_overview():
     training_data_available_to_download, models, policy_crank, submissions, curr_crank, cranks = init_view()
     if request.form.get('policy_crank'):
         policy_crank = request.form['policy_crank']
         models = db.get_submissions(policy_crank)
-    return render_template('index.html',
+    return render_template('submissions_overview.html',
                            submissions=submissions,
                            cranks=cranks,
                            curr_crank=curr_crank,
@@ -53,7 +53,7 @@ def delete_submission_files():
         for id in requested:
             db.remove_submission(id)
     _ = scheduler.add_job(func=update_auto, args=[], id='update_auto')
-    return redirect(url_for('view.view'))
+    return redirect(url_for('submissions_overview.submissions_overview'))
 
 
 @bp.route('/submission_files/download', methods=('POST',))

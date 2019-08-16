@@ -128,6 +128,14 @@ def update_ml():
         plot.update_results_by_model()  # f1_by_model and results_by_model
 
 
+@bp.route('/', methods=('GET', 'POST'))
+def dashboard():
+    return render_template('dashboard_overview.html',
+                           success_by_amine=plot.success_by_amine(),
+                           runs_by_crank=plot.runs_by_crank(),
+                           results_by_model=plot.results_by_model())
+
+
 @bp.route('/dashboard/science', methods=('GET', 'POST'))
 def dashboard_science():
     curr_inchikey = 'all'

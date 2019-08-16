@@ -10,11 +10,18 @@
     <!-- Plotly.js -->
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
-    <h1>{% block title %}Science Dashboard{% endblock title %}</h1>
+<h1>{% block title %}<a href="{{ url_for('dashboard.dashboard') }}">Dashboard{% endblock title %}</a></h1>
 
 {% endblock header %}
 
 {% block content %}
+
+    <!--Dashboard navigation-->
+    <ul class="navlist">
+        <li class="active"><a href="{{ url_for('dashboard.dashboard_science') }}">Science</a></li>
+        <li><a href="{{ url_for('dashboard.dashboard_automation') }}">Automation</a></li>
+        <li><a href="{{ url_for('dashboard.dashboard_ml') }}">ML</a></li>
+    </ul>
 
     <div>
         <div class="dashboard">

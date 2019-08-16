@@ -10,14 +10,19 @@
 <!-- Plotly.js -->
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
-<h1>{% block title %}Machine Learning Dashboard{% endblock title %}</h1>
+<h1>{% block title %}<a href="{{ url_for('dashboard.dashboard') }}">Dashboard{% endblock title %}</a></h1>
 
 {% endblock header %}
 
 {% block content %}
 
+    <!--Dashboard navigation-->
+    <ul class="navlist">
+        <li><a href="{{ url_for('dashboard.dashboard_science') }}">Science</a></li>
+        <li><a href="{{ url_for('dashboard.dashboard_automation') }}">Automation</a></li>
+        <li class="active"><a href="{{ url_for('dashboard.dashboard_ml') }}">ML</a></li>
+    </ul>
 
-    <!-- Datatables uploads per crank -->
     <div id="results_by_model" class="chart" style="max-width:1000px; max-height:400px;"></div>
     <script type="text/javascript">
         var graph = {{results_by_model | safe}};
@@ -33,7 +38,6 @@
 
 
     </script>
-
     <div id="results_by_crank" class="chart" style="max-width:1000px;"></div>
     <script type="text/javascript">
         var graph = {{results_by_crank | safe}};

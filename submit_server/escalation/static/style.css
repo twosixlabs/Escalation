@@ -1,4 +1,4 @@
-;
+
 html {
   font-family: sans-serif;
   background: #eee;
@@ -14,6 +14,13 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-family: serif;
   color: #377ba8;
+}
+
+h1 a{
+  font-family: serif;
+  color: #377ba8;
+  text-decoration: none;
+
 }
 
 a {
@@ -63,7 +70,7 @@ hr {
 
 
 /* new code */
-/* Add a black background color to the top navigation */
+/* Add a background color to the top navigation */
 .topnav {
     background-color: lightgray;
 }
@@ -72,11 +79,11 @@ hr {
 .topnav a {
   font-weight:bold;
   color: #377ba8;
-  text-align: left; 
+  text-align: left;
   padding: 14px 14px 14px 14px;
   text-decoration: none;
   font-size: 18px;
-  
+
 }
 
 /* Change the color of links on hover */
@@ -127,7 +134,7 @@ hr {
   margin: 1em 0;
   display: flex;
   flex-direction: column;
-  max-width: 200px;  
+  max-width: 200px;
 }
 
 .content label {
@@ -241,4 +248,33 @@ h2 {
 
 #auto_table_div {
     max-width:600px;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: white;
+}
+
+li {
+  float: left;
+}
+
+li a {
+  display: block;
+  color: #377ba8;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+
+/* Change the link color to grey on hover */
+li a:hover {
+  background-color: lightgray;
+}
+
+.active {
+  background-color: #f1f1f1;
 }
