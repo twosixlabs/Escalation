@@ -11,8 +11,8 @@ import plotly.graph_objs as go
 import plotly
 from sqlalchemy import text, func
 
-from submit_server.escalation import db
-from submit_server.escalation.database import (Submission, get_chemicals, get_leaderboard,
+from escalation import db
+from escalation.database import (Submission, get_chemicals, get_leaderboard,
                                                           get_feature_analysis, get_features, ReproducibilityStat)
 
 global plot_data

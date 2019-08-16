@@ -1,12 +1,11 @@
 import os
 from flask import  Blueprint, flash, render_template, request, send_file, jsonify, redirect, url_for
 from flask import current_app as app
-from submit_server.escalation import database as db
-from submit_server.escalation.files import download_zip
-from submit_server.escalation.policy import download_uniform_policy, default_models
-from submit_server.escalation.dashboard import update_auto
 
-from submit_server.escalation import scheduler, PERSISTENT_STORAGE, UPLOAD_FOLDER
+from escalation import database, scheduler, PERSISTENT_STORAGE, UPLOAD_FOLDER
+from escalation.files import download_zip
+from escalation.policy import download_uniform_policy, default_models
+from escalation.dashboard import update_auto
 
 bp = Blueprint('submissions_overview', __name__)
 
@@ -14,18 +13,18 @@ DOWNLOAD_TRAINING_DATA = 'Download training data'
 
 
 def init_view():
-    cranks = db.get_unique_cranks()
-    training_data_available_to_download = db.get_cranks_available_for_download()
+    cranks = database.get_unique_cranks()
+    training_data_available_to_download = database.get_cranks_available_for_download()
     curr_crank = 'all'
     models = []
     policy_crank = None
     if cranks:
         policy_crank = cranks[0]
         print(policy_crank)
-        models = db.get_submissions(policy_crank)
+        models = database.get_submissions(policy_crank)
     if request.method == 'POST' and 'crank' in request.form:
         curr_crank = request.form['crank']
-    submissions = db.get_submissions(curr_crank)
+    submissions = database.get_submissions(curr_crank)
     return training_data_available_to_download, models, policy_crank, submissions, curr_crank, cranks
 
 
@@ -34,7 +33,7 @@ def submissions_overview():
     training_data_available_to_download, models, policy_crank, submissions, curr_crank, cranks = init_view()
     if request.form.get('policy_crank'):
         policy_crank = request.form['policy_crank']
-        models = db.get_submissions(policy_crank)
+        models = database.get_submissions(policy_crank)
     return render_template('submissions_overview.html',
                            submissions=submissions,
                            cranks=cranks,
@@ -52,7 +51,7 @@ def delete_submission_files():
     else:
         requested = [int(x) for x in request.form.getlist('download')]
         for id in requested:
-            db.remove_submission(id)
+            database.remove_submission(id)
     _ = scheduler.add_job(func=update_auto, args=[], id='update_auto')
     return redirect(url_for('submissions_overview.submissions_overview'))
 
@@ -91,7 +90,7 @@ def validate_policy_crank(size, requested):
 def policy_crank_download():
     policy_crank = request.form['policy_crank']
     size = request.form['cranksize']
-    submissions = db.get_submissions(policy_crank)
+    submissions = database.get_submissions(policy_crank)
     requested = [int(x) for x in request.form.getlist('policy_download')]
     submissions = [sub for sub in submissions if sub.id in requested]
     err = validate_policy_crank(size, requested)

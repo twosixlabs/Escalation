@@ -5,7 +5,7 @@ from flask import current_app as app
 from sqlalchemy import and_, sql, text, func
 from sqlalchemy.orm import column_property
 
-from submit_server.escalation import db, PERSISTENT_STORAGE
+from escalation import db, PERSISTENT_STORAGE
 
 
 # Leaderboard statistics

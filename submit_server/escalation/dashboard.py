@@ -4,9 +4,8 @@ from flask import Blueprint, flash, render_template, request
 from flask import current_app as app
 from sqlalchemy import func
 
-from submit_server.escalation import scheduler, db
-from submit_server.escalation import database
-from submit_server.escalation import plot
+from escalation import scheduler, db, database, plot
+
 
 bp = Blueprint('dashboard', __name__)
 

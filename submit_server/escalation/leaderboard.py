@@ -1,18 +1,16 @@
-from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for, jsonify, send_file
-)
-from flask import current_app as app
-from . import database as db
-import os
 import csv
+import os
 import time
 
-from submit_server.escalation.dashboard import update_ml, update_auto, update_science
-from submit_server.escalation import scheduler
+from flask import Blueprint, render_template, request, jsonify, send_file
+from flask import current_app as app
+
+from escalation import database, scheduler
+from escalation.dashboard import update_ml
 
 
 def create_leaderboard_csv():
-    rows = [x.__dict__ for x in db.get_leaderboard()]
+    rows = [x.__dict__ for x in database.get_leaderboard()]
     fieldnames = ['dataset_name', 'githash', 'run_id', 'created', 'model_name', 'model_author', 'accuracy',
                   'balanced_accuracy', 'auc_score', 'average_precision', 'f1_score', 'precision', 'recall',
                   'samples_in_train', 'samples_in_test', 'model_description', 'column_predicted', 'num_features_used',
@@ -34,7 +32,7 @@ bp = Blueprint('leaderboard', __name__)
 @bp.route('/leaderboard', methods=('GET', 'POST'))
 def leaderboard():
     if request.method == 'POST' and request.headers.get('User-Agent') == 'escalation':
-        error = db.add_leaderboard(request.form)
+        error = database.add_leaderboard(request.form)
         if error:
             app.logger.info(error)
             return jsonify({'error': error}), 400
@@ -50,8 +48,8 @@ def leaderboard():
         else:
             requested = [int(x) for x in request.form.getlist('delete')]
             for id in requested:
-                db.remove_leaderboard(id)
+                database.remove_leaderboard(id)
 
             job3 = scheduler.add_job(func=update_ml, args=[], id='update_ml')
 
-    return render_template('leaderboard.html', table=db.get_leaderboard())
+    return render_template('leaderboard.html', table=database.get_leaderboard())

@@ -9,8 +9,8 @@ import click
 import logging
 from logging.handlers import RotatingFileHandler
 
-from submit_server.escalation.constants import PERSISTENT_STORAGE, TRAINING_DATA_PATH, STATESETS_PATH, LEADERBOARDS, SUBMISSIONS, UPLOAD_FOLDER
-from submit_server.escalation.VERSION import version
+from escalation.constants import PERSISTENT_STORAGE, TRAINING_DATA_PATH, STATESETS_PATH, LEADERBOARDS, SUBMISSIONS, UPLOAD_FOLDER
+from escalation.VERSION import version
 
 # create and configure the app
 
@@ -97,7 +97,7 @@ def create_app():
 
         app.logger.info("Writing to %s" % app.config['SQLALCHEMY_DATABASE_URI'])
 
-    from .database import delete_db, create_db, Run, Submission, Crank, Prediction
+    from escalation.database import delete_db, create_db, Run, Submission, Crank, Prediction
 
     @app.cli.command('reset-db')
     def reset_db():

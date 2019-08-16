@@ -1,15 +1,11 @@
 # Submit a CS
 
-import os
-import functools
-
-from flask import (Blueprint, flash, g, redirect, render_template, request, session, url_for, jsonify)
+from flask import (Blueprint, flash, render_template, request, session, jsonify)
 from flask import current_app as app
-from werkzeug.utils import secure_filename
 
-from submit_server.escalation.files import *
-from submit_server.escalation.dashboard import update_ml, update_auto, update_science
-from submit_server.escalation import scheduler
+from escalation import database, scheduler
+from escalation.dashboard import update_ml, update_auto, update_science
+from escalation.files import text2rows, ValidationError, validate_submission
 
 
 def arr2html(arr):
@@ -53,7 +49,7 @@ def validate_submission_form(request_form, request_files):
         raise ValidationError('7 char git hash is required (e.g. abc1234)')
     elif not csvfile or not allowed_file(csvfile.filename):
         raise ValidationError("Must upload a csv file")
-    elif not db.is_stateset_active(crank, githash):
+    elif not database.is_stateset_active(crank, githash):
         raise ValidationError("Entered crank number %s is not active" % (crank))
     return username, expname, crank, notes, githash, csvfile
 
@@ -72,7 +68,7 @@ def submission():
         validate_submission(rows, crank, githash)
         if comments:
             notes = notes + "\nComments from file:" + comments
-        db.add_submission(username, expname, crank, githash, rows, notes)
+        database.add_submission(username, expname, crank, githash, rows, notes)
     except ValidationError as e:
         app.logger.info(e)
         # custom check if POST from script instead of UI
@@ -97,5 +93,5 @@ def submission():
 
 @bp.route('/submission', methods=('GET',))
 def submission_view():
-    curr_cranks = " ".join(sorted(x.crank for x in db.get_active_cranks()))
+    curr_cranks = " ".join(sorted(x.crank for x in database.get_active_cranks()))
     return render_template('submission.html', session=session, curr_cranks=curr_cranks)
