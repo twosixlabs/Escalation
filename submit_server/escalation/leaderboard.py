@@ -7,8 +7,8 @@ import os
 import csv
 import time
 
-from .dashboard import update_ml, update_auto, update_science
-from escalation import scheduler
+from submit_server.escalation.dashboard import update_ml, update_auto, update_science
+from submit_server.escalation import scheduler
 
 
 def create_leaderboard_csv():

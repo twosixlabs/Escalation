@@ -7,10 +7,9 @@ from flask import (Blueprint, flash, g, redirect, render_template, request, sess
 from flask import current_app as app
 from werkzeug.utils import secure_filename
 
-from . import database as db
-from .files import *
-from .dashboard import update_ml, update_auto, update_science
-from escalation import scheduler
+from submit_server.escalation.files import *
+from submit_server.escalation.dashboard import update_ml, update_auto, update_science
+from submit_server.escalation import scheduler
 
 
 def arr2html(arr):

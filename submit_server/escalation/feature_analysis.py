@@ -6,8 +6,8 @@ from . import database as db
 import os
 import csv
 
-from .dashboard import update_science
-from escalation import scheduler
+from submit_server.escalation.dashboard import update_science
+from submit_server.escalation import scheduler
 
 bp = Blueprint('feature_analysis', __name__)
 @bp.route('/features', methods=('GET','POST'))

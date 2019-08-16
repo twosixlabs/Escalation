@@ -7,9 +7,10 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 from flask import current_app as app
-from . import database as db
-from .dashboard import update_auto, update_science
-from escalation import scheduler, PERSISTENT_STORAGE, STATESETS_PATH, TRAINING_DATA_PATH
+
+from submit_server.escalation import database as db
+from submit_server.escalation.dashboard import update_auto, update_science
+from submit_server.escalation import scheduler, PERSISTENT_STORAGE, STATESETS_PATH, TRAINING_DATA_PATH
 
 
 session_vars= ('githash','adminkey','username','crank')

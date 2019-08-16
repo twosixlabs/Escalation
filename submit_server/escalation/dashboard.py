@@ -1,11 +1,12 @@
-from flask import Blueprint, flash, render_template, request
-from escalation import scheduler, db
 from collections import defaultdict
 
-# ugh, I know
-from . import database
-from .database import *
-from . import plot
+from flask import Blueprint, flash, render_template, request
+from flask import current_app as app
+from sqlalchemy import func
+
+from submit_server.escalation import scheduler, db
+from submit_server.escalation import database
+from submit_server.escalation import plot
 
 bp = Blueprint('dashboard', __name__)
 
@@ -15,18 +16,18 @@ def update_auto():
     app.logger.info("Updating automation stats")
     with app.app_context():
         cranks = database.get_cranks()
-        AutomationStat.query.delete()
+        database.AutomationStat.query.delete()
         seen = {}
         for crank in cranks:
             if crank.crank in seen:
                 continue
             seen[crank.crank] = 1
 
-            num_uploads = Submission.query.filter_by(crank=crank.crank).count()
-            num_distinct_entries = db.session.query(Prediction.dataset, Prediction.name).filter_by(
-                dataset=crank.crank).group_by(Prediction.dataset, Prediction.name).count()
+            num_uploads = database.Submission.query.filter_by(crank=crank.crank).count()
+            num_distinct_entries = db.session.query(database.Prediction.dataset, database.Prediction.name).filter_by(
+                dataset=crank.crank).group_by(database.Prediction.dataset, database.Prediction.name).count()
 
-            db.session.add(AutomationStat(crank=crank.crank,
+            db.session.add(database.AutomationStat(crank=crank.crank,
                                           upload_date=crank.created,
                                           num_runs=crank.num_runs,
                                           num_uploads=num_uploads,
@@ -58,14 +59,14 @@ def update_science():
             if r[2] == 4:
                 success[r[1]] += 1
 
-        ScienceStat.query.delete()
+        database.ScienceStat.query.delete()
         chemicals = {}
         res = database.get_chemicals()
         for r in res:
             chemicals[r.inchi] = r.common_name
 
         for amine in total:
-            db.session.add(ScienceStat(amine=chemicals[amine] if amine in chemicals else amine,
+            db.session.add(database.ScienceStat(amine=chemicals[amine] if amine in chemicals else amine,
                                        success=success[amine],
                                        total=total[amine]
                                        ))
@@ -85,9 +86,9 @@ def update_ml():
 
     with app.app_context():
         # clear out previous top predictions and store new onew        
-        MLStat.query.delete()
+        database.MLStat.query.delete()
 
-        cranks = get_cranks()
+        cranks = database.get_cranks()
         seen = {}
         for crank in cranks:
             if crank.crank in seen:
@@ -96,9 +97,9 @@ def update_ml():
 
             # statistics about training/test data
             train_crystal_score_mean = float(
-                db.session.query(func.avg(TrainingRun._out_crystalscore)).filter_by(dataset=crank.crank).scalar())
+                db.session.query(func.avg(database.TrainingRun._out_crystalscore)).filter_by(dataset=crank.crank).scalar())
             train_length = float(
-                db.session.query(func.count(TrainingRun._out_crystalscore)).filter_by(dataset=crank.crank).scalar())
+                db.session.query(func.count(database.TrainingRun._out_crystalscore)).filter_by(dataset=crank.crank).scalar())
 
             # do more training stuff
             try:
@@ -108,7 +109,7 @@ def update_ml():
                 pred_crystal_score_mean = 0
 
             # statistics about submissions
-            subs = get_submissions(crank.crank)
+            subs = database.get_submissions(crank.crank)
             runs = defaultdict(list)
 
             app.logger.info("Retrieved %d submissions for %s" % (len(subs), crank.crank))
@@ -116,7 +117,7 @@ def update_ml():
             train_crystal_score_mean, train_length, pred_crystal_score_mean))
 
             # finally, store off the statistics
-            db.session.add(MLStat(crank=crank.crank,
+            db.session.add(database.MLStat(crank=crank.crank,
                                   upload_date=crank.created,
                                   train_mean=train_crystal_score_mean,
                                   num_train_rows=train_length,
@@ -130,6 +131,7 @@ def update_ml():
 
 @bp.route('/', methods=('GET', 'POST'))
 def dashboard():
+    print("VRSION", app.config['VERSION'])
     return render_template('dashboard_overview.html',
                            success_by_amine=plot.success_by_amine(),
                            runs_by_crank=plot.runs_by_crank(),
@@ -153,8 +155,8 @@ def dashboard_science():
             plot.update_reproducibility_table(inchi=request.form['inchikey_repro'],
                                               prec=float(request.form['prec_repro']))
 
-    sci_table = ScienceStat.query.all()
-    reproducibility_table = ReproducibilityStat.query.all()
+    sci_table = database.ScienceStat.query.all()
+    reproducibility_table = database.ReproducibilityStat.query.all()
     exp_repro_stats = plot.reproducibility_table_stats()
 
     return render_template('dashboard_science.html',
@@ -177,7 +179,7 @@ def dashboard_automation():
         app.logger.info("Refreshing stats")
         job2 = scheduler.add_job(func=update_auto, args=[], id='update_auto')
 
-    auto_table = AutomationStat.query.all()
+    auto_table = database.AutomationStat.query.all()
     return render_template('dashboard_automation.html',
                            # automation
                            auto_table=auto_table,
@@ -193,9 +195,9 @@ def dashboard_ml():
         app.logger.info("Refreshing stats")
         job2 = scheduler.add_job(func=update_auto, args=[], id='update_ml')
 
-    ml_table   = MLStat.query.all()
+    ml_table   = database.MLStat.query.all()
     return render_template('dashboard_ml.html',
-                           leaderboard=get_leaderboard(),
+                           leaderboard=database.get_leaderboard(),
                            ml_table=ml_table,
                            results_by_model=plot.results_by_model(),
                            results_by_crank=plot.results_by_crank(),

@@ -1,11 +1,12 @@
 import os
 from flask import  Blueprint, flash, render_template, request, send_file, jsonify, redirect, url_for
 from flask import current_app as app
-from . import database as db
-from .files import download_zip
-from .policy import download_uniform_policy, default_models
-from .dashboard import update_auto
-from escalation import scheduler, PERSISTENT_STORAGE, UPLOAD_FOLDER
+from submit_server.escalation import database as db
+from submit_server.escalation.files import download_zip
+from submit_server.escalation.policy import download_uniform_policy, default_models
+from submit_server.escalation.dashboard import update_auto
+
+from submit_server.escalation import scheduler, PERSISTENT_STORAGE, UPLOAD_FOLDER
 
 bp = Blueprint('submissions_overview', __name__)
 

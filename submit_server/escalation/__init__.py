@@ -9,7 +9,8 @@ import click
 import logging
 from logging.handlers import RotatingFileHandler
 
-from .constants import PERSISTENT_STORAGE, TRAINING_DATA_PATH, STATESETS_PATH, LEADERBOARDS, SUBMISSIONS, UPLOAD_FOLDER
+from submit_server.escalation.constants import PERSISTENT_STORAGE, TRAINING_DATA_PATH, STATESETS_PATH, LEADERBOARDS, SUBMISSIONS, UPLOAD_FOLDER
+from submit_server.escalation.VERSION import version
 
 # create and configure the app
 
@@ -50,7 +51,8 @@ def create_app():
         #1GB max upload
         MAX_CONTENT_LENGTH=1024 * 1024 * 1024,
         ADMIN_KEY='Trompdoy',
-        SQLALCHEMY_TRACK_MODIFICATIONS=False
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        VERSION=version
     )
 
     db.init_app(app)
