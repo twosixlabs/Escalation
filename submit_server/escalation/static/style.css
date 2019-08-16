@@ -16,13 +16,6 @@ h1, h2, h3, h4, h5, h6 {
   color: #377ba8;
 }
 
-h1 a{
-  font-family: serif;
-  color: #377ba8;
-  text-decoration: none;
-
-}
-
 a {
     color: #3d2087;
 }
@@ -250,6 +243,8 @@ h2 {
     max-width:600px;
 }
 
+/* Formats the horizontal nav bar as used for the dashboard */
+
 ul {
   list-style-type: none;
   margin: 0;
@@ -277,4 +272,12 @@ li a:hover {
 
 .active {
   background-color: #f1f1f1;
+}
+
+/* If the page title is a link, keep it formatted as a title, not a link */
+h1 a {
+  font-family: serif;
+  color: #377ba8;
+  text-decoration: none;
+
 }

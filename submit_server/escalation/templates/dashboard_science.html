@@ -10,7 +10,7 @@
     <!-- Plotly.js -->
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
-<h1>{% block title %}<a href="{{ url_for('dashboard.dashboard') }}">Dashboard{% endblock title %}</a></h1>
+<h1><a href="{{ url_for('dashboard.dashboard') }}">{% block title %}Dashboard{% endblock title %}</a></h1>
 
 {% endblock header %}
 
