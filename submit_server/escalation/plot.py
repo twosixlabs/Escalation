@@ -1,19 +1,15 @@
+import json
+import operator
+
+from collections import defaultdict
+from flask import current_app as app
+import numpy as np
 import plotly.graph_objs as go
 import plotly
-import json
-import math
-import operator
-import os
-
-from sqlalchemy import func
-from collections import defaultdict, Counter
-from flask import current_app as app
 from sqlalchemy import text
-from escalation import db
-from .database import (Submission, get_chemicals, get_leaderboard, get_feature_analysis, get_features, RepoStat)
 
-import numpy as np
-import pandas as pd
+from escalation import db
+from escalation.database import get_chemicals, get_leaderboard, get_feature_analysis, get_features
 
 global plot_data
 
@@ -84,41 +80,6 @@ def success_by_amine():
         title="<b>Success Rate by Amine</b>",
     )
     graph = {'data': [trace1, trace2],
-             'layout': layout
-             }
-    return json.dumps(graph, cls=plotly.utils.PlotlyJSONEncoder)
-
-
-def update_uploads_by_crank():
-    global plot_data
-    app.logger.info("Updating uploads_by_crank")
-    res = db.session.query(Submission.crank, func.count(Submission.crank)).group_by(Submission.crank).order_by(
-        Submission.crank.asc()).all()
-
-    plot_data['uploads_by_crank']['xs'] = [r[0] for r in res]
-    plot_data['uploads_by_crank']['ys'] = [r[1] for r in res]
-
-
-def uploads_by_crank():
-    global plot_data
-    if 'uploads_by_crank' not in plot_data:
-        update_uploads_by_crank()
-
-    trace = go.Bar(
-        x=plot_data['uploads_by_crank']['xs'],
-        y=plot_data['uploads_by_crank']['ys']
-    )
-
-    layout = go.Layout(
-        xaxis={'type': 'category',
-               'title': "<b>Crank</b>",
-               },
-        yaxis={'title': '<b>Number of Submissions</b>'
-               },
-        title="<b>Number of Submissions per Crank</b>"
-
-    )
-    graph = {'data': [trace],
              'layout': layout
              }
     return json.dumps(graph, cls=plotly.utils.PlotlyJSONEncoder)
@@ -897,7 +858,7 @@ def feature_importance():
         return {}
 
     crank = cranks[0]  # only plot the first crank
-    method_types = heldout[crank].keys() # heldout and general should be the same list
+    method_types = heldout[crank].keys()  # heldout and general should be the same list
 
     for method in method_types:
 
@@ -994,103 +955,3 @@ def feature_importance():
     return json.dumps(graphs, cls=plotly.utils.PlotlyJSONEncoder)
 
 
-def repo_cluster(df, prec):
-    features = ['_rxn_M_inorganic', '_rxn_M_organic', '_rxn_M_acid', '_rxn_temperatureC_actual_bulk',
-                '_out_crystalscore', 'inchikey']
-    vals = df[features].values
-    temp_prec = 3
-    clusters = []
-    memo = {}
-    for i, v in enumerate(vals):
-        if i in memo:
-            continue
-        cluster = [i]
-        for j, v_ in enumerate(vals):
-            if j in memo:
-                continue
-            if i == j:
-                continue
-            if abs(v[3] - v_[3]) > temp_prec:
-                continue
-            if not any(abs(v[:3] - v_[:3]) > prec):  # these are different
-                cluster.append(j)
-        if len(cluster) != 1:
-            for z in cluster:
-                memo[z] = 0
-            clusters.append(vals[cluster])
-
-    data = []
-    for i, k in enumerate(clusters):
-        data.append({})
-        cs = k[:, 4]
-        data[i]['cs'] = round(np.mean(cs, axis=0), 2)
-        data[i]['size'] = len(cs)
-        data[i]['inorganic'] = round(np.mean(k[:, 0], axis=0), 2)
-        data[i]['organic'] = round(np.mean(k[:, 1], axis=0), 2)
-        data[i]['acid'] = round(np.mean(k[:, 2], axis=0), 2)
-        data[i]['temp'] = round(np.mean(k[:, 3], axis=0), 2)
-        cntr = Counter(cs)
-        lbl = cntr.most_common(1)[0][0]
-        data[i]['purity'] = round(cntr[lbl] / len(cs), 2)
-    return data
-
-
-def update_repo_table(prec=0.25, inchi='all'):
-    app.logger.info("Updating reproducibility table")
-    global plot_data
-    name = 'exp_repo'
-    # update reproducibility
-    RepoStat.query.delete()
-
-    sql = "select max(dataset) dataset from training_run"
-    rows = list(db.engine.execute(sql))
-    crank = rows[0][0]
-    app.logger.info("Selected crank %s" % crank)
-    query = 'select * from training_run where dataset = "%s"' % (crank)
-    df = pd.read_sql(query, db.session.bind)
-    app.logger.info("Selected %d training runs" % len(df))
-    if inchi != 'all':
-        df = df[df.inchikey == inchi]
-        app.logger.info("Filtered to %d runs for inchi %s" % (len(df), inchi))
-
-    data = repo_cluster(df, prec)
-    objs = []
-    mean_cs = 0
-    mean_purity = 0
-    for row in data:
-        objs.append(RepoStat(inorganic=row['inorganic'],
-                             organic=row['organic'],
-                             acid=row['acid'],
-                             temp=row['temp'],
-                             size=row['size'],
-                             score=row['cs'],
-                             repo=round(row['purity'], 2)
-                             ))
-        mean_cs += row['cs']
-        mean_purity += row['purity']
-
-    if len(data) > 0:
-        mean_cs /= len(data)
-        mean_purity /= len(data)
-    else:
-        mean_cs = 0
-        mean_purity = 0
-
-    app.logger.info("Added %d clusters" % len(objs))
-
-    db.session.bulk_save_objects(objs)
-    db.session.commit()
-
-    plot_data[name] = {}
-    plot_data[name]['inchi'] = inchi
-    plot_data[name]['prec'] = prec
-    plot_data[name]['size'] = len(data)
-    plot_data[name]['score'] = round(mean_cs, 2)
-    plot_data[name]['purity'] = round(mean_purity, 2)
-    plot_data[name]['expts'] = len(df)
-
-
-def repo_table_stats():
-    global plot_data
-    name = 'exp_repo'
-    return plot_data[name]

@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block header %}
+
+<script src="{{ url_for('static', filename='percentbar.js') }}"></script>
+<!-- D3.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.9.2/d3.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+
+<!-- Plotly.js -->
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+<h1><a href="{{ url_for('dashboard.dashboard') }}">{% block title %}Dashboard{% endblock title %}</a></h1>
+
+{% endblock header %}
+
+{% block content %}
+
+    <!--Dashboard navigation-->
+    <ul class="navlist">
+        <li><a href="{{ url_for('dashboard.dashboard_science') }}">Science</a></li>
+        <li class="active"><a href="{{ url_for('dashboard.dashboard_automation') }}">Automation</a></li>
+        <li><a href="{{ url_for('dashboard.dashboard_ml') }}">ML</a></li>
+    </ul>
+
+    <div id="runs_by_crank" class="chart" style="max-width:1000px; max-height:500px;"></div>
+    <script type="text/javascript">
+      var graph = {{runs_by_crank | safe}};
+      Plotly.newPlot("runs_by_crank",graph.data,graph.layout, {responsive: true});
+
+    </script>
+
+
+    <div id="runs_by_month" class="chart" style="max-width:1000px; max-height:500px;"></div>
+        <script type="text/javascript">
+              var graph = {{runs_by_month | safe}};
+              Plotly.newPlot("runs_by_month",graph.data,graph.layout, {responsive: true});
+
+              var myPlot = document.getElementById('runs_by_month')
+
+              myPlot.on('plotly_hover', function(data){
+                var pn='',
+                    tn='';
+              for(var i=0; i < data.points.length; i++){
+                  pn = data.points[i].pointNumber;
+                  tn = data.points[i].curveNumber;
+                };
+              var update = {'marker':{'color': '#a55942','line':{'color':'#000000','width':1}}};
+              Plotly.restyle(myPlot, update, [tn]);
+             })
+
+             .on('plotly_unhover', function(data){
+               tn=data.points[0].yaxis._traceIndices
+               var update = {'marker':{'color': '#5eabdb','line':{'color':'#000000','width':1}}};
+               Plotly.restyle(myPlot, update, tn);
+            });
+        </script>
+
+
+        <!-- Datatables uploads per crank -->
+        <div class="dashboard" id="auto_table_div">
+
+            <table id="auto_table" class="compact hover order-column row-border" style="width:100%;">
+                <thead>
+                <th>Crank</th>
+                <th>Upload Date</th>
+                <th>Number of Runs</th>
+                <th>Number of Submissions</th>
+                </thead>
+                <tbody>
+                {% for r in auto_table %}
+                <tr>
+                    <td> {{ r['crank'] }}</td>
+                    <td> {{ r['upload_date'] }}</td>
+                    <td> {{ r['num_runs'] }}</td>
+                    <td> {{ r['num_uploads'] }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+            <script>
+                $(document).ready(function() {
+                $('#auto_table').DataTable( {
+                "order": [[ 0, "desc" ]],
+                }
+                );
+                } );
+            </script>
+        </div>
+    </div>
+    <form method="post">
+        <input type="submit" value="Refresh" name="update">
+    </form>
+{% endblock content %}

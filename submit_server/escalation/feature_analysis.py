@@ -1,19 +1,18 @@
-from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for, jsonify, send_file
-)
+from flask import Blueprint, flash,render_template, request, jsonify
 from flask import current_app as app
-from . import database as db
-import os
-import csv
 
-from .dashboard import update_science
+from escalation import database
+from escalation.dashboard import update_science
 from escalation import scheduler
 
+
 bp = Blueprint('feature_analysis', __name__)
+
+
 @bp.route('/features', methods=('GET','POST'))
 def feature_analysis():
     if request.method == 'POST' and request.headers.get('User-Agent') == 'escalation':
-        error = db.add_feature_analysis(request.json)
+        error = database.add_feature_analysis(request.json)
         if error:
             app.logger.info(error)
             return jsonify({'error':error}), 400
@@ -25,10 +24,9 @@ def feature_analysis():
         else:
             requested=[int(x) for x in request.form.getlist('delete')]
             for id in requested:
-                db.remove_feature_analysis(id)
+                database.remove_feature_analysis(id)
 
             job3 = scheduler.add_job(func=update_science, args=[], id = 'update_science')                    
             
-    return render_template('feature_analysis.html',table=[x.__dict__ for x in db.get_feature_analysis()])
+    return render_template('feature_analysis.html',table=[x.__dict__ for x in database.get_feature_analysis()])
 
-        

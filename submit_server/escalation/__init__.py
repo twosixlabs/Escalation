@@ -1,4 +1,3 @@
-
 import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
@@ -10,7 +9,8 @@ import click
 import logging
 from logging.handlers import RotatingFileHandler
 
-from .constants import PERSISTENT_STORAGE, TRAINING_DATA_PATH, STATESETS_PATH, LEADERBOARDS, SUBMISSIONS, UPLOAD_FOLDER
+from escalation.constants import PERSISTENT_STORAGE, TRAINING_DATA_PATH, STATESETS_PATH, LEADERBOARDS, SUBMISSIONS, UPLOAD_FOLDER
+from escalation.VERSION import version
 
 # create and configure the app
 
@@ -51,11 +51,12 @@ def create_app():
         #1GB max upload
         MAX_CONTENT_LENGTH=1024 * 1024 * 1024,
         ADMIN_KEY='Trompdoy',
-        SQLALCHEMY_TRACK_MODIFICATIONS=False
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        VERSION=version
     )
 
     db.init_app(app)
-    migrate.init_app(app,db)
+    migrate.init_app(app, db)
 
     if not scheduler.running:
         scheduler.init_app(app)
@@ -69,7 +70,7 @@ def create_app():
     from .feature_analysis import bp as feat_bp
     app.register_blueprint(feat_bp)
 
-    from .view import bp as view_bp
+    from .submissions_overview import bp as view_bp
     app.register_blueprint(view_bp)
 
     from .admin import bp as admin_bp
@@ -96,7 +97,7 @@ def create_app():
 
         app.logger.info("Writing to %s" % app.config['SQLALCHEMY_DATABASE_URI'])
 
-    from .database import delete_db, create_db, Run, Submission, Crank, Prediction
+    from escalation.database import delete_db, create_db, Run, Submission, Crank, Prediction
 
     @app.cli.command('reset-db')
     def reset_db():
@@ -113,11 +114,5 @@ def create_app():
         from .dashboard import update_ml
         update_ml()
 
-    @app.cli.command('job')
-    def do_job():
-        from .plot import update_repo_table
-        update_repo_table()
-
     # Shut down the scheduler when exiting the app
     return app
-
