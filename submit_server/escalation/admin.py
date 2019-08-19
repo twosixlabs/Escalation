@@ -166,22 +166,6 @@ def update_chemical_names():
     return jsonify({'success': "Added %d chemicals" % len(inchi_arr)})
 
 
-@bp.route('/admin/update_database', methods=('POST',))
-def update_database():
-    for k in request.form:
-        app.logger.info(k)
-    if request.form['adminkey'] != app.config['ADMIN_KEY']:
-        flash("Incorrect admin code")
-    else:
-        from .database import delete_db
-        if request.form['database'] == 'reset':
-            delete_db()
-            app.logger.info("Deleted all data")
-            flash("Deleted all data")
-        else:
-            flash("Unknown command, doing nothing")
-
-
 @bp.route('/admin', methods=('GET',))
 def admin():
     return render_template('admin.html',
