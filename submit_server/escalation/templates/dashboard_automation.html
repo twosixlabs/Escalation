@@ -56,13 +56,6 @@
             });
         </script>
 
-        <!-- Datatables uploads per crank -->
-        <div id="uploads_by_crank" class="chart" style="max-width:1000px; max-height:400px;"></div>
-        <script type="text/javascript">
-            var graph = {{uploads_by_crank | safe}};
-            Plotly.newPlot("uploads_by_crank",graph.data,graph.layout, {responsive: true});
-
-        </script>
 
         <!-- Datatables uploads per crank -->
         <div class="dashboard" id="auto_table_div">

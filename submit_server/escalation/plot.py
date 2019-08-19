@@ -89,41 +89,6 @@ def success_by_amine():
     return json.dumps(graph, cls=plotly.utils.PlotlyJSONEncoder)
 
 
-def update_uploads_by_crank():
-    global plot_data
-    app.logger.info("Updating uploads_by_crank")
-    res = db.session.query(Submission.crank, func.count(Submission.crank)).group_by(Submission.crank).order_by(
-        Submission.crank.asc()).all()
-
-    plot_data['uploads_by_crank']['xs'] = [r[0] for r in res]
-    plot_data['uploads_by_crank']['ys'] = [r[1] for r in res]
-
-
-def uploads_by_crank():
-    global plot_data
-    if 'uploads_by_crank' not in plot_data:
-        update_uploads_by_crank()
-
-    trace = go.Bar(
-        x=plot_data['uploads_by_crank']['xs'],
-        y=plot_data['uploads_by_crank']['ys']
-    )
-
-    layout = go.Layout(
-        xaxis={'type': 'category',
-               'title': "<b>Crank</b>",
-               },
-        yaxis={'title': '<b>Number of Submissions</b>'
-               },
-        title="<b>Number of Submissions per Crank</b>"
-
-    )
-    graph = {'data': [trace],
-             'layout': layout
-             }
-    return json.dumps(graph, cls=plotly.utils.PlotlyJSONEncoder)
-
-
 def update_runs_by_crank():
     global plot_data
     name = 'runs_by_crank'

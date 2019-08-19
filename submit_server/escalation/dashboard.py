@@ -6,7 +6,6 @@ from sqlalchemy import func
 
 from escalation import scheduler, db, database, plot
 
-
 bp = Blueprint('dashboard', __name__)
 
 
@@ -27,14 +26,13 @@ def update_auto():
                 dataset=crank.crank).group_by(database.Prediction.dataset, database.Prediction.name).count()
 
             db.session.add(database.AutomationStat(crank=crank.crank,
-                                          upload_date=crank.created,
-                                          num_runs=crank.num_runs,
-                                          num_uploads=num_uploads,
-                                          num_distinct=num_distinct_entries
-                                          )
+                                                   upload_date=crank.created,
+                                                   num_runs=crank.num_runs,
+                                                   num_uploads=num_uploads,
+                                                   num_distinct=num_distinct_entries
+                                                   )
                            )
         db.session.commit()
-        plot.update_uploads_by_crank()
         plot.update_runs_by_crank()
         plot.update_runs_by_month()
 
@@ -66,9 +64,9 @@ def update_science():
 
         for amine in total:
             db.session.add(database.ScienceStat(amine=chemicals[amine] if amine in chemicals else amine,
-                                       success=success[amine],
-                                       total=total[amine]
-                                       ))
+                                                success=success[amine],
+                                                total=total[amine]
+                                                ))
             app.logger.info("%s: %d %d" % (amine, success[amine], total[amine]))
             db.session.commit()
 
@@ -96,9 +94,11 @@ def update_ml():
 
             # statistics about training/test data
             train_crystal_score_mean = float(
-                db.session.query(func.avg(database.TrainingRun._out_crystalscore)).filter_by(dataset=crank.crank).scalar())
+                db.session.query(func.avg(database.TrainingRun._out_crystalscore)).filter_by(
+                    dataset=crank.crank).scalar())
             train_length = float(
-                db.session.query(func.count(database.TrainingRun._out_crystalscore)).filter_by(dataset=crank.crank).scalar())
+                db.session.query(func.count(database.TrainingRun._out_crystalscore)).filter_by(
+                    dataset=crank.crank).scalar())
 
             # do more training stuff
             try:
@@ -113,15 +113,15 @@ def update_ml():
 
             app.logger.info("Retrieved %d submissions for %s" % (len(subs), crank.crank))
             app.logger.info("Train mean: %.2f #train runs:%d Predicted mean: %.2f" % (
-            train_crystal_score_mean, train_length, pred_crystal_score_mean))
+                train_crystal_score_mean, train_length, pred_crystal_score_mean))
 
             # finally, store off the statistics
             db.session.add(database.MLStat(crank=crank.crank,
-                                  upload_date=crank.created,
-                                  train_mean=train_crystal_score_mean,
-                                  num_train_rows=train_length,
-                                  pred_mean=pred_crystal_score_mean
-                                  )
+                                           upload_date=crank.created,
+                                           train_mean=train_crystal_score_mean,
+                                           num_train_rows=train_length,
+                                           pred_mean=pred_crystal_score_mean
+                                           )
                            )
             # end crank
         db.session.commit()
@@ -182,7 +182,6 @@ def dashboard_automation():
     return render_template('dashboard_automation.html',
                            # automation
                            auto_table=auto_table,
-                           uploads_by_crank=plot.uploads_by_crank(),
                            runs_by_crank=plot.runs_by_crank(),
                            runs_by_month=plot.runs_by_month())
 
@@ -194,7 +193,7 @@ def dashboard_ml():
         app.logger.info("Refreshing stats")
         job2 = scheduler.add_job(func=update_auto, args=[], id='update_ml')
 
-    ml_table   = database.MLStat.query.all()
+    ml_table = database.MLStat.query.all()
     return render_template('dashboard_ml.html',
                            leaderboard=database.get_leaderboard(),
                            ml_table=ml_table,
