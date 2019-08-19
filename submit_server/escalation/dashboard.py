@@ -70,7 +70,6 @@ def update_science():
             app.logger.info("%s: %d %d" % (amine, success[amine], total[amine]))
             db.session.commit()
 
-        plot.update_reproducibility_table()
         plot.update_success_by_amine()
         plot.update_scatter_3d_by_rxn()
         plot.update_feature_importance()
@@ -149,14 +148,8 @@ def dashboard_science():
             curr_inchikey = request.form['inchikey']
             flash("Updating 3D scatter plot with %s" % request.form['inchikey'])
             plot.update_scatter_3d_by_rxn(request.form['inchikey'])
-        elif 'reproducibility_update' in request.form:
-            flash("Updating Reproducibility plot with %s" % request.form['inchikey_repro'])
-            plot.update_reproducibility_table(inchi=request.form['inchikey_repro'],
-                                              prec=float(request.form['prec_repro']))
 
     sci_table = database.ScienceStat.query.all()
-    reproducibility_table = database.ReproducibilityStat.query.all()
-    exp_repro_stats = plot.reproducibility_table_stats()
 
     return render_template('dashboard_science.html',
                            sci_table=sci_table,
@@ -166,8 +159,6 @@ def dashboard_science():
                            success_by_amine=plot.success_by_amine(),
                            rxn_3d_scatter=plot.scatter_3d_by_rxn(),
                            feature_importance=plot.feature_importance(),
-                           reproducibility_table=reproducibility_table,
-                           exp_repro_stats=exp_repro_stats,
                            )
 
 
