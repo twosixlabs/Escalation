@@ -26,18 +26,14 @@
     <div class="topnav-right">
         <a href="{{ url_for('submission.submission') }}">Submit</a>
         <div class="dropdown">
-            <a id="admin_dropdown" href="{{ url_for('admin.admin') }}">Admin</a>
-            <i class="fa fa-caret-down"></i>
-            </a>
+            <a id="admin_dropdown" href="{{ url_for('admin.admin') }}">Admin<i class="fa fa-caret-down"></i></a>
             <div class="dropdown-content">
                 <a href="{{ url_for('submissions_overview.submissions_overview') }}">Submissions</a>
                 <a href="{{ url_for('admin.admin') }}">Admin Panel</a>
             </div>
         </div>
         <div class="dropdown">
-            <a id="dashboard_dropdown" href="{{ url_for('dashboard.dashboard') }}">Dashboard
-                <i class="fa fa-caret-down"></i>
-            </a>
+            <a id="dashboard_dropdown" href="{{ url_for('dashboard.dashboard') }}">Dashboard<i class="fa fa-caret-down"></i></a>
             <div class="dropdown-content">
                 <a href="{{ url_for('dashboard.dashboard') }}">Overview</a>
                 <a href="{{ url_for('dashboard.dashboard_science') }}">Science</a>
