@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from flask import Blueprint, flash, render_template, request
+from flask import Blueprint, flash, render_template, request, jsonify
 from flask import current_app as app
 from sqlalchemy import func
 
@@ -21,7 +21,8 @@ def update_auto():
                 continue
             seen[crank.crank] = 1
 
-            num_uploads = database.Submission.query.filter_by(crank=crank.crank).count()
+            num_uploads = database.Submission.query.filter_by(
+                crank=crank.crank).count()
             num_distinct_entries = db.session.query(database.Prediction.dataset, database.Prediction.name).filter_by(
                 dataset=crank.crank).group_by(database.Prediction.dataset, database.Prediction.name).count()
 
@@ -67,7 +68,8 @@ def update_science():
                                                 success=success[amine],
                                                 total=total[amine]
                                                 ))
-            app.logger.info("%s: %d %d" % (amine, success[amine], total[amine]))
+            app.logger.info("%s: %d %d" %
+                            (amine, success[amine], total[amine]))
             db.session.commit()
 
         plot.update_success_by_amine()
@@ -81,7 +83,7 @@ def update_ml():
     app.logger.info("Updating ml stats")
 
     with app.app_context():
-        # clear out previous top predictions and store new onew        
+        # clear out previous top predictions and store new onew
         database.MLStat.query.delete()
 
         cranks = database.get_cranks()
@@ -110,7 +112,8 @@ def update_ml():
             subs = database.get_submissions(crank.crank)
             runs = defaultdict(list)
 
-            app.logger.info("Retrieved %d submissions for %s" % (len(subs), crank.crank))
+            app.logger.info("Retrieved %d submissions for %s" %
+                            (len(subs), crank.crank))
             app.logger.info("Train mean: %.2f #train runs:%d Predicted mean: %.2f" % (
                 train_crystal_score_mean, train_length, pred_crystal_score_mean))
 
@@ -129,7 +132,7 @@ def update_ml():
 
 @bp.route('/', methods=('GET', 'POST'))
 def dashboard():
-    print("VRSION", app.config['VERSION'])
+    print("VERSION", app.config['VERSION'])
     return render_template('dashboard_overview.html',
                            success_by_amine=plot.success_by_amine(),
                            runs_by_crank=plot.runs_by_crank(),
@@ -139,27 +142,39 @@ def dashboard():
 @bp.route('/dashboard/science', methods=('GET', 'POST'))
 def dashboard_science():
     curr_inchikey = 'all'
+    sci_table = database.ScienceStat.query.all()
     if request.method == 'POST':
         if 'update' in request.form:
             flash("Refreshing stats...")
             app.logger.info("Refreshing stats")
-            job1 = scheduler.add_job(func=update_science, args=[], id='update_science')
+            job1 = scheduler.add_job(
+                func=update_science, args=[], id='update_science')
+            return render_template('dashboard_science.html',
+                                   sci_table=sci_table,
+                                   chemicals=database.get_chemicals_in_training(),
+                                   curr_inchikey=curr_inchikey,
+                                   success_by_amine=plot.success_by_amine(),
+                                   rxn_3d_scatter=plot.scatter_3d_by_rxn(),
+                                   feature_importance=plot.feature_importance(),
+                                   )
         elif 'inchikey' in request.form:
             curr_inchikey = request.form['inchikey']
-            flash("Updating 3D scatter plot with %s" % request.form['inchikey'])
+            flash("Updating 3D scatter plot with %s" %
+                  request.form['inchikey'])
             plot.update_scatter_3d_by_rxn(request.form['inchikey'])
-
-    sci_table = database.ScienceStat.query.all()
-
-    return render_template('dashboard_science.html',
-                           sci_table=sci_table,
-                           chemicals=database.get_chemicals_in_training(),
-                           curr_inchikey=curr_inchikey,
-                           # science
-                           success_by_amine=plot.success_by_amine(),
-                           rxn_3d_scatter=plot.scatter_3d_by_rxn(),
-                           feature_importance=plot.feature_importance(),
-                           )
+            return render_template('dashboard_science.html',
+                                   sci_table=sci_table,
+                                   chemicals=database.get_chemicals_in_training(),
+                                   curr_inchikey=curr_inchikey,
+                                   success_by_amine=plot.success_by_amine(),
+                                   rxn_3d_scatter=plot.scatter_3d_by_rxn(),
+                                   feature_importance=plot.feature_importance(),
+                                   )
+        elif 'curve' in request.form:
+            details = plot.get_point_details(
+                int(request.form['curve']), int(request.form['point']))
+            app.logger.info(details)
+            return jsonify(list(details))
 
 
 @bp.route('/dashboard/automation', methods=('GET', 'POST'))
