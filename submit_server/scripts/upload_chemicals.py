@@ -4,7 +4,7 @@ import requests
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--endpoint',help="Rest endpoint",default='http://escalation.sd2e.org/admin')
+parser.add_argument('--endpoint',help="Rest endpoint",default='http://escalation.sd2e.org/admin/update_chemical_names')
 parser.add_argument('--dev',help="Use dev manifest and dev endpoint",action='store_true')
 parser.add_argument('--tsv',help="Chemical tab separated tsv")
 parser.add_argument('--key',help="admin secret key",default='Trompdoy')
