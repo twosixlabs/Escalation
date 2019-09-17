@@ -158,6 +158,8 @@ def dashboard_science():
             details = plot.get_point_details(
                 int(request.form['curve']), int(request.form['point']))
             app.logger.info(details)
+            # provide the point data details to populate in the table under the 3d point cloud
+            return jsonify(list(details))
     return render_template('dashboard_science.html',
                            sci_table=sci_table,
                            chemicals=database.get_chemicals_in_training(),
