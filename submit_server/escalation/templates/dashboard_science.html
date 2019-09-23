@@ -129,7 +129,6 @@
         curveNumber = clicked_point['points'][0]['curveNumber']
         pointNumber = clicked_point['points'][0]['pointNumber']
         $.post("{{ url_for('dashboard.dashboard_science') }}", { curve: curveNumber, point: pointNumber }).done(function (data) {
-            console.log(data);
             document.getElementById("rxn_3d_table").innerHTML =
                 `<table style="width:100%">
                 <tr>

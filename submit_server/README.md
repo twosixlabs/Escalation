@@ -106,3 +106,13 @@ csv submit_server/tests/0017_train_c4844e9_snovotney.csv
 To deploy the container, you'll need to upload an image to dockerhub.  You need a public docker hub account. If not, go make one at https://hub.docker.com/ . You'll also need access to the `snovotney/escalation-server` repo- talk to Scott.
 
 We have a dev and a prd site at `http://escalation-dev.sd2e.org` and `http://escalation.sd2e.org`.  These are hosted using the Portainer service at `https://chombo.sd2e.org/#/auth`.  
+
+- Update the app version in `VERSION.py`.  We use the semantic versioning scheme with major, minor, and patch revisions: https://semver.org/
+- Run `escalation/submit_server/build.sh` to build and tag the local container and deploy to the 
+- Deploy the new container version to the Portainer host on the Chombo site.  First deploy and test on the dev app to validate changes
+    - On Chombo, click `Containers`->`escalation-dev-server`->`Duplicate/edit`
+    - edit the link in `Image` to point to your new version
+    - click `Deploy the container`
+- After deploying and ensuring the version is ok, merge the pull request on Gitlab with your code changes to master.  We also want to tag the code commit corresponding to the version:
+    - Run `git checkout master && git pull` to switch your local branch to master and get the updated code with merge locally
+    - Run `git tag X.X.X && git push origin refs/tags/X.X.X` with your version in place of `X.X.X` to locally tag the commit with the version and push that tag to Gitlab

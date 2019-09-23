@@ -149,32 +149,24 @@ def dashboard_science():
             app.logger.info("Refreshing stats")
             job1 = scheduler.add_job(
                 func=update_science, args=[], id='update_science')
-            return render_template('dashboard_science.html',
-                                   sci_table=sci_table,
-                                   chemicals=database.get_chemicals_in_training(),
-                                   curr_inchikey=curr_inchikey,
-                                   success_by_amine=plot.success_by_amine(),
-                                   rxn_3d_scatter=plot.scatter_3d_by_rxn(),
-                                   feature_importance=plot.feature_importance(),
-                                   )
         elif 'inchikey' in request.form:
             curr_inchikey = request.form['inchikey']
             flash("Updating 3D scatter plot with %s" %
                   request.form['inchikey'])
             plot.update_scatter_3d_by_rxn(request.form['inchikey'])
-            return render_template('dashboard_science.html',
-                                   sci_table=sci_table,
-                                   chemicals=database.get_chemicals_in_training(),
-                                   curr_inchikey=curr_inchikey,
-                                   success_by_amine=plot.success_by_amine(),
-                                   rxn_3d_scatter=plot.scatter_3d_by_rxn(),
-                                   feature_importance=plot.feature_importance(),
-                                   )
         elif 'curve' in request.form:
             details = plot.get_point_details(
                 int(request.form['curve']), int(request.form['point']))
             app.logger.info(details)
+            # provide the point data details to populate in the table under the 3d point cloud
             return jsonify(list(details))
+    return render_template('dashboard_science.html',
+                           sci_table=sci_table,
+                           chemicals=database.get_chemicals_in_training(),
+                           curr_inchikey=curr_inchikey,
+                           success_by_amine=plot.success_by_amine(),
+                           rxn_3d_scatter=plot.scatter_3d_by_rxn(),
+                           feature_importance=plot.feature_importance())
 
 
 @bp.route('/dashboard/automation', methods=('GET', 'POST'))
