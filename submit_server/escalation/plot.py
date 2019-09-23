@@ -18,7 +18,7 @@ plot_data = defaultdict(dict)
 
 def update_success_by_amine():
     global plot_data
-    name = 'sucess_by_amine'
+    name = 'success_by_amine'
 
     chemicals = {}
     res = get_chemicals()
@@ -26,7 +26,9 @@ def update_success_by_amine():
         chemicals[r.inchi] = r.common_name
 
     sql = text(
-        'select distinct name,inchikey,_out_crystalscore,_rxn_M_organic,_rxn_M_inorganic,_rxn_M_acid from training_run')
+        'select distinct name,inchikey,_out_crystalscore,_rxn_M_organic,_rxn_M_inorganic,'
+        '_rxn_M_acid,'
+        '_rxn_temperatureC_actual_bulk from training_run')
     rows = list(db.engine.execute(sql))
 
     # 0 name
@@ -47,11 +49,12 @@ def update_success_by_amine():
     plot_data[name]['xs'] = [chemicals[amine] if amine in chemicals else amine for amine in sorted_amine]
     plot_data[name]['ys_success'] = [success[amine] for amine in sorted_amine]
     plot_data[name]['ys_total'] = [total[amine] for amine in sorted_amine]
+    app.logger.info(plot_data)
 
 
 def success_by_amine():
     global plot_data
-    name = 'sucess_by_amine'
+    name = 'success_by_amine'
 
     if name not in plot_data:
         update_success_by_amine()
@@ -102,7 +105,7 @@ def update_runs_by_crank():
     rows = list(db.engine.execute(sql))
     for row in rows:
         success[row[1]] = row[0]
-
+    
     sorted_list = sorted(total.keys())  # [x[0] for x in sorted(total.items(), key=operator.itemgetter(1)) ]
     plot_data[name]['xs'] = [crank for crank in sorted_list]
     plot_data[name]['ys_success'] = [success[crank] for crank in sorted_list]
@@ -623,6 +626,18 @@ def cluster(interval=0.1, xmin=0, xmax=4, X=[]):
 
     return xs, ys, zs, ss, ns, sizes, texts
 
+def filter_by_scores(rows):
+    """Returns a list of lists of experiments, where the position of the list corresponds to crystal score"""
+    rows_by_scores = {}
+    
+    for i in range(1,5):
+        rows_by_scores[i] = [exp for exp in rows if exp[2]==i]
+    return rows_by_scores
+
+def get_point_details(score, idx):
+    global plot_data
+    name = 'scatter_3d_by_rxn'
+    return plot_data[name]['data']['scores'][score+1][idx]
 
 def update_scatter_3d_by_rxn(inchikey='all'):
     name = 'scatter_3d_by_rxn'
@@ -638,13 +653,16 @@ def update_scatter_3d_by_rxn(inchikey='all'):
 
     if inchikey != 'all':
         sql = text(
-            'select distinct name,inchikey,_out_crystalscore,_rxn_M_organic,_rxn_M_inorganic,_rxn_M_acid from training_run where inchikey = "%s" limit 10000' % inchikey)
+            'select distinct name,inchikey,_out_crystalscore,_rxn_M_organic,'
+            '_rxn_M_inorganic,_rxn_M_acid from training_run where inchikey = "%s" limit 10000' % inchikey)
     else:
         sql = text(
             'select distinct name,inchikey,_out_crystalscore,_rxn_M_organic,_rxn_M_inorganic,_rxn_M_acid from training_run limit 10000')
 
     rows = list(db.engine.execute(sql))
     inchis = set([x.inchikey for x in rows])
+    rows_by_scores = filter_by_scores(rows)
+    
 
     if len(inchis) == 1:
         out = chemicals[inchis.pop()]
@@ -659,6 +677,7 @@ def update_scatter_3d_by_rxn(inchikey='all'):
 
     app.logger.info(annotation)
     plot_data[name]['data'] = defaultdict(lambda: defaultdict(list))
+    plot_data[name]['data']['scores'] = rows_by_scores
     for interval in plot_data[name]['intervals']:
         xs, ys, zs, ss, ns, size, texts = cluster(interval, plot_data[name]['xl'], plot_data[name]['xu'], rows)
         plot_data[name]['data'][interval]['xs'] = xs
@@ -680,7 +699,9 @@ def scatter_3d_by_rxn():
     xl = plot_data[name]['xl']
     xu = plot_data[name]['xu']
     data = plot_data[name]['data']
+    
     traces = []
+    """
     for interval in plot_data[name]['intervals']:
         traces.append(go.Scatter3d(
             x=data[interval]['xs'],
@@ -690,20 +711,41 @@ def scatter_3d_by_rxn():
             hoverlabel=dict(namelength=-1),
             hoverinfo='text',
             text=data[interval]['text'],
-            marker=dict(opacity=0.7,
-                        color=data[interval]['ss'],
-                        size=data[interval]['size'],
-                        colorscale='Portland',
-                        colorbar=dict(title='Crystal Score',
-                                      tick0=0,
-                                      dtick=1,
-                                      ),
-                        cmax=4,
-                        cmin=1
-                        ),
+            marker=dict(
+                    size=4,
+                    color=data[interval]['ss'],
+                    line=dict(
+                        width=0.2
+                    ),
+                    opacity=1.0
+                ),
             visible=False
         ))
     traces[2]['visible'] = True
+    """
+    trace_colors = ['rgba(65, 118, 244, 1.0)', 'rgba(92, 244, 65, 1.0)',
+                    'rgba(244, 238, 66, 1.0)', 'rgba(244, 66, 66, 1.0)']
+    for score in plot_data[name]['data']['scores']:
+        xdata = [exp[3] for exp in plot_data[name]['data']['scores'][score]]
+        ydata = [exp[4] for exp in plot_data[name]['data']['scores'][score]]
+        zdata = [exp[5] for exp in plot_data[name]['data']['scores'][score]]
+        traces.append(go.Scatter3d(
+                x=xdata,
+                y=ydata,
+                z=zdata,
+                mode='markers',
+                name='Score {}'.format(score),
+                text=['<b>Inorganic</b>: {} <br><b>Organic</b>: {} <br><b>Acid</b>: {}'.format(xdata[i], ydata[i], zdata[i]) for i in range(len(xdata))],
+                hoverinfo='text',
+                marker=dict(
+                    size=4,
+                    color=trace_colors[score-1],
+                    line=dict(
+                        width=0.2
+                    ),
+                    opacity=1.0
+                )
+            ))
 
     buttons = []
     for i, interval in enumerate(plot_data[name]['intervals']):
@@ -737,7 +779,7 @@ def scatter_3d_by_rxn():
                    },
                   ],
         )
-        step['args'][0]['visible'][i] = True  # Toggle i'th trace to "visible"
+        #step['args'][0]['visible'][i] = True  # Toggle i'th trace to "visible"
         buttons.append(step)
 
     layout = go.Layout(
@@ -777,16 +819,20 @@ def scatter_3d_by_rxn():
 
             ),
         ),
-        updatemenus=list([
-            dict(
-                buttons=buttons,
-
-                direction='down',
-                showactive=True,
-                type='buttons',
-                active=2
-            )]),
-        showlegend=False,
+        #showlegend=False,
+        legend=go.layout.Legend(
+                x=0,
+                y=1,
+                traceorder="normal",
+                font=dict(
+                    family="sans-serif",
+                    size=12,
+                    color="black"
+                ),
+                bgcolor="LightSteelBlue",
+                bordercolor="Black",
+                borderwidth=2
+            ),
         title=go.layout.Title(
             text=plot_data[name]['annotation'],
             xref='paper',
