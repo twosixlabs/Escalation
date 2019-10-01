@@ -64,6 +64,8 @@ class LeaderBoard(db.Model):
     num_features_normalized = db.Column(db.Integer)
     feature_extraction = db.Column(db.Boolean)
     was_untested_data_predicted = db.Column(db.Boolean)
+    leave_one_out_id = db.Column(db.String(64))
+    test_group = db.Column(db.String(64))
 
 
 #####################
@@ -417,22 +419,26 @@ def remove_leaderboard(id):
 
 
 def add_leaderboard(form):
-    for row in 'dataset', 'githash', 'run_id', 'model_name', 'model_author', 'accuracy', 'balanced_accuracy', 'auc_score', 'average_precision', 'f1_score', 'precision', 'recall', 'samples_in_train', 'samples_in_test', 'model_description', 'column_predicted', 'num_features_used', 'data_and_split_description', 'normalized', 'num_features_normalized', 'feature_extraction', 'was_untested_data_predicted':
-        if row not in form:
-            return "Row '%s' not in form" % row
+    for column in ('dataset', 'githash', 'run_id', 'model_name', 'model_author', 'accuracy', 'balanced_accuracy',
+                   'auc_score', 'average_precision', 'f1_score', 'precision', 'recall', 'samples_in_train',
+                   'samples_in_test', 'model_description', 'column_predicted', 'num_features_used',
+                   'data_and_split_description', 'normalized', 'num_features_normalized', 'feature_extraction',
+                   'was_untested_data_predicted'):
+        if column not in form:
+            return "column '%s' not in form" % column
     try:
-        for row in (
-        'accuracy', 'balanced_accuracy', 'auc_score', 'average_precision', 'f1_score', 'precision', 'recall'):
+        for column in (
+                'accuracy', 'balanced_accuracy', 'auc_score', 'average_precision', 'f1_score', 'precision', 'recall'):
             try:
-                float(form[row])
-            except:
-                return "Row '%s' with value '%s' does not look like a float" % (row, form[row])
+                float(form[column])
+            except ValueError:
+                return "Row '%s' with value '%s' does not look like a float" % (column, form[column])
 
-        for row in ('samples_in_train', 'samples_in_test', 'num_features_used', 'num_features_normalized'):
+        for column in ('samples_in_train', 'samples_in_test', 'num_features_used', 'num_features_normalized'):
             try:
-                int(form[row])
-            except:
-                return "Row '%s' with value '%s' does not look like an int" % (row, form[row])
+                int(form[column])
+            except ValueError:
+                return "Row '%s' with value '%s' does not look like an int" % (column, form[column])
 
         if len(form['githash']) != 7:
             return "git commit '%s' must be 7 chars" % form['githash']
@@ -459,7 +465,9 @@ def add_leaderboard(form):
             normalized=form['normalized'] == 'True',
             num_features_normalized=int(form['num_features_normalized']),
             feature_extraction=form['feature_extraction'] == 'True',
-            was_untested_data_predicted=form['was_untested_data_predicted'] == 'True'
+            was_untested_data_predicted=form['was_untested_data_predicted'] == 'True',
+            leave_one_out_id=form.get('leave_one_out_id'),
+            test_group=form.get('test_group')
         )
         db.session.add(row)
         db.session.commit()

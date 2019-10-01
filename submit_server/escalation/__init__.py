@@ -3,6 +3,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_apscheduler import APScheduler
+from apscheduler.schedulers import SchedulerNotRunningError
 
 import atexit
 import click
@@ -17,7 +18,11 @@ from escalation.VERSION import version
 db = SQLAlchemy()
 migrate = Migrate()
 scheduler = APScheduler()
-atexit.register(lambda: scheduler.shutdown())
+try:
+    atexit.register(lambda: scheduler.shutdown())
+except SchedulerNotRunningError:
+    pass
+
 
 if os.environ.get('ESCALATION_PERSISTENT_DATA_PATH') is None:
     raise KeyError("No value set for env variable ESCALATION_PERSISTENT_DATA_PATH")
