@@ -2,6 +2,7 @@ import csv
 import os
 
 from flask import current_app as app
+import numpy as np
 from sqlalchemy import and_, sql, text, func
 from sqlalchemy.orm import column_property
 
@@ -418,56 +419,81 @@ def remove_leaderboard(id):
     db.session.commit()
 
 
+def convert_to_mysql_friendly_number(form_value, num_type):
+    """
+    Validate submitted values, converting NaNs to None for mysql
+    :return:
+    """
+    if num_type == float:
+        converted_value = float(form_value)
+    elif num_type == int:
+        converted_value = int(form_value)
+    else:
+        raise ValueError("num_type %s not recognized" % str(num_type))
+    if np.isnan(converted_value):
+        return None
+    return converted_value
+
+
 def add_leaderboard(form):
+    # a mutable dictionary to store form contents after validation/conversion
+    formatted_row = {}
+    # required form values
     for column in ('dataset', 'githash', 'run_id', 'model_name', 'model_author', 'accuracy', 'balanced_accuracy',
                    'auc_score', 'average_precision', 'f1_score', 'precision', 'recall', 'samples_in_train',
                    'samples_in_test', 'model_description', 'column_predicted', 'num_features_used',
                    'data_and_split_description', 'normalized', 'num_features_normalized', 'feature_extraction',
                    'was_untested_data_predicted'):
+        formatted_row[column] = form[column]
         if column not in form:
             return "column '%s' not in form" % column
+    # optional form values
+    for column in ('leave_one_out_id', 'test_group'):
+        if column in form:
+            formatted_row[column] = form[column]
+    # validate form values
     try:
         for column in (
                 'accuracy', 'balanced_accuracy', 'auc_score', 'average_precision', 'f1_score', 'precision', 'recall'):
             try:
-                float(form[column])
+                formatted_row[column] = convert_to_mysql_friendly_number(formatted_row[column], float)
             except ValueError:
-                return "Row '%s' with value '%s' does not look like a float" % (column, form[column])
+                return "Row '%s' with value '%s' does not look like a float" % (column, formatted_row[column])
 
         for column in ('samples_in_train', 'samples_in_test', 'num_features_used', 'num_features_normalized'):
             try:
-                int(form[column])
+                formatted_row[column] = convert_to_mysql_friendly_number(formatted_row[column], int)
             except ValueError:
-                return "Row '%s' with value '%s' does not look like an int" % (column, form[column])
+                return "Row '%s' with value '%s' does not look like an int" % (column, formatted_row[column])
 
         if len(form['githash']) != 7:
-            return "git commit '%s' must be 7 chars" % form['githash']
+            return "git commit '%s' must be 7 chars" % formatted_row['githash']
 
         row = LeaderBoard(
-            dataset_name=form['dataset'],
-            githash=form['githash'],
-            run_id=form['run_id'],
-            model_name=form['model_name'],
-            model_author=form['model_author'],
-            accuracy=float(form['accuracy']),
-            balanced_accuracy=float(form['balanced_accuracy']),
-            auc_score=float(form['auc_score']),
-            average_precision=float(form['average_precision']),
-            f1_score=float(form['f1_score']),
-            precision=float(form['precision']),
-            recall=float(form['recall']),
-            samples_in_train=int(form['samples_in_train']),
-            samples_in_test=int(form['samples_in_test']),
-            model_description=form['model_description'],
-            column_predicted=form['column_predicted'],
-            num_features_used=form['num_features_used'],
-            data_and_split_description=form['data_and_split_description'],
-            normalized=form['normalized'] == 'True',
-            num_features_normalized=int(form['num_features_normalized']),
-            feature_extraction=form['feature_extraction'] == 'True',
-            was_untested_data_predicted=form['was_untested_data_predicted'] == 'True',
-            leave_one_out_id=form.get('leave_one_out_id'),
-            test_group=form.get('test_group')
+            dataset_name=formatted_row['dataset'],
+            githash=formatted_row['githash'],
+            run_id=formatted_row['run_id'],
+            model_name=formatted_row['model_name'],
+            model_author=formatted_row['model_author'],
+            accuracy=formatted_row['accuracy'],
+            balanced_accuracy=formatted_row['balanced_accuracy'],
+            auc_score=formatted_row['auc_score'],
+            average_precision=formatted_row['average_precision'],
+            f1_score=formatted_row['f1_score'],
+            precision=formatted_row['precision'],
+            recall=formatted_row['recall'],
+            samples_in_train=formatted_row['samples_in_train'],
+            samples_in_test=formatted_row['samples_in_test'],
+            model_description=formatted_row['model_description'],
+            column_predicted=formatted_row['column_predicted'],
+            num_features_used=formatted_row['num_features_used'],
+            data_and_split_description=formatted_row['data_and_split_description'],
+            normalized=formatted_row['normalized'] == 'True',
+            num_features_normalized=formatted_row['num_features_normalized'],
+            feature_extraction=formatted_row['feature_extraction'] == 'True',
+            was_untested_data_predicted=formatted_row['was_untested_data_predicted'] == 'True',
+            leave_one_out_id=formatted_row.get('leave_one_out_id'),
+            test_group=formatted_row.get('test_group')
         )
         db.session.add(row)
         db.session.commit()
@@ -475,7 +501,7 @@ def add_leaderboard(form):
         print(ex)
 
         app.logger.error("Error submitting leaderboard :(")
-        return "Uknown error loading db"
+        return "Unknown error loading db"
 
     return None
 
