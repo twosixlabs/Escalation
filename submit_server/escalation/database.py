@@ -430,6 +430,7 @@ def convert_to_mysql_friendly_number(form_value, num_type):
         converted_value = int(form_value)
     else:
         raise ValueError("num_type %s not recognized" % str(num_type))
+    # nan not supported by mysql, so use None which is cast to NULL
     if np.isnan(converted_value):
         return None
     return converted_value
