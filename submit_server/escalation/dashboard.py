@@ -199,7 +199,6 @@ def dashboard_ml():
     print("Use loo", use_loo)
     ml_table = database.MLStat.query.all()
     return render_template('dashboard_ml.html',
-                           leaderboard=database.get_leaderboard(),
                            ml_table=ml_table,
                            results_by_model=plot.results_by_model(use_loo),
                            results_by_crank=plot.results_by_crank(use_loo),

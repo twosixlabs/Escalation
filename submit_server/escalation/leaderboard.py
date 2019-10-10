@@ -52,4 +52,4 @@ def leaderboard():
 
             job3 = scheduler.add_job(func=update_ml, args=[], id='update_ml')
 
-    return render_template('leaderboard.html', table=database.get_leaderboard())
+    return render_template('leaderboard.html', table=database.get_all_leaderboard_entries())

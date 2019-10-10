@@ -413,6 +413,10 @@ def get_leaderboard_loo_inchis():
     return [ x for x in res if x[0]]
     
 
+def get_all_leaderboard_entries():
+    sql = text('select * from leader_board')
+    return list(db.engine.execute(sql))
+    
 def get_leaderboard(loo=True):
 
     sql = text('select crank, train_filename from crank order by crank desc limit 1')
