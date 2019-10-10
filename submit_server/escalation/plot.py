@@ -9,7 +9,7 @@ import plotly
 from sqlalchemy import text
 
 from escalation import db
-from escalation.database import get_chemicals, get_leaderboard, get_feature_analysis, get_features
+from escalation.database import get_chemicals, get_leaderboard, get_feature_analysis, get_features, get_leaderboard_loo_inchis
 
 global plot_data
 
@@ -248,21 +248,28 @@ def runs_by_month():
     return json.dumps(graph, cls=plotly.utils.PlotlyJSONEncoder)
 
 
-def update_results_by_model():
-    name = 'results_by_model'
+def update_results_by_model(loo=True):
+    if loo:
+        name = 'results_by_model_loo'
+    else:
+        name = 'results_by_model_all'
+        
     app.logger.info("Updating %s" % (name))
     global plot_data
 
-    res = get_leaderboard()
+    res = get_leaderboard(loo)
+
     results = defaultdict(list)
 
     # first group the data together by model
     for r in res:
-        results[r.model_name].append(r)
+        print(r)
+        if 'auc' in r:
+            results[r['model']].append(r)
 
     # sort array of rows by their dataset name
     for m in results:
-        results[m] = sorted(results[m], key=lambda x: x.dataset_name)
+        results[m] = sorted(results[m], key=lambda x: x['crank'])
 
     d_f1 = defaultdict(list)
     d_auc = defaultdict(list)
@@ -273,20 +280,20 @@ def update_results_by_model():
 
     # now we hav a sorted dict of numbers by model
     for m in results:
-        d_f1[m] = [x.f1_score for x in results[m]]
-        d_auc[m] = [x.auc_score for x in results[m]]
-        d_avg_prec[m] = [x.average_precision for x in results[m]]
-        d_rec[m] = [x.recall for x in results[m]]
-        d_prec[m] = [x.precision for x in results[m]]
-        d_dataset[m] = [x.dataset_name for x in results[m]]
+        d_f1[m]       = [x['f1'] for x in results[m]]
+        d_auc[m]      = [x['auc'] for x in results[m]]
+        d_avg_prec[m] = [x['avgp'] for x in results[m]]
+        d_rec[m]      = [x['recall'] for x in results[m]]
+        d_prec[m]     = [x['prec'] for x in results[m]]
+        d_dataset[m]  = [x['crank'] for x in results[m]]
 
-    plot_data[name]['f1'] = []
-    plot_data[name]['auc'] = []
+    plot_data[name]['f1']       = []
+    plot_data[name]['auc']      = []
     plot_data[name]['avg_prec'] = []
-    plot_data[name]['model'] = []
-    plot_data[name]['prec'] = []
-    plot_data[name]['rec'] = []
-    plot_data[name]['dataset'] = []
+    plot_data[name]['model']    = []
+    plot_data[name]['prec']     = []
+    plot_data[name]['rec']      = []
+    plot_data[name]['dataset']  = []
 
     # sort models by their means
     means = defaultdict(float)
@@ -304,17 +311,23 @@ def update_results_by_model():
         plot_data[name]['dataset'].append(d_dataset[model])
 
 
-def results_by_model():
-    name = 'results_by_model'
+def results_by_model(loo=True):
+    if loo:
+        name = 'results_by_model_loo'
+    else:
+        name = 'results_by_model_all'
+
     global plot_data
 
     if name not in plot_data:
-        update_results_by_model()
+        update_results_by_model(loo)
 
     models = plot_data[name]['model']
     f1_trace = []
     auc_trace = []
     prec_trace = []
+
+    
     for i, model in enumerate(models):
         auc_trace.append(go.Box(
             x=plot_data[name]['auc'][i],
@@ -338,6 +351,11 @@ def results_by_model():
     prec_bools = [False] * (2 * len(models)) + [True] * len(models)
 
     number_of_cranks = 0
+    number_of_inchis = len(get_leaderboard_loo_inchis())
+    if loo:
+        prefix = 'Leave-One-Out'
+    else:
+        prefix = 'K-Fold'
     if plot_data[name]['auc']:
         number_of_cranks = len(plot_data[name]['auc'][0])
 
@@ -352,7 +370,7 @@ def results_by_model():
         yaxis={'automargin': True,
                'title': '<b>Classifier</b>',
                },
-        title="<b>AUC scores over %d cranks</b>" % number_of_cranks,
+        title="<b>%s AUC scores over %d cranks and %d chemicals</b>" % (prefix, number_of_cranks, number_of_inchis),
         showlegend=False,
         updatemenus=list([
             dict(
@@ -360,7 +378,7 @@ def results_by_model():
                     dict(label='AUC',
                          method='update',
                          args=[{'visible': auc_bools},
-                               {'title': "<b>AUC scores over %d cranks</b>" % number_of_cranks,
+                               {'title': "<b>%s AUC scores over %d cranks and %d chemicals</b>" % (prefix, number_of_cranks, number_of_inchis),
                                 'xaxis': {'title': '<b>AUC</b>',
                                           'range': [0.5, 1],
                                           'tick0': 0.5,
@@ -372,7 +390,7 @@ def results_by_model():
                     dict(label='Avg. Prec',
                          method='update',
                          args=[{'visible': prec_bools},
-                               {'title': "<b>Average Precision over %d cranks</b>" % number_of_cranks,
+                               {'title': "<b>%s Average Precision over %d cranks and %d chemicals</b>" % (prefix, number_of_cranks, number_of_inchis),
                                 'xaxis': {'title': '<b>Average Precision</b>',
                                           'range': [0, 1],
                                           'tick0': 0,
@@ -384,7 +402,7 @@ def results_by_model():
                     dict(label='F1 Score',
                          method='update',
                          args=[{'visible': f1_bools},
-                               {'title': "<b>F1 scores over %d cranks</b>" % number_of_cranks,
+                               {'title': "<b>%s F1 scores over %d cranks and %d chemicals</b>" % (prefix, number_of_cranks, number_of_inchis),
                                 'xaxis': {'title': '<b>F1 Score</b>',
                                           'range': [0, 1],
                                           'tick0': 0,
@@ -407,13 +425,16 @@ def results_by_model():
     return json.dumps(graph, cls=plotly.utils.PlotlyJSONEncoder)
 
 
-def f1_by_model():
+def f1_by_model(loo = True):
     global plot_data
-    name = 'results_by_model'
+    if loo:
+        name = 'results_by_model_loo'
+    else:
+        name = 'results_by_model_all'
 
     # uses the same update function as above
     if name not in plot_data:
-        update_results_by_model()
+        update_results_by_model(loo)
 
     models = plot_data[name]['model']
     colors = [
@@ -484,12 +505,16 @@ def f1_by_model():
     return json.dumps(graph, cls=plotly.utils.PlotlyJSONEncoder)
 
 
-def results_by_crank():
+def results_by_crank(loo=True):
     global plot_data
-    name = 'results_by_model'
+
+    if loo:
+        name = 'results_by_model_loo'
+    else:
+        name = 'results_by_model_all'
 
     if name not in plot_data:
-        update_results_by_model()
+        update_results_by_model(loo)
 
     models = plot_data[name]['model']
     f1_trace = []

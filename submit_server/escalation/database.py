@@ -406,14 +406,66 @@ def add_training(filename, githash, crank):
     app.logger.info("Added %d training rows" % number_of_training_rows)
     return number_of_training_rows
 
+def get_leaderboard_loo_inchis():
+    sql = text('select distinct test_group from leader_board')
+    app.logger.info("Getting distinct elements")    
+    res = list(db.engine.execute(sql))
+    return [ x for x in res if x[0]]
+    
 
-def get_leaderboard(dataset='all'):
-    if dataset == 'all':
-        return LeaderBoard.query.all()
+def get_leaderboard(loo=True):
+
+    sql = text('select crank, train_filename from crank order by crank desc limit 1')
+    res = list(db.engine.execute(sql))
+    
+    if loo:
+        results = []
+        #get unique set of loo_ids
+        sql  = text('select leave_one_out_id as "loo_id", avg(auc_score) as "auc", avg(average_precision) as "avgp", avg(`precision`) as "prec", avg(recall) as "recall", avg(f1_score) as "f1" from leader_board group by leave_one_out_id')
+        sql1 = text('select distinct leave_one_out_id, dataset_name, model_name from leader_board where leave_one_out_id is not null')
+        avg_res = list(db.engine.execute(sql))
+        id_res = list(db.engine.execute(sql1))
+        h={}
+        for row in id_res:
+            h[row[0]] = row[1:]
+        
+        for row in avg_res:
+            id, auc, avgp, prec, recall, f1  = row
+            if not id:
+                continue
+            crank, model = h[id]
+            x = { 'model': model,
+                             'crank' : crank,
+                             'loo': True,
+                             'auc': auc,
+                             'avgp': avgp,
+                             'prec': prec,
+                             'recall':recall,
+                             'f1': f1
+                }
+
+            results.append(x)
+        return results
+        
     else:
-        return LeaderBoard.query.filter_by(dataset=dataset).all()
+        sql = text('select dataset_name, model_name, auc_score, average_precision, `precision`, recall, f1_score from leader_board where leave_one_out_id is NULL')
+        res = list(db.engine.execute(sql))
+        results=[]
+        for row in res:
 
+            x = { 'model':  row[1],
+                  'crank' : row[0],
+                  'loo': False,
+                  'auc': row[2],
+                  'avgp': row[3],
+                  'prec': row[4],
+                  'recall':row[5],
+                  'f1':  row[6]
+                }
 
+            results.append(x)            
+        return results
+    
 def remove_leaderboard(id):
     LeaderBoard.query.filter(LeaderBoard.id == id).delete()
     db.session.commit()

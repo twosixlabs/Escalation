@@ -127,7 +127,8 @@ def update_ml():
                            )
             # end crank
         db.session.commit()
-        plot.update_results_by_model()  # f1_by_model and results_by_model
+        plot.update_results_by_model(True)  # loo with f1_by_model and results_by_model
+        plot.update_results_by_model(False)  # generalized with f1_by_model and results_by_model        
 
 
 @bp.route('/', methods=('GET', 'POST'))
@@ -136,7 +137,10 @@ def dashboard():
     return render_template('dashboard_overview.html',
                            success_by_amine=plot.success_by_amine(),
                            runs_by_crank=plot.runs_by_crank(),
-                           results_by_model=plot.results_by_model())
+                           loo_results_by_model=plot.results_by_model(True),
+                           all_results_by_model=plot.results_by_model(False),
+                           num_loo_inchis=len(database.get_leaderboard_loo_inchis())
+                           )
 
 
 @bp.route('/dashboard/science', methods=('GET', 'POST'))
@@ -186,15 +190,20 @@ def dashboard_automation():
 
 @bp.route('/dashboard/ml', methods=('GET', 'POST'))
 def dashboard_ml():
-    if request.method == 'POST' and 'update' in request.form:
-        flash("Refreshing stats...")
-        app.logger.info("Refreshing stats")
-        job2 = scheduler.add_job(func=update_auto, args=[], id='update_ml')
+    use_loo = False
 
+
+    if request.method == 'POST':
+        print(request.form)
+        use_loo = 'use_loo' in request.form
+    print("Use loo", use_loo)
     ml_table = database.MLStat.query.all()
     return render_template('dashboard_ml.html',
                            leaderboard=database.get_leaderboard(),
                            ml_table=ml_table,
-                           results_by_model=plot.results_by_model(),
-                           results_by_crank=plot.results_by_crank(),
-                           f1_by_model=plot.f1_by_model())
+                           results_by_model=plot.results_by_model(use_loo),
+                           results_by_crank=plot.results_by_crank(use_loo),
+                           f1_by_model=plot.f1_by_model(use_loo),
+                           use_loo=use_loo)
+
+
