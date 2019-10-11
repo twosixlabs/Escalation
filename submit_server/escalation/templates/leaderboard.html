@@ -54,7 +54,9 @@ function checkAll(ele) {
       <th>Samples in train</th>
       <th>Samples in test</th>
       <th>Run ID</th>      
-      <th>Description</th>                  
+      <th>Description</th>
+      <th>LOO group id</th>
+      <th>LOO InchiKey</th>
     </thead>
     <tbody>
     {% for r in table %}
@@ -74,7 +76,9 @@ function checkAll(ele) {
       <td> {{ r['samples_in_train'] }} </td>
       <td> {{ r['samples_in_test'] }} </td>
       <td> {{ r['run_id'] }} </td>
-      <td> {{ r['model_description'] }} </td>                  
+      <td> {{ r['model_description'] }} </td>
+      <td> {{ r['leave_one_out_id'] }}</td>
+      <td> {{ r['test_group'] }}</td>
     </tr>
     {% endfor %}
     </tbody>

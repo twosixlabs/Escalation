@@ -2,6 +2,7 @@ import csv
 import os
 
 from flask import current_app as app
+import numpy as np
 from sqlalchemy import and_, sql, text, func
 from sqlalchemy.orm import column_property
 
@@ -64,6 +65,8 @@ class LeaderBoard(db.Model):
     num_features_normalized = db.Column(db.Integer)
     feature_extraction = db.Column(db.Boolean)
     was_untested_data_predicted = db.Column(db.Boolean)
+    leave_one_out_id = db.Column(db.String(64))
+    test_group = db.Column(db.String(64))
 
 
 #####################
@@ -403,63 +406,151 @@ def add_training(filename, githash, crank):
     app.logger.info("Added %d training rows" % number_of_training_rows)
     return number_of_training_rows
 
+def get_leaderboard_loo_inchis():
+    sql = text('select distinct test_group from leader_board')
+    app.logger.info("Getting distinct elements")    
+    res = list(db.engine.execute(sql))
+    return [ x for x in res if x[0]]
+    
 
-def get_leaderboard(dataset='all'):
-    if dataset == 'all':
-        return LeaderBoard.query.all()
+def get_all_leaderboard_entries():
+    sql = text('select * from leader_board')
+    return list(db.engine.execute(sql))
+    
+def get_leaderboard(loo=True):
+
+    sql = text('select crank, train_filename from crank order by crank desc limit 1')
+    res = list(db.engine.execute(sql))
+    
+    if loo:
+        results = []
+        #get unique set of loo_ids
+        sql  = text('select leave_one_out_id as "loo_id", avg(auc_score) as "auc", avg(average_precision) as "avgp", avg(`precision`) as "prec", avg(recall) as "recall", avg(f1_score) as "f1" from leader_board group by leave_one_out_id')
+        sql1 = text('select distinct leave_one_out_id, dataset_name, model_name from leader_board where leave_one_out_id is not null')
+        avg_res = list(db.engine.execute(sql))
+        id_res = list(db.engine.execute(sql1))
+        h={}
+        for row in id_res:
+            h[row[0]] = row[1:]
+        
+        for row in avg_res:
+            id, auc, avgp, prec, recall, f1  = row
+            if not id:
+                continue
+            crank, model = h[id]
+            x = { 'model': model,
+                             'crank' : crank,
+                             'loo': True,
+                             'auc': auc,
+                             'avgp': avgp,
+                             'prec': prec,
+                             'recall':recall,
+                             'f1': f1
+                }
+
+            results.append(x)
+        return results
+        
     else:
-        return LeaderBoard.query.filter_by(dataset=dataset).all()
+        sql = text('select dataset_name, model_name, auc_score, average_precision, `precision`, recall, f1_score from leader_board where leave_one_out_id is NULL')
+        res = list(db.engine.execute(sql))
+        results=[]
+        for row in res:
 
+            x = { 'model':  row[1],
+                  'crank' : row[0],
+                  'loo': False,
+                  'auc': row[2],
+                  'avgp': row[3],
+                  'prec': row[4],
+                  'recall':row[5],
+                  'f1':  row[6]
+                }
 
+            results.append(x)            
+        return results
+    
 def remove_leaderboard(id):
     LeaderBoard.query.filter(LeaderBoard.id == id).delete()
     db.session.commit()
 
 
-def add_leaderboard(form):
-    for row in 'dataset', 'githash', 'run_id', 'model_name', 'model_author', 'accuracy', 'balanced_accuracy', 'auc_score', 'average_precision', 'f1_score', 'precision', 'recall', 'samples_in_train', 'samples_in_test', 'model_description', 'column_predicted', 'num_features_used', 'data_and_split_description', 'normalized', 'num_features_normalized', 'feature_extraction', 'was_untested_data_predicted':
-        if row not in form:
-            return "Row '%s' not in form" % row
-    try:
-        for row in (
-        'accuracy', 'balanced_accuracy', 'auc_score', 'average_precision', 'f1_score', 'precision', 'recall'):
-            try:
-                float(form[row])
-            except:
-                return "Row '%s' with value '%s' does not look like a float" % (row, form[row])
+def convert_to_mysql_friendly_number(form_value, num_type):
+    """
+    Validate submitted values, converting NaNs to None for mysql
+    :return:
+    """
+    if num_type == float:
+        converted_value = float(form_value)
+    elif num_type == int:
+        converted_value = int(form_value)
+    else:
+        raise ValueError("num_type %s not recognized" % str(num_type))
+    # nan not supported by mysql, so use None which is cast to NULL
+    if np.isnan(converted_value):
+        return None
+    return converted_value
 
-        for row in ('samples_in_train', 'samples_in_test', 'num_features_used', 'num_features_normalized'):
+
+def add_leaderboard(form):
+    # a mutable dictionary to store form contents after validation/conversion
+    formatted_row = {}
+    # required form values
+    for column in ('dataset', 'githash', 'run_id', 'model_name', 'model_author', 'accuracy', 'balanced_accuracy',
+                   'auc_score', 'average_precision', 'f1_score', 'precision', 'recall', 'samples_in_train',
+                   'samples_in_test', 'model_description', 'column_predicted', 'num_features_used',
+                   'data_and_split_description', 'normalized', 'num_features_normalized', 'feature_extraction',
+                   'was_untested_data_predicted'):
+        formatted_row[column] = form[column]
+        if column not in form:
+            return "column '%s' not in form" % column
+    # optional form values
+    for column in ('leave_one_out_id', 'test_group'):
+        if column in form:
+            formatted_row[column] = form[column]
+    # validate form values
+    try:
+        for column in (
+                'accuracy', 'balanced_accuracy', 'auc_score', 'average_precision', 'f1_score', 'precision', 'recall'):
             try:
-                int(form[row])
-            except:
-                return "Row '%s' with value '%s' does not look like an int" % (row, form[row])
+                formatted_row[column] = convert_to_mysql_friendly_number(formatted_row[column], float)
+            except ValueError:
+                return "Row '%s' with value '%s' does not look like a float" % (column, formatted_row[column])
+
+        for column in ('samples_in_train', 'samples_in_test', 'num_features_used', 'num_features_normalized'):
+            try:
+                formatted_row[column] = convert_to_mysql_friendly_number(formatted_row[column], int)
+            except ValueError:
+                return "Row '%s' with value '%s' does not look like an int" % (column, formatted_row[column])
 
         if len(form['githash']) != 7:
-            return "git commit '%s' must be 7 chars" % form['githash']
+            return "git commit '%s' must be 7 chars" % formatted_row['githash']
 
         row = LeaderBoard(
-            dataset_name=form['dataset'],
-            githash=form['githash'],
-            run_id=form['run_id'],
-            model_name=form['model_name'],
-            model_author=form['model_author'],
-            accuracy=float(form['accuracy']),
-            balanced_accuracy=float(form['balanced_accuracy']),
-            auc_score=float(form['auc_score']),
-            average_precision=float(form['average_precision']),
-            f1_score=float(form['f1_score']),
-            precision=float(form['precision']),
-            recall=float(form['recall']),
-            samples_in_train=int(form['samples_in_train']),
-            samples_in_test=int(form['samples_in_test']),
-            model_description=form['model_description'],
-            column_predicted=form['column_predicted'],
-            num_features_used=form['num_features_used'],
-            data_and_split_description=form['data_and_split_description'],
-            normalized=form['normalized'] == 'True',
-            num_features_normalized=int(form['num_features_normalized']),
-            feature_extraction=form['feature_extraction'] == 'True',
-            was_untested_data_predicted=form['was_untested_data_predicted'] == 'True'
+            dataset_name=formatted_row['dataset'],
+            githash=formatted_row['githash'],
+            run_id=formatted_row['run_id'],
+            model_name=formatted_row['model_name'],
+            model_author=formatted_row['model_author'],
+            accuracy=formatted_row['accuracy'],
+            balanced_accuracy=formatted_row['balanced_accuracy'],
+            auc_score=formatted_row['auc_score'],
+            average_precision=formatted_row['average_precision'],
+            f1_score=formatted_row['f1_score'],
+            precision=formatted_row['precision'],
+            recall=formatted_row['recall'],
+            samples_in_train=formatted_row['samples_in_train'],
+            samples_in_test=formatted_row['samples_in_test'],
+            model_description=formatted_row['model_description'],
+            column_predicted=formatted_row['column_predicted'],
+            num_features_used=formatted_row['num_features_used'],
+            data_and_split_description=formatted_row['data_and_split_description'],
+            normalized=formatted_row['normalized'] == 'True',
+            num_features_normalized=formatted_row['num_features_normalized'],
+            feature_extraction=formatted_row['feature_extraction'] == 'True',
+            was_untested_data_predicted=formatted_row['was_untested_data_predicted'] == 'True',
+            leave_one_out_id=formatted_row.get('leave_one_out_id'),
+            test_group=formatted_row.get('test_group')
         )
         db.session.add(row)
         db.session.commit()
@@ -467,7 +558,7 @@ def add_leaderboard(form):
         print(ex)
 
         app.logger.error("Error submitting leaderboard :(")
-        return "Uknown error loading db"
+        return "Unknown error loading db"
 
     return None
 

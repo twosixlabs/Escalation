@@ -36,17 +36,6 @@
             </script>
         </div>
 
-
-    <!--ML Overview-->
-
-    <div id="results_by_model" class="chart" style="max-width:1000px; max-height:400px;"></div>
-    <script type="text/javascript">
-        var graph = {{results_by_model | safe}};
-        Plotly.newPlot("results_by_model",graph.data,graph.layout, {responsive: true});
-    </script>
-
-
-
     <!--Automation Overview-->
 
     <div id="runs_by_crank" class="chart" style="max-width:1000px; max-height:500px;"></div>
@@ -55,5 +44,21 @@
       Plotly.newPlot("runs_by_crank",graph.data,graph.layout, {responsive: true});
 
     </script>
+
+
+    <!--ML Overview-->
+    <div id="loo_results_by_model" class="chart" style="max-width:1000px; max-height:600px;"></div>
+    <script type="text/javascript">
+        var graph = {{loo_results_by_model | safe}};
+        Plotly.newPlot("loo_results_by_model",graph.data,graph.layout, {responsive: true});
+    </script>
+
+    <div id="all_results_by_model" class="chart" style="max-width:1000px; max-height:600px;"></div>
+    <script type="text/javascript">
+        var graph = {{all_results_by_model | safe}};
+        Plotly.newPlot("all_results_by_model",graph.data,graph.layout, {responsive: true});
+    </script>
+
+
 
 {% endblock content %}
