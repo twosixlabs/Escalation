@@ -1,4 +1,5 @@
-version = "1.5.1"
+version = "1.5.2"
+# 1.5.2 Adds luao hover functionality
 # 1.5.1 Adds leave one amine out UI
 # 1.5.0 Adds leave out amine out support
 # 1.4.0 Adds Shekar's interactive reaction space point plot
