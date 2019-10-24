@@ -426,7 +426,7 @@ def get_leaderboard(loo=True):
         results = []
 
         #get most recent crank
-        res = list(db.engine.execute(text('select dataset_name from leader_board order by dataset_name desc limit 1')))
+        res = list(db.engine.execute(text('select dataset_name from leader_board where test_group is not null order by dataset_name desc limit 1')))
         crank = res[0][0]
         app.logger.info("Using crank %s for LOO plotting" % (crank))
         #get unique set of loo_ids
