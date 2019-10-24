@@ -1,4 +1,5 @@
-version = "1.5.3"
+version = "1.5.4"
+# 1.5.4 Selects crank for plotting that has a LOO entry
 # 1.5.3 Switches from snovotney to nleiby dockerhub hosting
 # 1.5.2 Adds luao hover functionality
 # 1.5.1 Adds leave one amine out UI
