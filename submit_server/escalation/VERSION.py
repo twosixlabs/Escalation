@@ -1,4 +1,5 @@
-version = "1.5.2"
+version = "1.5.3"
+# 1.5.3 Switches from snovotney to nleiby dockerhub hosting
 # 1.5.2 Adds luao hover functionality
 # 1.5.1 Adds leave one amine out UI
 # 1.5.0 Adds leave out amine out support
