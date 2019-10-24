@@ -79,7 +79,7 @@ def success_by_amine():
         xaxis={'title': "<b>Ammonium Iodide Salt</b>",
                'automargin': True
                },
-        yaxis={'title': "<b>Numbef of Experiments</b>"},
+        yaxis={'title': "<b>Number of Experiments</b>"},
         title="<b>Success Rate by Amine</b>",
     )
     graph = {'data': [trace1, trace2],
@@ -257,13 +257,17 @@ def update_results_by_model(loo=True):
     app.logger.info("Updating %s" % (name))
     global plot_data
 
+    chemicals = {}
+    res = get_chemicals()
+    for r in res:
+        chemicals[r.inchi] = r.common_name
+    
     res = get_leaderboard(loo)
 
     results = defaultdict(list)
 
     # first group the data together by model
     for r in res:
-        print(r)
         if 'auc' in r:
             results[r['model']].append(r)
 
@@ -271,13 +275,15 @@ def update_results_by_model(loo=True):
     for m in results:
         results[m] = sorted(results[m], key=lambda x: x['crank'])
 
-    d_f1 = defaultdict(list)
-    d_auc = defaultdict(list)
+    d_f1       = defaultdict(list)
+    d_auc      = defaultdict(list)
     d_avg_prec = defaultdict(list)
-    d_prec = defaultdict(list)
-    d_rec = defaultdict(list)
-    d_dataset = defaultdict(list)
+    d_prec     = defaultdict(list)
+    d_rec      = defaultdict(list)
+    d_dataset  = defaultdict(list)
+    d_inchi    = defaultdict(list)
 
+    
     # now we hav a sorted dict of numbers by model
     for m in results:
         d_f1[m]       = [x['f1'] for x in results[m]]
@@ -286,6 +292,7 @@ def update_results_by_model(loo=True):
         d_rec[m]      = [x['recall'] for x in results[m]]
         d_prec[m]     = [x['prec'] for x in results[m]]
         d_dataset[m]  = [x['crank'] for x in results[m]]
+        d_inchi[m]    = [chemicals[x['inchi']] if x['inchi'] in chemicals else x['inchi'] for x in results[m]]
 
     plot_data[name]['f1']       = []
     plot_data[name]['auc']      = []
@@ -294,6 +301,7 @@ def update_results_by_model(loo=True):
     plot_data[name]['prec']     = []
     plot_data[name]['rec']      = []
     plot_data[name]['dataset']  = []
+    plot_data[name]['inchi']    = []
 
     # sort models by their means
     means = defaultdict(float)
@@ -309,7 +317,7 @@ def update_results_by_model(loo=True):
         plot_data[name]['prec'].append(d_prec[model])
         plot_data[name]['avg_prec'].append(d_avg_prec[model])
         plot_data[name]['dataset'].append(d_dataset[model])
-
+        plot_data[name]['inchi'].append(d_inchi[model])        
 
 def results_by_model(loo=True):
     if loo:
@@ -327,24 +335,43 @@ def results_by_model(loo=True):
     auc_trace = []
     prec_trace = []
 
-    
     for i, model in enumerate(models):
+
+        if loo:
+            text = plot_data[name]['inchi'][i]
+        else:
+            text=[]
         auc_trace.append(go.Box(
             x=plot_data[name]['auc'][i],
             name=model,
             visible=True,
+            boxpoints='all',
+            pointpos=0,
+            marker={'size':7},
+            hovertext=text,
+            hoverinfo="text",
         ))
 
         f1_trace.append(go.Box(
             x=plot_data[name]['f1'][i],
             name=model,
             visible=False,
+            boxpoints='all',            
+            pointpos=0,
+            marker={'size':7},
+            hovertext=text,
+            hoverinfo="text",
         ))
 
         prec_trace.append(go.Box(
             x=plot_data[name]['avg_prec'][i],
             name=model,
             visible=False,
+            boxpoints='all',
+            pointpos=0,
+            marker={'size':7},
+            hovertext=text,
+            hoverinfo="text",
         ))
     auc_bools = [True] * len(models) + [False] * (2 * len(models))
     f1_bools = [False] * len(models) + [True] * len(models) + [False] * len(models)
@@ -352,12 +379,13 @@ def results_by_model(loo=True):
 
     number_of_cranks = 0
     number_of_inchis = len(get_leaderboard_loo_inchis())
-    if loo:
-        prefix = 'Leave-One-Out'
-    else:
-        prefix = 'K-Fold'
     if plot_data[name]['auc']:
         number_of_cranks = len(plot_data[name]['auc'][0])
+    if loo:
+        prefix = 'Leave-One-Out'
+        number_of_cranks = 1
+    else:
+        prefix = 'K-Fold'
 
     layout = go.Layout(
         xaxis={'title': '<b>AUC</b>',

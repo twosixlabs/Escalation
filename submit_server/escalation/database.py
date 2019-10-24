@@ -424,28 +424,26 @@ def get_leaderboard(loo=True):
     
     if loo:
         results = []
+
+        #get most recent crank
+        res = list(db.engine.execute(text('select dataset_name from leader_board order by dataset_name desc limit 1')))
+        crank = res[0][0]
+        app.logger.info("Using crank %s for LOO plotting" % (crank))
         #get unique set of loo_ids
-        sql  = text('select leave_one_out_id as "loo_id", avg(auc_score) as "auc", avg(average_precision) as "avgp", avg(`precision`) as "prec", avg(recall) as "recall", avg(f1_score) as "f1" from leader_board group by leave_one_out_id')
-        sql1 = text('select distinct leave_one_out_id, dataset_name, model_name from leader_board where leave_one_out_id is not null')
-        avg_res = list(db.engine.execute(sql))
-        id_res = list(db.engine.execute(sql1))
-        h={}
-        for row in id_res:
-            h[row[0]] = row[1:]
+        res = list(db.engine.execute(text("select model_name, test_group, leave_one_out_id, auc_score, f1_score, average_precision, recall, `precision` from leader_board where dataset_name = '%s' and leave_one_out_id is not null" % crank)))
         
-        for row in avg_res:
-            id, auc, avgp, prec, recall, f1  = row
-            if not id:
-                continue
-            crank, model = h[id]
+        h={}
+        for row in res:
+            model, inchi, loo, auc, f1, avgp, recall, prec = row
             x = { 'model': model,
-                             'crank' : crank,
-                             'loo': True,
-                             'auc': auc,
-                             'avgp': avgp,
-                             'prec': prec,
-                             'recall':recall,
-                             'f1': f1
+                  'crank' : crank,
+                  'loo': True,
+                  'inchi':inchi,
+                  'auc': auc if auc else 0.0,
+                  'avgp': avgp if avgp else 0.0,
+                  'prec': prec if prec else 0.0,
+                  'recall':recall if recall else 0.0,
+                  'f1': f1
                 }
 
             results.append(x)
@@ -460,6 +458,7 @@ def get_leaderboard(loo=True):
             x = { 'model':  row[1],
                   'crank' : row[0],
                   'loo': False,
+                  'inchi': None,
                   'auc': row[2],
                   'avgp': row[3],
                   'prec': row[4],
