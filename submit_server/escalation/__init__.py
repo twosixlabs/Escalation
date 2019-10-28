@@ -19,6 +19,7 @@ migrate = Migrate()
 scheduler = APScheduler()
 atexit.register(lambda: scheduler.shutdown())
 
+
 if os.environ.get('ESCALATION_PERSISTENT_DATA_PATH') is None:
     raise KeyError("No value set for env variable ESCALATION_PERSISTENT_DATA_PATH")
 

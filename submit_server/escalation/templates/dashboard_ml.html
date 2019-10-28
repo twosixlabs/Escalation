@@ -23,7 +23,27 @@
         <li class="active"><a href="{{ url_for('dashboard.dashboard_ml') }}">ML</a></li>
     </ul>
 
-    <div id="results_by_model" class="chart" style="max-width:1000px; max-height:400px;"></div>
+    
+    <form method="post">
+      <label class="switch">
+        {% if use_loo is sameas true %}        
+        <input class="switch-input" onclick="this.form.submit();" type="checkbox" name="use_loo" checked />
+        {% else %}
+        <input class="switch-input" onclick="this.form.submit();" type="checkbox" name="use_loo" />
+        {% endif %}
+        <span class="switch-label" data-on="leave-one-out" data-off="k-fold"></span>
+        <span class="switch-handle"></span>
+      </label>
+      
+    </form>
+    {% if use_loo is sameas true %}
+    <h2>Leave-One-Out Performance</h2>
+    <p>Metrics computed by training a separate model on all but one amine and testing on the heldout amine. Results are averaged, stratified by amine.</p>
+    {% else %}
+    <h2>K-fold Performance</h2>
+    <p>Metrics computed by randomly holding out 20% of the reactions across all amines.</p>
+    {% endif %}
+    <div id="results_by_model" class="chart" style="max-width:1000px; max-height:600px;"></div>
     <script type="text/javascript">
         var graph = {{results_by_model | safe}};
         Plotly.newPlot("results_by_model",graph.data,graph.layout, {responsive: true});
@@ -50,47 +70,6 @@
     <script type="text/javascript">
         var graph = {{results_by_crank | safe}};
         Plotly.newPlot("results_by_crank",graph.data,graph.layout, {responsive: true});
-
-
-    </script>
-
-
-    <h3>Leaderboard summary</h3>
-
-    <a href="{{ url_for('leaderboard.leaderboard') }}">View full leaderboard</a>
-    <table id="leaderboard_table" class="compact hover order-column row-border" style="width:100%">
-        <thead>
-        <th>Dataset</th>
-        <th>Name</th>
-        <th>Author</th>
-        <th>AUC</th>
-        <th>F1 score</th>
-        <th>Precision</th>
-        <th>Recall</th>
-        </thead>
-        <tbody>
-        {% for r in leaderboard %}
-        <tr>
-            <td> {{ r['dataset_name'] }}</td>
-            <td> {{ r['model_name'] }}</td>
-            <td> {{ r['model_author'] }}</td>
-            <td> {{ r['auc_score'] }}</td>
-            <td> {{ r['f1_score'] }}</td>
-            <td> {{ r['precision'] }}</td>
-            <td> {{ r['recall'] }}</td>
-
-        </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-
-    <script>
-        $(document).ready(function() {
-        $('#leaderboard_table').DataTable( {
-        "order": [[ 0, "desc" ]],
-        }
-        );
-        } );
 
 
     </script>
@@ -131,7 +110,4 @@
         </script>
 
     </div>
-    <form method="post">
-            <input type="submit" value="Refresh" name="update">
-    </form>
 {% endblock content %}
