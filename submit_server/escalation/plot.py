@@ -6,11 +6,11 @@ from flask import current_app as app
 import numpy as np
 import plotly.graph_objs as go
 import plotly
-from sqlalchemy import text, func
+from sqlalchemy import text, func, case, select, subquery
 
 from escalation import db
 from escalation.database import get_chemicals, get_leaderboard, get_feature_analysis, get_features, get_leaderboard_loo_inchis
-from escalation.database import TrainingRun
+from escalation.database import TrainingRun, Crank
 
 global plot_data
 
@@ -28,27 +28,16 @@ def update_success_by_amine():
     for r in res:
         chemicals[r.inchi] = r.common_name
 
-    rows = db.session.query(TrainingRun.name,
-                                 TrainingRun.inchikey,
-                                 TrainingRun._out_crystalscore,
-                                 TrainingRun._rxn_M_organic,
-                                 TrainingRun._rxn_M_inorganic,
-                                 TrainingRun._rxn_M_acid,
-                                 TrainingRun._rxn_temperatureC_actual_bulk).distinct().all()
+    latest_crank = db.session.query(Crank.crank).order_by(Crank.id.desc()).limit(1).subquery('latest_crank')
+    total = func.count(TrainingRun.id).label("total")
+    success = func.sum(case(value=TrainingRun._out_crystalscore, whens={4: 1}, else_=0)).label("success")
     
-    total = defaultdict(int)
-    success = defaultdict(int)
-    for r in rows:
-        total[r.inchikey] += 1
-        if r._out_crystalscore == 4:
-            success[r.inchikey] += 1
-
-    sorted_amine = [x[0] for x in sorted(total.items(), key=operator.itemgetter(1))]
-    plot_data[name]['xs'] = [chemicals[amine] if amine in chemicals else amine for amine in sorted_amine]
-    plot_data[name]['ys_success'] = [success[amine] for amine in sorted_amine]
-    plot_data[name]['ys_total'] = [total[amine] for amine in sorted_amine]
-    #app.logger.info(plot_data)
-
+    results = db.session.query(TrainingRun.inchikey, total, success).group_by(TrainingRun.inchikey).join(latest_crank, latest_crank.c.crank==TrainingRun.dataset).all()
+    sorted_results = [x for x in sorted(results, key=operator.itemgetter(1))]
+    
+    plot_data[name]['xs'] = [chemicals[result[0]] if result[0] in chemicals else result[0] for result in sorted_results]
+    plot_data[name]['ys_success'] = [result[2] for result in sorted_results]
+    plot_data[name]['ys_total'] = [result[1] for result in sorted_results]
 
 def success_by_amine():
     """ Generates plotly figure "Success Rate by Amine" plot in the Science tab 
@@ -101,17 +90,14 @@ def update_runs_by_crank():
     total = defaultdict(int)
     success = defaultdict(int)
 
-    rows = db.session.query(TrainingRun.dataset, 
-                             func.count(TrainingRun._out_crystalscore).label('count')).\
-                      group_by(TrainingRun.dataset).all()
+    success_func = func.sum(case(value=TrainingRun._out_crystalscore, whens={4: 1}, else_=0)).label('success')
+    total_func = func.count(TrainingRun._out_crystalscore).label('count')
+    
+    rows = db.session.query(TrainingRun.dataset, total_func, success_func).group_by(TrainingRun.dataset).all()
     
     for row in rows:
         total[row.dataset] = row.count
-    rows = db.session.query(TrainingRun.dataset, 
-                             func.count(TrainingRun._out_crystalscore).label('count')).\
-                             filter(TrainingRun._out_crystalscore==4).group_by(TrainingRun.dataset).all()
-    for row in rows:
-        success[row.dataset] = row.count
+        success[row.dataset] = row.success
     
     sorted_list = sorted(total.keys())  # [x[0] for x in sorted(total.items(), key=operator.itemgetter(1)) ]
     plot_data[name]['xs'] = [crank for crank in sorted_list]
