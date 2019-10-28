@@ -1,4 +1,5 @@
-version = "1.5.4"
+version = "1.5.5"
+# 1.5.5 Docstrings and sqlalchemy to plot.py
 # 1.5.4 Selects crank for plotting that has a LOO entry
 # 1.5.3 Switches from snovotney to nleiby dockerhub hosting
 # 1.5.2 Adds luao hover functionality
