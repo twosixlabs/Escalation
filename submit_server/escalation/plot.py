@@ -29,15 +29,18 @@ def update_success_by_amine():
         chemicals[r.inchi] = r.common_name
 
     latest_crank = db.session.query(Crank.crank).order_by(Crank.id.desc()).limit(1).subquery('latest_crank')
-    total = func.count(TrainingRun.id).label("total")
-    success = func.sum(case(value=TrainingRun._out_crystalscore, whens={4: 1}, else_=0)).label("success")
+    total = func.count(TrainingRun.id).label('total')
+    success = func.sum(case(value=TrainingRun._out_crystalscore, whens={4: 1}, else_=0)).label('success')
     
-    results = db.session.query(TrainingRun.inchikey, total, success).group_by(TrainingRun.inchikey).join(latest_crank, latest_crank.c.crank==TrainingRun.dataset).all()
-    sorted_results = [x for x in sorted(results, key=operator.itemgetter(1))]
+    results = db.session.query(TrainingRun.inchikey, total, success).\
+                group_by(TrainingRun.inchikey).\
+                join(latest_crank, latest_crank.c.crank==TrainingRun.dataset).\
+                order_by(total.asc()).all()
     
-    plot_data[name]['xs'] = [chemicals[result[0]] if result[0] in chemicals else result[0] for result in sorted_results]
-    plot_data[name]['ys_success'] = [result[2] for result in sorted_results]
-    plot_data[name]['ys_total'] = [result[1] for result in sorted_results]
+    plot_data[name]['xs'] = [chemicals[result.inchikey] if result.inchikey in chemicals 
+                             else result.inchikey for result in results]
+    plot_data[name]['ys_success'] = [result.success for result in results]
+    plot_data[name]['ys_total'] = [result.total for result in results]
 
 def success_by_amine():
     """ Generates plotly figure "Success Rate by Amine" plot in the Science tab 
@@ -90,19 +93,17 @@ def update_runs_by_crank():
     total = defaultdict(int)
     success = defaultdict(int)
 
-    success_func = func.sum(case(value=TrainingRun._out_crystalscore, whens={4: 1}, else_=0)).label('success')
+    success_func = func.sum(case(value=TrainingRun._out_crystalscore, 
+                            whens={4: 1}, else_=0)).label('success')
     total_func = func.count(TrainingRun._out_crystalscore).label('count')
     
-    rows = db.session.query(TrainingRun.dataset, total_func, success_func).group_by(TrainingRun.dataset).all()
+    rows = db.session.query(TrainingRun.dataset, total_func, success_func).\
+                        group_by(TrainingRun.dataset).order_by(TrainingRun.dataset.asc()).all()
     
-    for row in rows:
-        total[row.dataset] = row.count
-        success[row.dataset] = row.success
-    
-    sorted_list = sorted(total.keys())  # [x[0] for x in sorted(total.items(), key=operator.itemgetter(1)) ]
-    plot_data[name]['xs'] = [crank for crank in sorted_list]
-    plot_data[name]['ys_success'] = [success[crank] for crank in sorted_list]
-    plot_data[name]['ys_total'] = [total[crank] for crank in sorted_list]
+    xs, ys_total, ys_success = zip(*rows)
+    plot_data[name]['xs'] = xs
+    plot_data[name]['ys_success'] = ys_success
+    plot_data[name]['ys_total'] = ys_total
 
 
 def runs_by_crank():
