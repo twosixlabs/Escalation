@@ -6,17 +6,20 @@ from flask import current_app as app
 import numpy as np
 import plotly.graph_objs as go
 import plotly
-from sqlalchemy import text
+from sqlalchemy import text, func, case, select, subquery
 
 from escalation import db
 from escalation.database import get_chemicals, get_leaderboard, get_feature_analysis, get_features, get_leaderboard_loo_inchis
+from escalation.database import TrainingRun, Crank
 
 global plot_data
 
 plot_data = defaultdict(dict)
 
-
 def update_success_by_amine():
+    """ Update "Success Rate by Amine" plot in the Science tab and overview tab
+        Adds successes and total experiments for each amine to plot_data['success_by_amine']
+    """
     global plot_data
     name = 'success_by_amine'
 
@@ -25,34 +28,26 @@ def update_success_by_amine():
     for r in res:
         chemicals[r.inchi] = r.common_name
 
-    sql = text(
-        'select distinct name,inchikey,_out_crystalscore,_rxn_M_organic,_rxn_M_inorganic,'
-        '_rxn_M_acid,'
-        '_rxn_temperatureC_actual_bulk from training_run')
-    rows = list(db.engine.execute(sql))
-
-    # 0 name
-    # 1 inchikey
-    # 2 _out_crystalscore
-    # 3 _rxn_M_organic
-    # 4 _rxn_M_inorganic
-    # 5 _rxn_M_acid
-
-    total = defaultdict(int)
-    success = defaultdict(int)
-    for r in rows:
-        total[r[1]] += 1
-        if r[2] == 4:
-            success[r[1]] += 1
-
-    sorted_amine = [x[0] for x in sorted(total.items(), key=operator.itemgetter(1))]
-    plot_data[name]['xs'] = [chemicals[amine] if amine in chemicals else amine for amine in sorted_amine]
-    plot_data[name]['ys_success'] = [success[amine] for amine in sorted_amine]
-    plot_data[name]['ys_total'] = [total[amine] for amine in sorted_amine]
-    app.logger.info(plot_data)
-
+    latest_crank = db.session.query(Crank.crank).order_by(Crank.id.desc()).limit(1).subquery('latest_crank')
+    total = func.count(TrainingRun.id).label('total')
+    success = func.sum(case(value=TrainingRun._out_crystalscore, whens={4: 1}, else_=0)).label('success')
+    
+    results = db.session.query(TrainingRun.inchikey, total, success).\
+                group_by(TrainingRun.inchikey).\
+                join(latest_crank, latest_crank.c.crank==TrainingRun.dataset).\
+                order_by(total.asc()).all()
+    
+    plot_data[name]['xs'] = [chemicals[result.inchikey] if result.inchikey in chemicals 
+                             else result.inchikey for result in results]
+    plot_data[name]['ys_success'] = [result.success for result in results]
+    plot_data[name]['ys_total'] = [result.total for result in results]
 
 def success_by_amine():
+    """ Generates plotly figure "Success Rate by Amine" plot in the Science tab 
+        based on data recieved from update_success_by_amine()
+        Returns:
+            json object representing plotly figure
+    """
     global plot_data
     name = 'success_by_amine'
 
@@ -89,30 +84,34 @@ def success_by_amine():
 
 
 def update_runs_by_crank():
+    """ Updates "Total Experiments by Time" plot in the automation and overview tab
+        Adds total number of experiments and successes vs. time to plot_data['runs_by_crank']
+    """
     global plot_data
     name = 'runs_by_crank'
     app.logger.info("Updating %s" % (name))
     total = defaultdict(int)
     success = defaultdict(int)
 
-    sql = text('select count(_out_crystalscore), dataset from training_run group by dataset')
-    rows = list(db.engine.execute(sql))
-    for row in rows:
-        total[row[1]] = row[0]
-
-    sql = text(
-        'select count(_out_crystalscore), dataset from training_run where _out_crystalscore = 4 group by dataset')
-    rows = list(db.engine.execute(sql))
-    for row in rows:
-        success[row[1]] = row[0]
+    success_func = func.sum(case(value=TrainingRun._out_crystalscore, 
+                            whens={4: 1}, else_=0)).label('success')
+    total_func = func.count(TrainingRun._out_crystalscore).label('count')
     
-    sorted_list = sorted(total.keys())  # [x[0] for x in sorted(total.items(), key=operator.itemgetter(1)) ]
-    plot_data[name]['xs'] = [crank for crank in sorted_list]
-    plot_data[name]['ys_success'] = [success[crank] for crank in sorted_list]
-    plot_data[name]['ys_total'] = [total[crank] for crank in sorted_list]
+    rows = db.session.query(TrainingRun.dataset, total_func, success_func).\
+                        group_by(TrainingRun.dataset).order_by(TrainingRun.dataset.asc()).all()
+    
+    xs, ys_total, ys_success = zip(*rows)
+    plot_data[name]['xs'] = xs
+    plot_data[name]['ys_success'] = ys_success
+    plot_data[name]['ys_total'] = ys_total
 
 
 def runs_by_crank():
+    """Generates plotly figure "Total Experiments by Time" plot in the automation and overview tab
+        based on data recieved from update_runs_by_crank()
+        Returns:
+            json object representing plotly figure
+    """
     global plot_data
     name = 'runs_by_crank'
 
@@ -155,6 +154,9 @@ def runs_by_crank():
 
 
 def update_runs_by_month():
+    """ Updates "Number of Experiments by Month" plot in the automation tab
+        Adds total number of experiments per amine vs. month to plot_data['runs_by_month']
+    """
     global plot_data
     name = 'runs_by_month'
     app.logger.info("Updating %s" % (name))
@@ -164,16 +166,17 @@ def update_runs_by_month():
     total = defaultdict(int)
     success = defaultdict(int)
 
-    sql = text('select distinct name,inchikey from training_run')
-    rows = list(db.engine.execute(sql))
+    rows = db.session.query(TrainingRun.name, TrainingRun.inchikey).distinct().all()
+    #print(len(rows))
 
     xs = set()
     by_inchi = defaultdict(lambda: defaultdict(int))
     totals = defaultdict(int)
     for row in rows:
-        by_inchi[row[1]][row[0][:7]] += 1
-        xs.add(row[0][:7])
-        totals[row[1]] += 1
+        #by_inchi[row[1]][row[0][:7]] += 1
+        by_inchi[row.inchikey][row.name[:7]] += 1
+        xs.add(row.name[:7])
+        totals[row.inchikey] += 1
 
     xs = sorted(list(xs))
     ys_dict = {}
@@ -198,6 +201,11 @@ def update_runs_by_month():
 
 
 def runs_by_month():
+    """Generates plotly figure "Number of Experiments by Month" plot in the automation tab
+        based on data recieved from update_runs_by_month()
+        Returns:
+            json object representing plotly figure
+    """
     global plot_data
     name = 'runs_by_month'
 
@@ -249,6 +257,13 @@ def runs_by_month():
 
 
 def update_results_by_model(loo=True):
+    """Updates ML metrics in ML tab
+        Adds different metrics into plot_data['results_by_model_*'] based on what is selected
+
+    Args:
+        loo (bool): Switches between leave-one-out and regular stats
+    
+    """
     if loo:
         name = 'results_by_model_loo'
     else:
@@ -320,6 +335,15 @@ def update_results_by_model(loo=True):
         plot_data[name]['inchi'].append(d_inchi[model])        
 
 def results_by_model(loo=True):
+    """Generates plotly plot to show different ML metrics
+
+    Args:
+        loo (bool) : Switches between leave-one-out and regular stats
+    
+    Returns:
+        json object representing plotly figure
+
+    """
     if loo:
         name = 'results_by_model_loo'
     else:
@@ -454,6 +478,15 @@ def results_by_model(loo=True):
 
 
 def f1_by_model(loo = True):
+    """Generates plotly plot to show different ML metrics
+
+    Args:
+        loo (bool) : Switches between leave-one-out and regular stats
+    
+    Returns:
+        json object representing plotly figure
+
+    """
     global plot_data
     if loo:
         name = 'results_by_model_loo'
@@ -534,6 +567,15 @@ def f1_by_model(loo = True):
 
 
 def results_by_crank(loo=True):
+    """Generates plotly plot to show different ML metrics
+
+    Args:
+        loo (bool) : Switches between leave-one-out and regular stats
+    
+    Returns:
+        json object representing plotly figure
+
+    """
     global plot_data
 
     if loo:
@@ -648,39 +690,13 @@ def results_by_crank(loo=True):
     graph = {'data': auc_trace + f1_trace + prec_trace, 'layout': layout}
     return json.dumps(graph, cls=plotly.utils.PlotlyJSONEncoder)
 
-
-def cluster(interval=0.1, xmin=0, xmax=4, X=[]):
-    dz = dy = dx = interval
-    xl = yl = zl = xmin
-    xu = yu = zu = xmax
-    s = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
-    n = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
-
-    for x in X:
-        s[x._rxn_M_organic // dx][x._rxn_M_inorganic // dy][x._rxn_M_acid // dz] += x._out_crystalscore
-        n[x._rxn_M_organic // dx][x._rxn_M_inorganic // dy][x._rxn_M_acid // dz] += 1
-    xs = []
-    ys = []
-    zs = []
-    ss = []
-    ns = []
-
-    for x in sorted(s.keys()):
-        for y in sorted(s[x].keys()):
-            for z in sorted(s[x][y].keys()):
-                xs.append(dx * x + dx / 2)
-                ys.append(dy * y + dy / 2)
-                zs.append(dz * z + dz / 2)
-                ss.append(s[x][y][z] / n[x][y][z])
-                ns.append(n[x][y][z])
-    m = max(ns)
-    sizes = [2 + 10 * (0.4244 * x ** (1 / 3)) for x in ns]
-    texts = ["%d,%.2f" % x for x in zip(ns, ss)]
-
-    return xs, ys, zs, ss, ns, sizes, texts
-
 def filter_by_scores(rows):
-    """Returns a list of lists of experiments, where the position of the list corresponds to crystal score"""
+    """Returns a dict of lists of experiments, where the position of the list corresponds to crystal score
+        Args:
+            rows (db.session.query) : database query result where each row represents an experiment
+        Returns:
+            dict of lists where the key is the crystal score
+    """
     rows_by_scores = {}
     
     for i in range(1,5):
@@ -688,11 +704,26 @@ def filter_by_scores(rows):
     return rows_by_scores
 
 def get_point_details(score, idx):
+    """Returns experiment details based on what is clicked in the 3D plot
+
+    Args:
+        idx (int): Index of the point clicked on the plotly plot
+    
+    Returns:
+        row corresponding to the index 
+
+    """
     global plot_data
     name = 'scatter_3d_by_rxn'
     return plot_data[name]['data']['scores'][score+1][idx]
 
 def update_scatter_3d_by_rxn(inchikey='all'):
+    """Updates 3d scatter plot
+
+    Args:
+        inchikey (str) : inchikey of the organic amine to be shown on the plot. 'all' by default
+    
+    """
     name = 'scatter_3d_by_rxn'
     app.logger.info("Updating %s" % (name))
     plot_data[name]['xl'] = 0
@@ -705,14 +736,14 @@ def update_scatter_3d_by_rxn(inchikey='all'):
         chemicals[r.inchi] = r.common_name
 
     if inchikey != 'all':
-        sql = text(
-            'select distinct name,inchikey,_out_crystalscore,_rxn_M_organic,'
-            '_rxn_M_inorganic,_rxn_M_acid from training_run where inchikey = "%s" limit 10000' % inchikey)
+        rows = db.session.query(TrainingRun.name, TrainingRun.inchikey, TrainingRun._out_crystalscore, 
+                                TrainingRun._rxn_M_organic, TrainingRun._rxn_M_inorganic, TrainingRun._rxn_M_acid).\
+                                filter(TrainingRun.inchikey == inchikey).distinct().limit(10000).all()
     else:
-        sql = text(
-            'select distinct name,inchikey,_out_crystalscore,_rxn_M_organic,_rxn_M_inorganic,_rxn_M_acid from training_run limit 10000')
-
-    rows = list(db.engine.execute(sql))
+        rows = db.session.query(TrainingRun.name, TrainingRun.inchikey, TrainingRun._out_crystalscore, 
+                                TrainingRun._rxn_M_organic, TrainingRun._rxn_M_inorganic, TrainingRun._rxn_M_acid).\
+                                distinct().limit(10000).all()
+    
     inchis = set([x.inchikey for x in rows])
     rows_by_scores = filter_by_scores(rows)
     
@@ -731,18 +762,16 @@ def update_scatter_3d_by_rxn(inchikey='all'):
     app.logger.info(annotation)
     plot_data[name]['data'] = defaultdict(lambda: defaultdict(list))
     plot_data[name]['data']['scores'] = rows_by_scores
-    for interval in plot_data[name]['intervals']:
-        xs, ys, zs, ss, ns, size, texts = cluster(interval, plot_data[name]['xl'], plot_data[name]['xu'], rows)
-        plot_data[name]['data'][interval]['xs'] = xs
-        plot_data[name]['data'][interval]['ys'] = ys
-        plot_data[name]['data'][interval]['zs'] = zs
-        plot_data[name]['data'][interval]['ss'] = ss
-        plot_data[name]['data'][interval]['ns'] = ns
-        plot_data[name]['data'][interval]['size'] = size
-        plot_data[name]['data'][interval]['text'] = texts
+    
 
 
 def scatter_3d_by_rxn():
+    """Generates 3d scatter plot
+
+    Returns:
+        json object representing plotly figure
+
+    """
     global plot_data
     name = 'scatter_3d_by_rxn'
 
@@ -754,28 +783,6 @@ def scatter_3d_by_rxn():
     data = plot_data[name]['data']
     
     traces = []
-    """
-    for interval in plot_data[name]['intervals']:
-        traces.append(go.Scatter3d(
-            x=data[interval]['xs'],
-            y=data[interval]['ys'],
-            z=data[interval]['zs'],
-            mode='markers',
-            hoverlabel=dict(namelength=-1),
-            hoverinfo='text',
-            text=data[interval]['text'],
-            marker=dict(
-                    size=4,
-                    color=data[interval]['ss'],
-                    line=dict(
-                        width=0.2
-                    ),
-                    opacity=1.0
-                ),
-            visible=False
-        ))
-    traces[2]['visible'] = True
-    """
     trace_colors = ['rgba(65, 118, 244, 1.0)', 'rgba(92, 244, 65, 1.0)',
                     'rgba(244, 238, 66, 1.0)', 'rgba(244, 66, 66, 1.0)']
     for score in plot_data[name]['data']['scores']:
@@ -901,6 +908,9 @@ def scatter_3d_by_rxn():
 
 
 def update_feature_importance():
+    """Updates feature importance plots BBA and SHap
+
+    """
     global plot_data
     name = 'feature_importance'
 
@@ -941,6 +951,11 @@ def update_feature_importance():
 
 
 def feature_importance():
+    """Generates feature importance plots
+    Returns:
+        json object representing plotly figure
+
+    """
     global plot_data
     name = 'feature_importance'
     if name not in plot_data:
