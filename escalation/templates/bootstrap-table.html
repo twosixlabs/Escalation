@@ -1,0 +1,21 @@
+<!--# Copyright [2020] [Two Six Labs, LLC]-->
+<!--# Licensed under the Apache License, Version 2.0-->
+
+{% set table_dict = plot['plot_info'] %}
+
+<table id="table" data-height="400">
+  <thead>
+    <tr>
+        {% for header_dict in table_dict['header_info'] %}
+      <th data-sortable="true" data-field="{{ header_dict["column"] }}">{{ header_dict["header"] }}</th>
+        {% endfor %}
+    </tr>
+  </thead>
+</table>
+
+<script>
+  var $table = $('#table')
+  $(function() {
+    $table.bootstrapTable({data: {{table_dict['data']| safe }} ,sortReset: true})
+  })
+</script>

@@ -1,0 +1,244 @@
+
+<!--# Copyright [2020] [Two Six Labs, LLC]-->
+<!--# Licensed under the Apache License, Version 2.0-->
+
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+          integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+    <link rel="shortcut icon" href="/static/favicon.ico">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/css/bootstrap-select.min.css">
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+            integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+            integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+            integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+            crossorigin="anonymous"></script>
+
+
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"
+            integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/js/bootstrap-select.min.js"></script>
+
+
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <title>Escalation</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@json-editor/json-editor@latest/dist/jsoneditor.min.js"></script>
+<script type="text/javascript" src="../helper_function.js"></script>
+</head>
+
+<body>
+<section class="content">
+
+
+    <div class="container-fluid pl-5 pr-5">
+        <div class="row" id=bar_aggregate_example>
+        <div class="col-10">
+            <h1> Filter Data Example </h1>
+            <p>Different types and settings of filters (Note: in gallery filters do not do anything)</p>
+        </div>
+        </div>
+        <div class="row">
+            <div class="col-10">
+            <div class="chart" id=plot_advanced_filters>
+            <script>
+                var graphs = {"data": [{"type": "scatter", "mode": "markers", "x": [3250.0, 3900.0, 3300.0, 3900.0, 3325.0, 4150.0, 3950.0, 3550.0, 3300.0, 4650.0, 3150.0, 3900.0, 3100.0, 4400.0, 3000.0, 4600.0, 3425.0, 2975.0, 3450.0, 4150.0, 3350.0, 3550.0, 3800.0, 3500.0, 3950.0, 3600.0, 3550.0, 4300.0, 3400.0, 4450.0, 3300.0, 4300.0, 3700.0, 4350.0, 2900.0, 4100.0, 3500.0, 4475.0, 3425.0, 3900.0, 3175.0, 3975.0, 3400.0, 4250.0, 3400.0, 3475.0, 3050.0, 3725.0, 3000.0, 3650.0, 4250.0, 3475.0, 3450.0, 3750.0, 3700.0, 4000.0, 3500.0, 3900.0, 3650.0, 3525.0, 3725.0, 3950.0, 3250.0, 3750.0, 4150.0, 3700.0, 3800.0, 3775.0, 3700.0, 4050.0, 3575.0, 4050.0, 3300.0, 3700.0, 3450.0, 4400.0, 3600.0, 3400.0, 2900.0, 3800.0, 3300.0, 4150.0, 3400.0, 3800.0, 3700.0, 4550.0, 3200.0, 4300.0, 3350.0, 4100.0, 3600.0, 3900.0, 3850.0, 4800.0, 2700.0, 4500.0, 3950.0, 3650.0, 3550.0, 3500.0, 3675.0, 4450.0, 3400.0, 4300.0, 3250.0, 3675.0, 3325.0, 3950.0, 3600.0, 4050.0, 3350.0, 3450.0, 3250.0, 4050.0, 3800.0, 3525.0, 3950.0, 3650.0, 3650.0, 4000.0, 3400.0, 3775.0, 4100.0, 3775.0, 3650.0], "y": [178.0, 178.0, 188.0, 184.0, 195.0, 196.0, 190.0, 180.0, 181.0, 184.0, 182.0, 195.0, 186.0, 196.0, 185.0, 190.0, 182.0, 179.0, 190.0, 191.0, 191.0, 194.0, 190.0, 189.0, 189.0, 190.0, 202.0, 205.0, 185.0, 186.0, 187.0, 208.0, 190.0, 196.0, 178.0, 192.0, 193.0, 199.0, 187.0, 190.0, 191.0, 200.0, 185.0, 193.0, 193.0, 187.0, 188.0, 190.0, 192.0, 185.0, 190.0, 184.0, 195.0, 193.0, 187.0, 201.0, 192.0, 196.0, 193.0, 188.0, 197.0, 198.0, 178.0, 197.0, 195.0, 198.0, 193.0, 194.0, 185.0, 201.0, 190.0, 201.0, 197.0, 181.0, 190.0, 195.0, 181.0, 191.0, 187.0, 193.0, 195.0, 197.0, 200.0, 200.0, 191.0, 205.0, 187.0, 201.0, 187.0, 203.0, 195.0, 199.0, 195.0, 210.0, 192.0, 205.0, 210.0, 187.0, 196.0, 196.0, 196.0, 201.0, 190.0, 212.0, 187.0, 198.0, 199.0, 201.0, 193.0, 203.0, 187.0, 197.0, 191.0, 203.0, 202.0, 194.0, 206.0, 189.0, 195.0, 207.0, 202.0, 193.0, 210.0, 198.0, 195.0], "transforms": []}], "layout": {"hovermode": "closest", "xaxis": {"title": "penguin_size:body_mass_g", "automargin": true}, "yaxis": {"title": "penguin_size:flipper_length_mm", "automargin": true}}};
+                Plotly.newPlot(plot_advanced_filters,graphs || {});
+            </script>
+        </div>
+        </div>
+            <div class="col-2 text-center">
+
+
+            <!--# Copyright [2020] [Two Six Labs, LLC]-->
+<!--# Licensed under the Apache License, Version 2.0-->
+
+
+
+<h6>Filter by penguin_size:sex</h6>
+    <select class="selectpicker form-control m-2" data-dropdown-align-right='auto' id=filter_0 name=filter_0 form=form_advanced_filters
+             >
+
+  <option value="Show All Rows"
+                  selected>  Show All Rows</option>
+
+  <option value="."
+                  >  .</option>
+
+  <option value="FEMALE"
+                  >  FEMALE</option>
+
+  <option value="MALE"
+                  >  MALE</option>
+
+</select>
+
+
+            <!--# Copyright [2020] [Two Six Labs, LLC]-->
+<!--# Licensed under the Apache License, Version 2.0-->
+
+
+
+<h6>Filter by penguin_size:island</h6>
+    <select class="selectpicker form-control m-2" data-dropdown-align-right='auto' id=filter_1 name=filter_1 form=form_advanced_filters
+              multiple>
+
+  <option value="Show All Rows"
+                  >  Show All Rows</option>
+
+  <option value="Dream"
+                  selected>  Dream</option>
+
+</select>
+
+
+            <!--# Copyright [2020] [Two Six Labs, LLC]-->
+<!--# Licensed under the Apache License, Version 2.0-->
+
+
+
+<h6 class="text-break">Filter by penguin_size:culmen_length_mm</h6>
+
+        <div class="input-group m-2">
+        <div class="input-group-prepend">
+    <select class="custom-select custom-select-sm" name=numerical_filter_0_upper_operation  form=form_advanced_filters>
+
+        <option value=&gt;
+                  >  &gt;</option>
+
+        <option value=&gt;=
+                  >  &gt;=</option>
+
+        <option value==
+                  >  =</option>
+
+        <option value=&lt;=
+                  selected>  &lt;=</option>
+
+        <option value=&lt;
+                  >  &lt;</option>
+
+    </select>
+   </div>
+
+    <input class="form-control form-control-sm" name=numerical_filter_0_upper_value  type="number"  form=form_advanced_filters>
+        </div>
+        <!--<div class="row"><div class="col"><p class="text-center">and </p></div></div>-->
+
+        <div class="input-group m-2">
+        <div class="input-group-prepend">
+    <select class="custom-select custom-select-sm" name=numerical_filter_0_lower_operation  form=form_advanced_filters>
+
+        <option value=&gt;
+                  >  &gt;</option>
+
+        <option value=&gt;=
+                  selected>  &gt;=</option>
+
+        <option value==
+                  >  =</option>
+
+        <option value=&lt;=
+                  >  &lt;=</option>
+
+        <option value=&lt;
+                  >  &lt;</option>
+
+    </select>
+   </div>
+
+    <input class="form-control form-control-sm" name=numerical_filter_0_lower_value  type="number"  form=form_advanced_filters>
+        </div>
+        </div>
+        </div>
+    <div class="row">
+        <div class="col-8">
+            <div class="row">
+                <div class="w-100" id="editor_holder_graphic"></div>
+            </div>
+            <div class="row ml-1 mb-4">
+                <h2>Type of Plot:</h2>
+                <select class="selectpicker mt-1 ml-3" data-dropdown-align-right='auto' id = "plot_type">
+
+                        <option value=scatter selected>Scatter or Line Plot</option>
+
+                        <option value=bar >Bar Plot</option>
+
+                        <option value=heatmap >Heatmap</option>
+
+                        <option value=contour >Contour Plot</option>
+
+                        <option value=box >Box Plot</option>
+
+                        <option value=violin >Violin Plot</option>
+
+                        <option value=histogram >Histogram</option>
+
+                        <option value=scatter3d>3D Scatter/Line Plot</option>
+
+                        <option value=mesh3d >3D Mesh Plot</option>
+
+                </select>
+            </div>
+            <div class="row">
+                <div class="w-100" id="editor_holder_plotly"></div>
+            </div>
+            <div class="row">
+                <div class="w-100" id="editor_holder_visualization"></div>
+            </div>
+            <div class="row">
+                <div class="w-100" id="editor_holder_selector"></div>
+            </div>
+        </div>
+    </div>
+    </div>
+<script>
+
+    let current_state = {"visualization": {}, "selector": {"filter": [{"column": "penguin_size:sex", "multiple": false}, {"column": "penguin_size:island", "multiple": true, "default_selected": ["Dream"]}], "numerical_filter": [{"column": "penguin_size:culmen_length_mm"}]}, "plotly": {"data": [{"type": "scatter", "mode": "markers", "x": "penguin_size:body_mass_g", "y": "penguin_size:flipper_length_mm"}]}, "graphic_meta_info": {"plot_manager": "plotly", "data_sources": {"main_data_source": {"data_source_type": "penguin_size"}}, "title": "Filter Data Example", "brief_desc": "Different types and settings of filters"}};
+    const dict_of_schemas = get_schema();
+    const dict_of_plotly_schemas = dict_of_schemas['plotly_schema'];
+    let editors= new Object();
+    let current_plot_type = "scatter";
+    let saved_plot_type = current_plot_type;
+    editors['graphic_meta_info'] = new_editor('graphic', false, dict_of_schemas['graphic_schema']);
+    editors['plotly'] = new_editor('plotly', true, dict_of_plotly_schemas[current_plot_type]);
+    editors['visualization'] = new_editor('visualization', false, dict_of_schemas["visualization_schema"]);
+    editors['selector'] = new_editor('selector', false, dict_of_schemas["selector_schema"]);
+
+
+    for(let editor_name in editors){
+        editors[editor_name].setValue(current_state[editor_name])
+    }
+    function new_editor(type,display_required_only,schema) {
+        return new JSONEditor(document.getElementById('editor_holder_'.concat(type)),
+        options={theme: 'bootstrap4',display_required_only: display_required_only, disable_edit_json:true,
+            disable_array_delete_last_row:true, iconlib: 'fontawesome4', schema: schema });
+    }
+</script>
+
+</section>
+
+</body>
+<footer>
+
+</footer>
+</html>

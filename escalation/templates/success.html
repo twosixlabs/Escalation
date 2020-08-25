@@ -1,0 +1,30 @@
+<!--# Copyright [2020] [Two Six Labs, LLC]-->
+<!--# Licensed under the Apache License, Version 2.0-->
+
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Success CSV{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+<p>Success! Thank you {{ username }}</p>
+
+
+<div id="missing_columns">
+
+        <ul>
+            <li><b>The following columns were not included in the database for the uploaded file because they are not defined in the schema.</b>
+            </li>
+
+          {% for column in ignored_columns %}
+          <li> {{ column }}</li>
+          {% endfor %}
+
+        </ul>
+
+    </div>
+
+
+
+{% endblock %}

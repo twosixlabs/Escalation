@@ -1,0 +1,43 @@
+{
+    "plot_manager": "plotly",
+    "data_sources": {"main_data_source": {"data_source_type":"penguin_size"}},
+    "title": "How big are penguins?",
+    "brief_desc": "Try the group by selector",
+    "plot_specific_info": {
+        "data": [
+            {
+                "type": "histogram",
+                "opacity": 0.5,
+                "x": "penguin_size:body_mass_g"
+            }
+        ],
+        "layout": {
+            "barmode": "overlay",
+            "yaxis": {
+                "title": {
+                    "text": "count"
+                }
+            }
+        }
+    },
+    "selectable_data_dict": {
+        "axis": [
+            {
+                "column": "x",
+                "entries": [
+                    "penguin_size:culmen_length_mm",
+                    "penguin_size:flipper_length_mm",
+                    "penguin_size:body_mass_g",
+                    "penguin_size:culmen_depth_mm"
+                ]
+            }
+        ],
+        "groupby": {
+            "entries": [
+                "penguin_size:sex",
+                "penguin_size:island"
+            ],
+            "multiple": true
+        }
+    }
+}

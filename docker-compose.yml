@@ -1,0 +1,51 @@
+# todo: version 2 for compatibility with Chombo- switch to 3
+version: '2'
+
+services:
+  web:
+    restart: always
+    build: .
+    container_name: escos_web
+    expose:
+      - "8000"
+    links:
+      - postgres_db:postgres_db
+# todo: are there app env-specific things we want to include here?
+#    env_file:
+#      - .env
+    ports:
+      - "8000:8000"
+    command: /escalation/boot.sh
+
+  nginx:
+    restart: always
+    image: "nginx:1.13.5"
+    container_name: escos_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - .:/www/static
+    links:
+      - web:web
+
+  data:
+    image: postgres:latest
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    command: "true"
+
+  postgres_db:
+    restart: always
+    image: postgres:latest
+    container_name: escos_db
+    env_file:
+    - ./escalation/app_deploy_data/database_env_file
+    volumes:
+      - db-data:/var/lib/postgresql/data
+#      This file runs a db setup command that creates the upload metadata table
+      - ./escalation/database/container_db_init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+
+volumes:
+  db-data:

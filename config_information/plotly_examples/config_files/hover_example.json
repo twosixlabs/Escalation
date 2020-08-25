@@ -1,0 +1,24 @@
+{
+    "plot_manager": "plotly",
+    "data_sources": {"main_data_source": {"data_source_type":"penguin_size"}},
+    "title": "Hover options",
+    "brief_desc": "",
+    "plot_specific_info": {
+        "data": [
+            {
+                "type": "scatter",
+                "mode": "markers",
+                "x": "penguin_size:body_mass_g",
+                "y": "penguin_size:flipper_length_mm"
+            }
+        ]
+    },
+    "visualization_options": {
+        "hover_data":{
+            "column": [
+                "penguin_size:sex",
+                "penguin_size:culmen_length_mm"
+            ]
+        }
+    }
+}

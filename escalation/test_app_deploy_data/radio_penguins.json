@@ -1,0 +1,56 @@
+{
+    "plot_manager": "plotly",
+    "data_sources": {
+        "main_data_source": {"data_source_type": "penguin_size"},
+        "additional_data_sources": [
+            {
+                "data_source_type": "mean_penguin_stat",
+                "join_keys": [
+                    ["penguin_size:study_name", "mean_penguin_stat:study_name"],
+                    ["penguin_size:sex", "mean_penguin_stat:sex"],
+                    ["penguin_size:species", "mean_penguin_stat:species"]
+                ]
+            }
+        ]
+    },
+    "title": "Can we join tables to find whether radio isotopes are connected to penguin size?",
+    "brief_desc": "",
+    "plot_specific_info": {
+        "data": [
+            {
+                "type": "scatter",
+                "x": "penguin_size:culmen_length_mm",
+                "y": "mean_penguin_stat:delta_15_n",
+                "mode": "markers"
+            }
+        ]
+    },
+    "visualization_options": {
+        "hover_data": {"column": ["penguin_size:sex", "penguin_size:culmen_length_mm"]},
+        "groupby": {"column": ["penguin_size:sex"]},
+        "aggregate": {
+            "column": ["mean_penguin_stat:delta_15_n"],
+            "aggregations": {"y": "avg"}
+        }
+    },
+    "selectable_data_dict": {
+        "axis": [
+            {
+                "column": "x",
+                "entries": [
+                    "penguin_size:culmen_length_mm",
+                    "penguin_size:flipper_length_mm",
+                    "penguin_size:body_mass_g",
+                    "penguin_size:culmen_depth_mm"
+                ]
+            },
+            {
+                "column": "y",
+                "entries": [
+                    "mean_penguin_stat:delta_15_n",
+                    "mean_penguin_stat:delta_13_c"
+                ]
+            }
+        ]
+    }
+}

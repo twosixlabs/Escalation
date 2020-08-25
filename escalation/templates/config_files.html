@@ -1,0 +1,89 @@
+<!--# Copyright [2020] [Two Six Labs, LLC]-->
+<!--# Licensed under the Apache License, Version 2.0-->
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="jumbotron">
+    <h1 class="display-4">Dashboard Layout Editor</h1>
+    <hr class="my-4">
+    <p class="lead">Click on a file to edit the config file</p>
+</div>
+    <div class="container-fluid pl-5 pr-5">
+        <div class="row">
+            <form method="post" action={{ url_for('.graphic_config_setup') }} id="form_button_click">
+                <div class="form-group">
+                    <label for="title">Site Title</label>
+                    <input type="text" class="form-control" name="title" id="title" {% if current_config['title'] %} value="{{ current_config['title'] }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label for="brief_desc">Site Description</label>
+                    <textarea type="text" class="form-control" name="brief_desc" id="brief_desc" row="3">{{ current_config['brief_desc'] if current_config['brief_desc'] }}</textarea>
+                    <small class="form-text text-muted">Description shown at the top of the website</small>
+                </div>
+                <div class="form-group">
+                    <label for="data_backend">Data Backend</label>
+                    <select class="selectpicker form-control" data-dropdown-align-right='auto' name="data_backend" id="data_backend">
+                        <option value="database" {% if current_schema == "database" %}  selected {% endif %}>Database</option>
+                        <option value="local_csv" {% if current_schema == "local_csv" %}  selected {% endif %}>Local</option>
+                    </select>
+                </div>
+                    <input type="hidden" name="page_id" value=''>
+                    <input type="hidden" name="graphic" value=''>
+                    <input type="hidden" name="graphic_status" value=''>
+            </form>
+        </div>
+        <div class="row">
+            <p>Dashboard Panels</p>
+        </div>
+            {% for page in available_pages %}
+                <div class="row">
+                {% set page_id=loop.index0 %}
+                    <button type="button" class="btn btn-secondary dropdown-toggle mb-1 mt-1 pr-5 pl-5" data-toggle="collapse" data-target={{ "#page_" ~ page_id ~ "_graphics" }}>
+                        {{ page["webpage_label"] }}
+                    </button>
+                    <button class="btn btn-danger mb-1 mt-1 ml-1 pr-3 pl-3" type="button" onclick=modify_config('delete_page',{{ page_id }})>Delete</button>
+                </div>
+                <div class="collapse show" id={{ "page_" ~ page_id ~ "_graphics" }}>
+                    {% for graphic in page["graphic_config_files"] %}
+                        <div class="row">
+                            <button class="btn btn-outline-secondary mb-1 mt-1 ml-5 pr-3 pl-3" type="button" onclick=edit_graphic({{ page_id }},'{{ graphic['graphic_path'] }}','old')>{{ graphic['title'] }}</button>
+                            <button class="btn btn-outline-success mb-1 mt-1 ml-1 pr-3 pl-3" type="button" onclick=edit_graphic({{ page_id }},'{{ graphic['graphic_path'] }}','copy')>Copy</button>
+                        <button class="btn btn-outline-danger mb-1 mt-1 ml-1 pr-3 pl-3" type="button" onclick=modify_config('delete_graphic',{{ page_id }},'{{ graphic['graphic_path'] }}')>Delete</button>
+                        </div>
+                    {% endfor %}
+                    <div class="row">
+                        <div class="form-group mb-1 mt-1 ml-5">
+                            <button type="button" class="btn btn-outline-primary" onclick=edit_graphic({{ page_id }},'','new')>Add a Graphic
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+
+            {% endfor %}
+
+    <div class="row">
+        <form method="post" action={{ url_for('.modify_layout') }} id="form_add_page">
+            <div class="form-group mb-1 mt-4">
+                <div class="input-group">
+                    <input type="hidden" name="modification" value='add_page'>
+                    <input type="hidden" name="title" value=''>
+                    <input type="hidden" name="brief_desc" value=''>
+                    <input type="hidden" name="data_backend" value=''>
+                    <input type="hidden" name="page_id" value=''>
+                    <input type="hidden" name="graphic" value=''>
+                    <input type="text" class="form-control" name="webpage_label" placeholder="Dashboard Panel Name">
+                    <div class="input-group-append">
+                        <button type="button" class="btn btn-primary" onclick=modify_config('add_page')>Add a Dashboard Panel
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+{% endblock %}

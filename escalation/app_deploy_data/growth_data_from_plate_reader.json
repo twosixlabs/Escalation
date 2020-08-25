@@ -1,0 +1,56 @@
+{
+    "plot_manager": "plotly",
+    "title": "Growth data from plate reader",
+    "brief_desc": "Line plot per well, rather than box plot",
+    "data_sources": {
+        "main_data_source": {
+            "data_source_type": "plate_reader"
+        }
+    },
+    "plot_specific_info": {
+        "data": [
+            {
+                "type": "scattergl",
+                "x": "plate_reader:timepoint",
+                "y": "plate_reader:fluor_gain_0.16/od",
+                "mode": "lines+markers"
+            }
+        ]
+    },
+    "visualization_options": {
+        "hover_data": {
+            "column": [
+                "plate_reader:well",
+                "plate_reader:sample_contents",
+                "plate_reader:experiment_reference"
+            ]
+        },
+        "groupby": {
+            "column": [
+                "plate_reader:sample_contents",
+                "plate_reader:well",
+                "plate_reader:experiment_reference"
+            ]
+        }
+    },
+    "selectable_data_dict": {
+        "filter": [
+            {
+                "column": "plate_reader:experiment_reference",
+                "multiple": true,
+                "default_selected": [
+                    "YeastSTATES-CRISPR-Long-Duration-Time-Series-20191208"
+                ],
+                "unfiltered_selector": true
+            },
+            {
+                "column": "plate_reader:control_type",
+                "multiple": true
+            },
+            {
+                "column": "plate_reader:strain",
+                "multiple": true
+            }
+        ]
+    }
+}

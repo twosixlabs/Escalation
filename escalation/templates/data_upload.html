@@ -1,0 +1,97 @@
+<!--# Copyright [2020] [Two Six Labs, LLC]-->
+<!--# Licensed under the Apache License, Version 2.0-->
+
+{% extends 'base.html' %}
+
+
+{% block header %}
+{% include 'navbar.html' %}
+
+<script type="text/javascript">
+  function displayInstructions() {
+  var x = document.getElementById("instructions");
+  var y = document.getElementById("instruction-button");
+
+  if (x.style.display === "none") {
+    x.style.display = "block";
+    y.innerHTML="Hide Instructions   <i class=\"fa fa-caret-up\"></i>" ;
+  } else {
+    x.style.display = "none";
+    y.innerHTML="Show Instructions   <i class=\"fa fa-caret-down\"></i>";
+  }
+  }
+
+
+</script>
+
+{% endblock %}
+
+
+{% block content %}
+<div class="jumbotron">
+    <h1 class="display-4">Upload CSV</h1>
+    <hr class="my-4">
+    <p class="lead">Data Upload</p>
+</div>
+<div class="container-fluid pl-5 pr-5">
+<div class="row">
+<h3>Most recent upload</h3>
+    </div>
+<div class="row">
+<button id="instruction-button" class="btn btn-outline-secondary" onclick="displayInstructions()">Show Instructions   <i
+        class="fa fa-caret-down"></i></button>
+</div>
+<div class="row">
+    <div id="instructions" style="display:none;">
+
+        <ul>
+            <li><b>Write some instructions for upload</b>
+            </li>
+        </ul>
+
+    </div>
+ </div>
+
+<div class="row">
+
+<form id="upload_form" method="post" enctype="multipart/form-data">
+    <div class="form-group">
+
+        <label id="username" for="username">Username</label>
+
+        <input class="form-control" type="text" name="username" required>
+    </div>
+    <div class="form-group">
+        <label for="data_source">Data File Type</label>
+        <small class="form-text text-muted">Enter new data type name or select existing data type</small>
+            <input list="data_source_list" class="form-control"  id="data_source" name="data_source" required>
+            <datalist id="data_source_list">
+                {% for existing_data_source in data_sources %}
+                <option value={{ existing_data_source }}>
+                    {% endfor %}
+            </datalist>
+    </div>
+
+
+    <div class="form-group">
+        <label id="csvfile" for="csvfile">CSV file</label>
+
+        <input type="file" class="form-control-file"  name="csvfile" accept="csv" required>
+
+    </div>
+    <div class="form-group">
+        <label id="notes" for="notes">Notes</label>
+
+        <textarea placeholder="Enter notes about your submission" class="form-control"  name="notes" rows="10" cols="30"></textarea>
+
+    </div>
+
+    <button type="submit" class="btn btn-primary align-middle">Submit</button>
+
+</form>
+</div>
+    </div>
+
+{% endblock %}
+
+

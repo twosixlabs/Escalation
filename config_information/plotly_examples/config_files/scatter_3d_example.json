@@ -1,0 +1,36 @@
+{
+    "plot_manager": "plotly",
+    "data_sources": {"main_data_source": {"data_source_type":"penguin_size"}},
+    "title": "Example 3D Scatter",
+    "brief_desc": "A 3D scatter plot",
+    "plot_specific_info": {
+        "data": [
+            {
+                "type": "scatter3d",
+                "mode": "markers",
+                "marker": {"size": 4},
+                "x": "penguin_size:body_mass_g",
+                "y": "penguin_size:flipper_length_mm",
+                "z": "penguin_size:culmen_length_mm"
+            }
+        ],
+        "layout": {
+            "scene": {
+                "xaxis": {
+                    "title": "Body Mass"
+                },
+                "yaxis": {
+                    "title": "Flipper Length"
+                },
+                "zaxis": {
+                    "title": "Beak Length"
+                },
+                "camera": {
+                    "center": {
+                        "z": -0.5
+                    }
+                }
+            }
+        }
+    }
+}

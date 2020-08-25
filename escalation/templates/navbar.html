@@ -1,0 +1,27 @@
+<!--# Copyright [2020] [Two Six Labs, LLC]-->
+<!--# Licensed under the Apache License, Version 2.0-->
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <a class="navbar-brand" href="{{ url_for('dashboard.main_page') }}">EscOS</a>
+
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item {% if request.path=="/admin" %} active {% endif %}">
+        <a class="nav-link" href={{ url_for('admin.admin_page') }}>Admin</a>
+      </li>
+      <li class="nav-item {% if request.path==url_for('upload.submission_view') %} active {% endif %}">
+        <a class="nav-link" href={{ url_for('upload.submission_view') }}>Upload</a>
+      </li>
+      <li class="nav-item dropdown {% if "/dashboard/" in request.path %} active {% endif %}">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Dashboards
+        </a>
+        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+            {% for dashboard_page in dashboard_pages %}
+        <a class="dropdown-item" href={{ url_for('dashboard.graphic_page', page_name=dashboard_page['link']) }}>{{
+        dashboard_page['webpage_label'] }}</a>
+        {% endfor %}
+        </div>
+      </li>
+
+    </ul>
+</nav>

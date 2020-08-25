@@ -1,0 +1,21 @@
+<!--# Copyright [2020] [Two Six Labs, LLC]-->
+<!--# Licensed under the Apache License, Version 2.0-->
+
+{% set name=selector['name'] %}
+
+<h6 class="text-break">{{ selector['text'] }}</h6>
+    {% for position in ['upper', 'lower'] %}
+        <div class="input-group m-2">
+        <div class="input-group-prepend">
+    <select class="custom-select custom-select-sm" name={{ name ~ "_" ~ position ~ "_operation" }}  form={{ "form_" ~ plot_id }}>
+      {% for col_name in selector['entries'] %}
+        <option value={{ col_name }}
+                  {% if col_name == selector['active_selector'][position]['operation'] %}selected> {% else %}> {% endif %} {{ col_name }}</option>
+      {% endfor %}
+    </select>
+   </div>
+
+    <input class="form-control form-control-sm" name={{ name ~ "_" ~ position ~ "_value" }}  type="number" {{ "value="~selector['active_selector'][position]['value'] if selector['active_selector'][position]['value']}} form={{ "form_" ~ plot_id }}>
+        </div>
+        <!--{% if not loop.last %}<div class="row"><div class="col"><p class="text-center">and </p></div></div>{% endif %}-->
+{% endfor %}

@@ -1,0 +1,25 @@
+{
+    "plot_manager": "plotly",
+    "data_sources": {"main_data_source": {"data_source_type":"penguin_size_small"}},
+    "title": "Example Line",
+    "brief_desc": "A line plot",
+    "plot_specific_info": {
+        "data": [
+            {
+                "type": "scatter",
+                "mode": "line",
+                "x": "penguin_size_small:culmen_length_mm",
+                "y": "penguin_size_small:flipper_length_mm"
+            }
+        ],
+        "layout": {
+            "yaxis": {
+                "title": "Beak Length"
+            },
+            "xaxis": {
+                "title": "Filler Length"
+            }
+        }
+    }
+}
+

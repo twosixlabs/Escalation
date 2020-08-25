@@ -1,0 +1,23 @@
+{
+    "plot_manager": "plotly",
+    "data_sources": {"main_data_source": {"data_source_type":"penguin_size"}},
+    "title": "Do massive penguins have long flippers?",
+    "brief_desc": "This plot looks at the relationship between...",
+    "plot_specific_info": {
+        "data": [
+            {
+                "type": "scatter",
+                "mode": "markers",
+                "x": "penguin_size:body_mass_g",
+                "y": "penguin_size:flipper_length_mm"
+            }
+        ]
+    },
+    "selectable_data_dict": {
+        "filter": [
+            {
+                "column": "penguin_size:sex"
+            }
+        ]
+    }
+}

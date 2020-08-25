@@ -1,0 +1,22 @@
+{
+    "plot_manager": "plotly",
+    "data_sources": {"main_data_source": {"data_source_type":"penguin_size"}},
+    "title": "Example Box plot",
+    "brief_desc": "A box plot grouped other columns",
+    "plot_specific_info": {
+        "data": [
+            {
+                "type": "box",
+                "y": "penguin_size:body_mass_g"
+            }
+        ]
+    },
+    "visualization_options": {
+        "groupby":{
+            "column": [
+                "penguin_size:island",
+                "penguin_size:sex"
+            ]
+        }
+    }
+}

@@ -1,0 +1,141 @@
+
+<!--# Copyright [2020] [Two Six Labs, LLC]-->
+<!--# Licensed under the Apache License, Version 2.0-->
+
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+          integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+    <link rel="shortcut icon" href="/static/favicon.ico">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/css/bootstrap-select.min.css">
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+            integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+            integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+            integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+            crossorigin="anonymous"></script>
+
+
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"
+            integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/js/bootstrap-select.min.js"></script>
+
+
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <title>Escalation</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@json-editor/json-editor@latest/dist/jsoneditor.min.js"></script>
+<script type="text/javascript" src="../helper_function.js"></script>
+</head>
+
+<body>
+<section class="content">
+
+
+    <div class="container-fluid pl-5 pr-5">
+        <div class="row" id=bar_aggregate_example>
+        <div class="col-10">
+            <h1> Hover options </h1>
+            <p></p>
+        </div>
+        </div>
+        <div class="row">
+            <div class="col-10">
+            <div class="chart" id=plot_hover_example>
+            <script>
+                var graphs = {"data": [{"type": "scatter", "mode": "markers", "x": [3750.0, 3800.0, 3250.0, null, 3450.0, 3650.0, 3625.0, 4675.0, 3475.0, 4250.0, 3300.0, 3700.0, 3200.0, 3800.0, 4400.0, 3700.0, 3450.0, 4500.0, 3325.0, 4200.0, 3400.0, 3600.0, 3800.0, 3950.0, 3800.0, 3800.0, 3550.0, 3200.0, 3150.0, 3950.0, 3250.0, 3900.0, 3300.0, 3900.0, 3325.0, 4150.0, 3950.0, 3550.0, 3300.0, 4650.0, 3150.0, 3900.0, 3100.0, 4400.0, 3000.0, 4600.0, 3425.0, 2975.0, 3450.0, 4150.0, 3500.0, 4300.0, 3450.0, 4050.0, 2900.0, 3700.0, 3550.0, 3800.0, 2850.0, 3750.0, 3150.0, 4400.0, 3600.0, 4050.0, 2850.0, 3950.0, 3350.0, 4100.0, 3050.0, 4450.0, 3600.0, 3900.0, 3550.0, 4150.0, 3700.0, 4250.0, 3700.0, 3900.0, 3550.0, 4000.0, 3200.0, 4700.0, 3800.0, 4200.0, 3350.0, 3550.0, 3800.0, 3500.0, 3950.0, 3600.0, 3550.0, 4300.0, 3400.0, 4450.0, 3300.0, 4300.0, 3700.0, 4350.0, 2900.0, 4100.0, 3725.0, 4725.0, 3075.0, 4250.0, 2925.0, 3550.0, 3750.0, 3900.0, 3175.0, 4775.0, 3825.0, 4600.0, 3200.0, 4275.0, 3900.0, 4075.0, 2900.0, 3775.0, 3350.0, 3325.0, 3150.0, 3500.0, 3450.0, 3875.0, 3050.0, 4000.0, 3275.0, 4300.0, 3050.0, 4000.0, 3325.0, 3500.0, 3500.0, 4475.0, 3425.0, 3900.0, 3175.0, 3975.0, 3400.0, 4250.0, 3400.0, 3475.0, 3050.0, 3725.0, 3000.0, 3650.0, 4250.0, 3475.0, 3450.0, 3750.0, 3700.0, 4000.0, 3500.0, 3900.0, 3650.0, 3525.0, 3725.0, 3950.0, 3250.0, 3750.0, 4150.0, 3700.0, 3800.0, 3775.0, 3700.0, 4050.0, 3575.0, 4050.0, 3300.0, 3700.0, 3450.0, 4400.0, 3600.0, 3400.0, 2900.0, 3800.0, 3300.0, 4150.0, 3400.0, 3800.0, 3700.0, 4550.0, 3200.0, 4300.0, 3350.0, 4100.0, 3600.0, 3900.0, 3850.0, 4800.0, 2700.0, 4500.0, 3950.0, 3650.0, 3550.0, 3500.0, 3675.0, 4450.0, 3400.0, 4300.0, 3250.0, 3675.0, 3325.0, 3950.0, 3600.0, 4050.0, 3350.0, 3450.0, 3250.0, 4050.0, 3800.0, 3525.0, 3950.0, 3650.0, 3650.0, 4000.0, 3400.0, 3775.0, 4100.0, 3775.0, 3650.0, 4500.0, 5700.0, 4450.0, 5700.0, 5400.0, 4550.0, 4800.0, 5200.0, 4400.0, 5150.0, 4650.0, 5550.0, 4650.0, 5850.0, 4200.0, 5850.0, 4150.0, 6300.0, 4800.0, 5350.0, 5700.0, 5000.0, 4400.0, 5050.0, 5000.0, 5100.0, 4100.0, 5650.0, 4600.0, 5550.0, 5250.0, 4700.0, 5050.0, 6050.0, 5150.0, 5400.0, 4950.0, 5250.0, 4350.0, 5350.0, 3950.0, 5700.0, 4300.0, 4750.0, 5550.0, 4900.0, 4200.0, 5400.0, 5100.0, 5300.0, 4850.0, 5300.0, 4400.0, 5000.0, 4900.0, 5050.0, 4300.0, 5000.0, 4450.0, 5550.0, 4200.0, 5300.0, 4400.0, 5650.0, 4700.0, 5700.0, 4650.0, 5800.0, 4700.0, 5550.0, 4750.0, 5000.0, 5100.0, 5200.0, 4700.0, 5800.0, 4600.0, 6000.0, 4750.0, 5950.0, 4625.0, 5450.0, 4725.0, 5350.0, 4750.0, 5600.0, 4600.0, 5300.0, 4875.0, 5550.0, 4950.0, 5400.0, 4750.0, 5650.0, 4850.0, 5200.0, 4925.0, 4875.0, 4625.0, 5250.0, 4850.0, 5600.0, 4975.0, 5500.0, 4725.0, 5500.0, 4700.0, 5500.0, 4575.0, 5500.0, 5000.0, 5950.0, 4650.0, 5500.0, 4375.0, 5850.0, 4875.0, 6000.0, 4925.0, null, 4850.0, 5750.0, 5200.0, 5400.0], "y": [181.0, 186.0, 195.0, null, 193.0, 190.0, 181.0, 195.0, 193.0, 190.0, 186.0, 180.0, 182.0, 191.0, 198.0, 185.0, 195.0, 197.0, 184.0, 194.0, 174.0, 180.0, 189.0, 185.0, 180.0, 187.0, 183.0, 187.0, 172.0, 180.0, 178.0, 178.0, 188.0, 184.0, 195.0, 196.0, 190.0, 180.0, 181.0, 184.0, 182.0, 195.0, 186.0, 196.0, 185.0, 190.0, 182.0, 179.0, 190.0, 191.0, 186.0, 188.0, 190.0, 200.0, 187.0, 191.0, 186.0, 193.0, 181.0, 194.0, 185.0, 195.0, 185.0, 192.0, 184.0, 192.0, 195.0, 188.0, 190.0, 198.0, 190.0, 190.0, 196.0, 197.0, 190.0, 195.0, 191.0, 184.0, 187.0, 195.0, 189.0, 196.0, 187.0, 193.0, 191.0, 194.0, 190.0, 189.0, 189.0, 190.0, 202.0, 205.0, 185.0, 186.0, 187.0, 208.0, 190.0, 196.0, 178.0, 192.0, 192.0, 203.0, 183.0, 190.0, 193.0, 184.0, 199.0, 190.0, 181.0, 197.0, 198.0, 191.0, 193.0, 197.0, 191.0, 196.0, 188.0, 199.0, 189.0, 189.0, 187.0, 198.0, 176.0, 202.0, 186.0, 199.0, 191.0, 195.0, 191.0, 210.0, 190.0, 197.0, 193.0, 199.0, 187.0, 190.0, 191.0, 200.0, 185.0, 193.0, 193.0, 187.0, 188.0, 190.0, 192.0, 185.0, 190.0, 184.0, 195.0, 193.0, 187.0, 201.0, 192.0, 196.0, 193.0, 188.0, 197.0, 198.0, 178.0, 197.0, 195.0, 198.0, 193.0, 194.0, 185.0, 201.0, 190.0, 201.0, 197.0, 181.0, 190.0, 195.0, 181.0, 191.0, 187.0, 193.0, 195.0, 197.0, 200.0, 200.0, 191.0, 205.0, 187.0, 201.0, 187.0, 203.0, 195.0, 199.0, 195.0, 210.0, 192.0, 205.0, 210.0, 187.0, 196.0, 196.0, 196.0, 201.0, 190.0, 212.0, 187.0, 198.0, 199.0, 201.0, 193.0, 203.0, 187.0, 197.0, 191.0, 203.0, 202.0, 194.0, 206.0, 189.0, 195.0, 207.0, 202.0, 193.0, 210.0, 198.0, 195.0, 211.0, 230.0, 210.0, 218.0, 215.0, 210.0, 211.0, 219.0, 209.0, 215.0, 214.0, 216.0, 214.0, 213.0, 210.0, 217.0, 210.0, 221.0, 209.0, 222.0, 218.0, 215.0, 213.0, 215.0, 215.0, 215.0, 216.0, 215.0, 210.0, 220.0, 222.0, 209.0, 207.0, 230.0, 220.0, 220.0, 213.0, 219.0, 208.0, 208.0, 208.0, 225.0, 210.0, 216.0, 222.0, 217.0, 210.0, 225.0, 213.0, 215.0, 210.0, 220.0, 210.0, 225.0, 217.0, 220.0, 208.0, 220.0, 208.0, 224.0, 208.0, 221.0, 214.0, 231.0, 219.0, 230.0, 214.0, 229.0, 220.0, 223.0, 216.0, 221.0, 221.0, 217.0, 216.0, 230.0, 209.0, 220.0, 215.0, 223.0, 212.0, 221.0, 212.0, 224.0, 212.0, 228.0, 218.0, 218.0, 212.0, 230.0, 218.0, 228.0, 212.0, 224.0, 214.0, 226.0, 216.0, 222.0, 203.0, 225.0, 219.0, 228.0, 215.0, 228.0, 216.0, 215.0, 210.0, 219.0, 208.0, 209.0, 216.0, 229.0, 213.0, 230.0, 217.0, 230.0, 217.0, 222.0, 214.0, null, 215.0, 222.0, 212.0, 213.0], "transforms": [], "customdata": [["MALE", "39.1"], ["FEMALE", "39.5"], ["FEMALE", "40.3"], ["nan", "nan"], ["FEMALE", "36.7"], ["MALE", "39.3"], ["FEMALE", "38.9"], ["MALE", "39.2"], ["nan", "34.1"], ["nan", "42.0"], ["nan", "37.8"], ["nan", "37.8"], ["FEMALE", "41.1"], ["MALE", "38.6"], ["MALE", "34.6"], ["FEMALE", "36.6"], ["FEMALE", "38.7"], ["MALE", "42.5"], ["FEMALE", "34.4"], ["MALE", "46.0"], ["FEMALE", "37.8"], ["MALE", "37.7"], ["FEMALE", "35.9"], ["MALE", "38.2"], ["MALE", "38.8"], ["FEMALE", "35.3"], ["MALE", "40.6"], ["FEMALE", "40.5"], ["FEMALE", "37.9"], ["MALE", "40.5"], ["FEMALE", "39.5"], ["MALE", "37.2"], ["FEMALE", "39.5"], ["MALE", "40.9"], ["FEMALE", "36.4"], ["MALE", "39.2"], ["MALE", "38.8"], ["FEMALE", "42.2"], ["FEMALE", "37.6"], ["MALE", "39.8"], ["FEMALE", "36.5"], ["MALE", "40.8"], ["FEMALE", "36.0"], ["MALE", "44.1"], ["FEMALE", "37.0"], ["MALE", "39.6"], ["MALE", "41.1"], ["nan", "37.5"], ["FEMALE", "36.0"], ["MALE", "42.3"], ["FEMALE", "39.6"], ["MALE", "40.1"], ["FEMALE", "35.0"], ["MALE", "42.0"], ["FEMALE", "34.5"], ["MALE", "41.4"], ["FEMALE", "39.0"], ["MALE", "40.6"], ["FEMALE", "36.5"], ["MALE", "37.6"], ["FEMALE", "35.7"], ["MALE", "41.3"], ["FEMALE", "37.6"], ["MALE", "41.1"], ["FEMALE", "36.4"], ["MALE", "41.6"], ["FEMALE", "35.5"], ["MALE", "41.1"], ["FEMALE", "35.9"], ["MALE", "41.8"], ["FEMALE", "33.5"], ["MALE", "39.7"], ["FEMALE", "39.6"], ["MALE", "45.8"], ["FEMALE", "35.5"], ["MALE", "42.8"], ["FEMALE", "40.9"], ["MALE", "37.2"], ["FEMALE", "36.2"], ["MALE", "42.1"], ["FEMALE", "34.6"], ["MALE", "42.9"], ["FEMALE", "36.7"], ["MALE", "35.1"], ["FEMALE", "37.3"], ["MALE", "41.3"], ["MALE", "36.3"], ["FEMALE", "36.9"], ["MALE", "38.3"], ["FEMALE", "38.9"], ["FEMALE", "35.7"], ["MALE", "41.1"], ["FEMALE", "34.0"], ["MALE", "39.6"], ["FEMALE", "36.2"], ["MALE", "40.8"], ["FEMALE", "38.1"], ["MALE", "40.3"], ["FEMALE", "33.1"], ["MALE", "43.2"], ["FEMALE", "35.0"], ["MALE", "41.0"], ["FEMALE", "37.7"], ["MALE", "37.8"], ["FEMALE", "37.9"], ["MALE", "39.7"], ["FEMALE", "38.6"], ["MALE", "38.2"], ["FEMALE", "38.1"], ["MALE", "43.2"], ["FEMALE", "38.1"], ["MALE", "45.6"], ["FEMALE", "39.7"], ["MALE", "42.2"], ["FEMALE", "39.6"], ["MALE", "42.7"], ["FEMALE", "38.6"], ["MALE", "37.3"], ["FEMALE", "35.7"], ["MALE", "41.1"], ["FEMALE", "36.2"], ["MALE", "37.7"], ["FEMALE", "40.2"], ["MALE", "41.4"], ["FEMALE", "35.2"], ["MALE", "40.6"], ["FEMALE", "38.8"], ["MALE", "41.5"], ["FEMALE", "39.0"], ["MALE", "44.1"], ["FEMALE", "38.5"], ["MALE", "43.1"], ["FEMALE", "36.8"], ["MALE", "37.5"], ["FEMALE", "38.1"], ["MALE", "41.1"], ["FEMALE", "35.6"], ["MALE", "40.2"], ["FEMALE", "37.0"], ["MALE", "39.7"], ["FEMALE", "40.2"], ["MALE", "40.6"], ["FEMALE", "32.1"], ["MALE", "40.7"], ["FEMALE", "37.3"], ["MALE", "39.0"], ["MALE", "39.2"], ["FEMALE", "36.6"], ["FEMALE", "36.0"], ["MALE", "37.8"], ["FEMALE", "36.0"], ["MALE", "41.5"], ["FEMALE", "46.5"], ["MALE", "50.0"], ["MALE", "51.3"], ["FEMALE", "45.4"], ["MALE", "52.7"], ["FEMALE", "45.2"], ["FEMALE", "46.1"], ["MALE", "51.3"], ["FEMALE", "46.0"], ["MALE", "51.3"], ["FEMALE", "46.6"], ["MALE", "51.7"], ["FEMALE", "47.0"], ["MALE", "52.0"], ["FEMALE", "45.9"], ["MALE", "50.5"], ["MALE", "50.3"], ["FEMALE", "58.0"], ["FEMALE", "46.4"], ["MALE", "49.2"], ["FEMALE", "42.4"], ["MALE", "48.5"], ["FEMALE", "43.2"], ["MALE", "50.6"], ["FEMALE", "46.7"], ["MALE", "52.0"], ["FEMALE", "50.5"], ["MALE", "49.5"], ["FEMALE", "46.4"], ["MALE", "52.8"], ["FEMALE", "40.9"], ["MALE", "54.2"], ["FEMALE", "42.5"], ["MALE", "51.0"], ["MALE", "49.7"], ["FEMALE", "47.5"], ["FEMALE", "47.6"], ["MALE", "52.0"], ["FEMALE", "46.9"], ["MALE", "53.5"], ["MALE", "49.0"], ["FEMALE", "46.2"], ["MALE", "50.9"], ["FEMALE", "45.5"], ["FEMALE", "50.9"], ["MALE", "50.8"], ["FEMALE", "50.1"], ["MALE", "49.0"], ["MALE", "51.5"], ["FEMALE", "49.8"], ["FEMALE", "48.1"], ["MALE", "51.4"], ["FEMALE", "45.7"], ["MALE", "50.7"], ["FEMALE", "42.5"], ["MALE", "52.2"], ["FEMALE", "45.2"], ["MALE", "49.3"], ["MALE", "50.2"], ["FEMALE", "45.6"], [".", "51.9"], ["FEMALE", "46.8"], ["FEMALE", "45.7"], ["MALE", "55.8"], ["FEMALE", "43.5"], ["MALE", "49.6"], ["MALE", "50.8"], ["FEMALE", "50.2"], ["MALE", "45.7"], ["FEMALE", "46.1"], ["MALE", "50.0"], ["FEMALE", "48.7"], ["MALE", "50.0"], ["MALE", "47.6"], ["FEMALE", "46.5"], ["FEMALE", "45.4"], ["MALE", "46.7"], ["FEMALE", "43.3"], ["MALE", "46.8"], ["FEMALE", "40.9"], ["MALE", "49.0"], ["FEMALE", "45.5"], ["MALE", "48.4"], ["FEMALE", "45.8"], ["MALE", "49.3"], ["FEMALE", "42.0"], ["MALE", "49.2"], ["FEMALE", "46.2"], ["MALE", "48.7"], ["MALE", "50.2"], ["FEMALE", "45.1"], ["FEMALE", "46.5"], ["MALE", "46.3"], ["FEMALE", "42.9"], ["MALE", "46.1"], ["nan", "44.5"], ["MALE", "47.8"], ["FEMALE", "48.2"], ["MALE", "50.0"], ["MALE", "47.3"], ["FEMALE", "42.8"], ["FEMALE", "45.1"], ["MALE", "59.6"], ["FEMALE", "49.1"], ["MALE", "48.4"], ["FEMALE", "42.6"], ["MALE", "44.4"], ["FEMALE", "44.0"], ["MALE", "48.7"], ["FEMALE", "42.7"], ["MALE", "49.6"], ["FEMALE", "45.3"], ["MALE", "49.6"], ["MALE", "50.5"], ["FEMALE", "43.6"], ["FEMALE", "45.5"], ["MALE", "50.5"], ["FEMALE", "44.9"], ["MALE", "45.2"], ["FEMALE", "46.6"], ["MALE", "48.5"], ["FEMALE", "45.1"], ["MALE", "50.1"], ["FEMALE", "46.5"], ["MALE", "45.0"], ["FEMALE", "43.8"], ["MALE", "45.5"], ["FEMALE", "43.2"], ["MALE", "50.4"], ["FEMALE", "45.3"], ["MALE", "46.2"], ["FEMALE", "45.7"], ["MALE", "54.3"], ["FEMALE", "45.8"], ["MALE", "49.8"], ["nan", "46.2"], ["MALE", "49.5"], ["FEMALE", "43.5"], ["MALE", "50.7"], ["FEMALE", "47.7"], ["MALE", "46.4"], ["MALE", "48.2"], ["FEMALE", "46.5"], ["FEMALE", "46.4"], ["MALE", "48.6"], ["FEMALE", "47.5"], ["MALE", "51.1"], ["FEMALE", "45.2"], ["MALE", "45.2"], ["FEMALE", "49.1"], ["MALE", "52.5"], ["FEMALE", "47.4"], ["MALE", "50.0"], ["FEMALE", "44.9"], ["MALE", "50.8"], ["FEMALE", "43.4"], ["MALE", "51.3"], ["FEMALE", "47.5"], ["MALE", "52.1"], ["FEMALE", "47.5"], ["MALE", "52.2"], ["FEMALE", "45.5"], ["MALE", "49.5"], ["FEMALE", "44.5"], ["MALE", "50.8"], ["MALE", "49.4"], ["FEMALE", "46.9"], ["FEMALE", "48.4"], ["MALE", "51.1"], ["FEMALE", "48.5"], ["MALE", "55.9"], ["FEMALE", "47.2"], ["MALE", "49.1"], ["nan", "47.3"], ["MALE", "46.8"], ["FEMALE", "41.7"], ["MALE", "53.4"], ["FEMALE", "43.3"], ["MALE", "48.1"], ["FEMALE", "50.5"], ["MALE", "49.8"], ["FEMALE", "43.5"], ["MALE", "51.5"], ["FEMALE", "46.2"], ["MALE", "55.1"], [".", "44.5"], ["MALE", "48.8"], ["FEMALE", "47.2"], ["nan", "nan"], ["FEMALE", "46.8"], ["MALE", "50.4"], ["FEMALE", "45.2"], ["MALE", "49.9"]], "hovertemplate": "\npenguin_size:sex: %{customdata[0]} <br> penguin_size:culmen_length_mm: %{customdata[1]}\n<extra></extra>"}], "layout": {"hovermode": "closest", "xaxis": {"title": "penguin_size:body_mass_g", "automargin": true}, "yaxis": {"title": "penguin_size:flipper_length_mm", "automargin": true}}};
+                Plotly.newPlot(plot_hover_example,graphs || {});
+            </script>
+        </div>
+        </div>
+        </div>
+    <div class="row">
+        <div class="col-8">
+            <div class="row">
+                <div class="w-100" id="editor_holder_graphic"></div>
+            </div>
+            <div class="row ml-1 mb-4">
+                <h2>Type of Plot:</h2>
+                <select class="selectpicker mt-1 ml-3" data-dropdown-align-right='auto' id = "plot_type">
+
+                        <option value=scatter selected>Scatter or Line Plot</option>
+
+                        <option value=bar >Bar Plot</option>
+
+                        <option value=heatmap >Heatmap</option>
+
+                        <option value=contour >Contour Plot</option>
+
+                        <option value=box >Box Plot</option>
+
+                        <option value=violin >Violin Plot</option>
+
+                        <option value=histogram >Histogram</option>
+
+                        <option value=scatter3d >3D Scatter/Line Plot</option>
+
+                        <option value=mesh3d >3D Mesh Plot</option>
+
+                </select>
+            </div>
+            <div class="row">
+                <div class="w-100" id="editor_holder_plotly"></div>
+            </div>
+            <div class="row">
+                <div class="w-100" id="editor_holder_visualization"></div>
+            </div>
+            <div class="row">
+                <div class="w-100" id="editor_holder_selector"></div>
+            </div>
+        </div>
+    </div>
+    </div>
+<script>
+
+    let current_state = {"visualization": {"hover_data": {"column": ["penguin_size:sex", "penguin_size:culmen_length_mm"]}}, "selector": {}, "plotly": {"data": [{"type": "scatter", "mode": "markers", "x": "penguin_size:body_mass_g", "y": "penguin_size:flipper_length_mm"}]}, "graphic_meta_info": {"plot_manager": "plotly", "data_sources": {"main_data_source": {"data_source_type": "penguin_size"}}, "title": "Hover options", "brief_desc": ""}};
+    const dict_of_schemas = get_schema();
+    const dict_of_plotly_schemas = dict_of_schemas['plotly_schema'];
+    let editors= new Object();
+    let current_plot_type = "scatter";
+    let saved_plot_type = current_plot_type;
+    editors['graphic_meta_info'] = new_editor('graphic', false, dict_of_schemas['graphic_schema']);
+    editors['plotly'] = new_editor('plotly', true, dict_of_plotly_schemas[current_plot_type]);
+    editors['visualization'] = new_editor('visualization', false, dict_of_schemas["visualization_schema"]);
+    editors['selector'] = new_editor('selector', false, dict_of_schemas["selector_schema"]);
+
+
+    for(let editor_name in editors){
+        editors[editor_name].setValue(current_state[editor_name])
+    }
+    function new_editor(type,display_required_only,schema) {
+        return new JSONEditor(document.getElementById('editor_holder_'.concat(type)),
+        options={theme: 'bootstrap4',display_required_only: display_required_only, disable_edit_json:true,
+            disable_array_delete_last_row:true, iconlib: 'fontawesome4', schema: schema });
+    }
+</script>
+
+</section>
+
+</body>
+<footer>
+
+</footer>
+</html>

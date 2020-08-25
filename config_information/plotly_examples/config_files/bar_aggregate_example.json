@@ -1,0 +1,25 @@
+{
+    "plot_manager": "plotly",
+    "data_sources": {"main_data_source": {"data_source_type":"penguin_size"}},
+    "title": "Example Bar",
+    "brief_desc": "A bar plot using the aggregate functionality",
+    "plot_specific_info": {
+        "data": [
+            {
+                "type": "bar",
+                "y": "penguin_size:body_mass_g",
+                "x": "penguin_size:island"
+            }
+        ]
+    },
+    "visualization_options": {
+        "aggregate": {
+            "column": [
+                "penguin_size:island"
+            ],
+            "aggregations": {
+                "y": "avg"
+            }
+        }
+    }
+}

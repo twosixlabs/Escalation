@@ -1,0 +1,9 @@
+<!--# Copyright [2020] [Two Six Labs, LLC]-->
+<!--# Licensed under the Apache License, Version 2.0-->
+
+<div class="chart" id={{ "plot_{}".format(plot_id) }}>
+    <script>
+        var graphs = {{plot['plot_info'] | safe}};
+        Plotly.newPlot({{ "plot_{}".format(plot_id) }},graphs || {});
+    </script>
+</div>

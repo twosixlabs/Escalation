@@ -1,0 +1,28 @@
+{
+    "title": "Escalation Test",
+    "brief_desc": "This is a test/demo for the Escalation OS",
+    "data_backend": "local_csv",
+    "data_file_directory": "test_app_deploy_data/data/",
+    "data_sources": [
+        "penguin_size",
+        "mean_penguin_stat",
+        "penguin_size_small"
+    ],
+    "available_pages": [
+        {
+            "webpage_label": "PENGUINS!",
+            "url_endpoint": "penguin",
+            "graphic_config_files": [
+                "big_penguins.json",
+                "hist_penguins.json"
+            ]
+        },
+        {
+            "webpage_label": "Radio Penguins",
+            "url_endpoint": "radio_penguins",
+            "graphic_config_files": [
+                "radio_penguins.json"
+            ]
+        }
+    ]
+}

@@ -1,0 +1,56 @@
+<!--# Copyright [2020] [Two Six Labs, LLC]-->
+<!--# Licensed under the Apache License, Version 2.0-->
+
+{% extends 'base.html' %}
+
+{% block content %}
+{% include 'navbar.html' %}
+
+<div class="jumbotron">
+    <h1 class="display-4">{{ title }}</h1>
+    <p class="lead">{{ brief_desc }}</p>
+    <hr class="my-4">
+    <p class="lead">
+        {% for dashboard_page in dashboard_pages %}
+        <a class="btn btn-primary" href={{ url_for('.graphic_page', page_name=dashboard_page['link']) }} role="button">{{
+        dashboard_page['webpage_label'] }}</a>
+        {% endfor %}
+    </p>
+</div>
+
+<div class="container-fluid pl-5 pr-5">
+    {% for plot in plots %}
+    {% set plot_id = plot['plot_id'] %}
+    <form method="post" id={{
+    "form_" ~ plot_id  }}>
+    <input type="hidden" name="graphic_name" value={{ plot_id }}>
+    <input type="hidden" name="process" value="true">
+    </form>
+    <div class="row" id={{
+    plot_id }}>
+    <div class="col-10">
+            <h1> {{ plot['title'] }} </h1>
+            <p>{{ plot['brief_desc'] }}</p>
+    </div>
+    <div class="col-2">
+    </div>
+    </div>
+    <div class="row">
+        <div class="col-10">
+            {% include plot['graph_html_file']%}
+        </div>
+        <div class="col-2 text-center">
+            {% for selector in plot['select_info'] %}
+            {% set selector_index = loop.index0 %}
+            {% include selector['select_html_file'] ignore missing %}
+            {% endfor %}
+            <button type="button" class="btn btn-primary btn-block m-2" onclick=post_to_server('{{ plot_id }}')>Update
+            </button>
+            <button type="button" class="btn btn-secondary btn-block m-2" onclick=reset_form('{{ plot_id }}')>Reset
+            </button>
+        </div>
+    </div>
+
+    {% endfor %}
+</div>
+{% endblock %}

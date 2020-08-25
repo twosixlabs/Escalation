@@ -1,0 +1,4 @@
+-r escalation/requirements-app.txt
+black
+pre-commit
+pytest

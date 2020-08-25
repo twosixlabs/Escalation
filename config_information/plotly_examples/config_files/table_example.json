@@ -1,0 +1,21 @@
+{
+    "plot_manager": "bootstrap-table",
+    "data_sources": {
+    "main_data_source": {"data_source_type": "penguin_size"}
+    },
+    "title": "Example Table",
+    "brief_desc": "A table",
+    "plot_specific_info": {
+        "data": [
+            {
+                "header": "Body Mass",
+                "column": "penguin_size:body_mass_g"
+            },
+            {
+                "header": "Flipper Size",
+                "column": "penguin_size:flipper_length_mm"
+            }
+        ]
+    }
+}
+

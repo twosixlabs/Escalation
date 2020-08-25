@@ -1,0 +1,14 @@
+{
+    "plot_manager": "plotly",
+    "data_sources": {"main_data_source": {"data_source_type":"penguin_size"}},
+    "title": "Example Histogram",
+    "brief_desc": "A histogram",
+    "plot_specific_info": {
+        "data": [
+            {
+                "type": "histogram",
+                "x": "penguin_size:body_mass_g"
+            }
+        ]
+    }
+}
