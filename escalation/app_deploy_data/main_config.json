@@ -1,5 +1,12 @@
 {
-    "title": "",
-    "brief_desc": "",
-    "data_backend": "psql"
+    "title": "Foo",
+    "brief_desc": "Bar",
+    "data_backend": "psql",
+    "available_pages": [
+        {
+            "webpage_label": "Test",
+            "url_endpoint": "test",
+            "graphic_config_files": []
+        }
+    ]
 }
