@@ -6,22 +6,27 @@
 {% block header %}
 <script>
     function any_identifiers_active(data_source) {
-            const rbs = document.querySelectorAll(`input[form=form_${data_source}]`);
-            let flag=0;
-            for (const rb of rbs) {
-                if (rb.checked && 'active'===rb.value) {
-                    flag=1
-                }
-            }
-            if (flag){
-                post_to_server(data_source)
-            }
-            else{
-               alert('At least one identifier needs to be active');
-            }
+        let web_form=$('#form_'.concat(data_source));
+        const table_data=$(`#table_${data_source}`).bootstrapTable('getData')
+        let flag=0;
+        function active_table_data_to_form(dict) {
+            web_form[0][dict['upload_id']].value=(dict['active'] ? 'active' : 'inactive');
+          if (dict['active']){
+              flag=1
+          }
+        }
+        table_data.forEach(active_table_data_to_form)
+        if (flag){
+            web_form.attr('action','#'.concat(data_source));
+            web_form.submit()
+        }
+        else{
+           alert('At least one identifier needs to be active');
+        }
 
         };
-    </script>
+
+</script>
 {% endblock %}
 
 
@@ -30,58 +35,70 @@
 <div class="jumbotron">
     <h1 class="display-4">Administration Options</h1>
     <hr class="my-4">
-    <p class="lead">Change what files are shown,...</p>
+    <p class="lead">Select which data uploads are included in the visualizations produced in the Escalation
+        dashboard</p>
 </div>
 
 <div class="container-fluid pl-5 pr-5">
-    {% for data_source, identifiers in data_source_dict.items() %}
-        <form method="post" id={{
-    "form_" ~ data_source }}>
-    <input type="hidden" name="data_sources" value={{ data_source }}>
-    </form>
-    <div class="row" id={{ data_source }}>
-        <h1>{{ data_source }} </h1>
-    </div>
-    <div class="row">
-    <div class="col-10">
-        <table class="table table-striped">
-          <thead>
-            <tr>
-              <th scope="col">Identifier</th>
-              <th scope="col" class="text-right">Data Set Active</th>
-            </tr>
-          </thead>
-      <tbody>
-      {% for identifier in identifiers %}
-        <tr>
-          <th scope="row">{{ identifier }}</th>
-          <td class="text-right">
-              {%  set identifier_active = identifier in data_source_active_dict[data_source] %}
-              <div class="form-check form-check-inline">
-                <label class="form-check-label" for={{ data_source~"_"~identifier~"_active" }}><i class="fa fa-check" aria-hidden="true"></i></label>
-                <input class="form-check-input" type="radio" name={{ identifier }} id={{ data_source~"_"~identifier~"_active" }} value='active' form={{ "form_" ~ data_source }} {% if identifier_active %} checked>{% else %} > {% endif %}
+    {% for data_source, identifiers_metadata_dict_list in data_source_dict.items() %}
+        <form method="post" id={{"form_" ~ data_source }}>
+            <input type="hidden" name="data_sources" value={{ data_source }}>
+            {% for id in identifiers_metadata_dict_list['ids'] %}
+                <input type="hidden" name="{{ id }}" value="true">
+            {% endfor %}
+        </form>
 
+        <div class="row" id={{ data_source }}>
+            <h1>{{ data_source }}</h1>
+        </div>
+
+        <div class="row">
+            <div class="col-10">
+                <table id="{{"table_"~data_source }}"
+                       data-toggle="table"
+                       data-click-to-select="true"
+                       data-pagination="true"
+                       data-search="true"
+                       data-maintain-meta-data="true"
+                       data-page-list="[10, 25, 50, 100, 200, All]"
+                       data-checkbox-header="false">
+                    <thead>
+                    <tr>
+                        <th scope="col" data-field="upload_id" data-sortable="true">Identifier</th>
+                        <th scope="col" data-field="username" data-sortable="true">Username</th>
+                        <th scope="col" data-field="upload_time" data-sortable="true">Upload Time</th>
+                        <th scope="col" data-field="notes" data-sortable="true">Notes</th>
+                        <th scope="col" data-field="active" data-checkbox="true" data-show-select-title="true">Data Set Active</th>
+                    </tr>
+                    </thead>
+                </table>
             </div>
-            <div class="form-check form-check-inline">
 
-                <label class="form-check-label" for={{ data_source~"_"~identifier~"_inactive" }}><i class="fa fa-times" aria-hidden="true"></i></label>
-                <input class="form-check-input" type="radio" name={{ identifier }} id={{ data_source~"_"~identifier~"_inactive" }} value='inactive' form={{ "form_" ~ data_source }} {% if identifier_active %} >{% else %} checked> {% endif %}
+            <div class="col-2">
+                <div class="sticky-top">
+                    <button type="button" id="{{"button_check_"~data_source }}" class="btn btn-secondary btn-block m-2">Check All Shown</button>
+                    <button type="button" id="{{"button_uncheck_"~data_source }}" class="btn btn-secondary btn-block m-2">Uncheck All Shown</button>
+                    <script>
+                      const $table_{{ data_source }} = $('{{"#table_"~data_source }}')
+                      const $button_check_{{ data_source }} = $('{{"#button_check_"~data_source }}')
+                      const $button_uncheck_{{ data_source }} = $('{{"#button_uncheck_"~data_source }}')
+                      $table_{{ data_source }}.bootstrapTable({data:  {{ identifiers_metadata_dict_list['data']|safe }} ,sortReset: true});
+                      $(function() {
+                        $button_check_{{ data_source }}.click(function () {
+                          $table_{{ data_source }}.bootstrapTable('checkAll')
+                        })
+                        $button_uncheck_{{ data_source }}.click(function () {
+                          $table_{{ data_source }}.bootstrapTable('uncheckAll')
+                        })
+                      })
+                    </script>
+                    <button type="button" class="btn btn-primary btn-block m-2" onclick=any_identifiers_active("{{ data_source }}")>Update</button>
+                </div>
             </div>
-          </td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-    </div>
-    <div class="col-2 align-self-center">
-        <button type="button" class="btn btn-primary btn-lg" onclick=any_identifiers_active('{{ data_source }}')>Update
-            </button>
-    </div>
-    </div>
+        </div>
 
-{% endfor %}
+    {% endfor %}
 </div>
-
 {% endblock %}
 
 

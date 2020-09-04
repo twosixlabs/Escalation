@@ -1,0 +1,71 @@
+<!--# Copyright [2020] [Two Six Labs, LLC]-->
+<!--# Licensed under the Apache License, Version 2.0-->
+
+{% extends 'base.html' %}
+
+
+{% block header %}
+{% include 'navbar.html' %}
+{% endblock %}
+
+
+{% block content %}
+<div class="jumbotron">
+    <h1 class="display-4">Upload CSV</h1>
+    <hr class="my-4">
+    <p class="lead">Upload data csvs to existing data tables. To add new data tables, you'll have to run the app in development mode using the setup wizard.</p>
+</div>
+<div class="container-fluid pl-5 pr-5">
+{% if success_text %}
+<div class="row mb">
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+  <strong>Success!</strong> File was uploaded.
+  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+</div>
+{% endif %}
+{% if config.ENV == "development" %}
+<div class="row mb-3">
+    <a class="btn btn-outline-secondary" href={{ url_for('wizard.data_upload_page_view') }} role="button">Create/Replace a Table</a> <button type="button" class="btn btn-secondary">Append to a Existing Table</button>
+ </div>
+{% endif %}
+<div class="row">
+<form id="upload_form" method="post" enctype="multipart/form-data">
+
+    <div class="form-group">
+        <label for="data_source">Data File Type</label>
+        <small class="form-text text-muted">Select existing data type. To add new data types, run the wizard setup app.</small>
+            <select class="selectpicker form-control"  id="data_source_list" name="data_source">
+                {% for existing_data_source in data_sources %}
+                    <option value={{ existing_data_source }}>{{ existing_data_source }}</option>
+                    {% endfor %}
+            </select>
+    </div>
+
+    <div class="form-group">
+        <label id="csvfile" for="csvfile">CSV file</label>
+
+        <input type="file" class="form-control-file"  name="csvfile" accept="csv" required>
+
+    </div>
+
+    <div class="form-group">
+        <label id="username" for="username">Username</label>
+        <input class="form-control" type="text" name="username" placeholder="Uploader's name for data table history tracking" required>
+    </div>
+
+    <div class="form-group">
+        <label id="notes" for="notes">Notes</label>
+        <textarea placeholder="Enter any notes describing your submission to identify it later" class="form-control"  name="notes" rows="5" cols="15"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary align-middle">Submit</button>
+
+</form>
+</div>
+</div>
+{% endblock %}
+
+

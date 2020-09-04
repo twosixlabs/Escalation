@@ -4,15 +4,18 @@
 {% extends 'base.html' %}
 
 {% block header %}
+
 <script src="https://cdn.jsdelivr.net/npm/@json-editor/json-editor@latest/dist/jsoneditor.min.js"></script>
+    <link rel="stylesheet" href="/static/lighter_buttons.css">
 {% endblock %}
 
 {% block content %}
+{% include 'navbar.html' %}
 
 <div class="jumbotron">
-    <h1 class="display-4">Graphic Configuration Editor</h1>
-    <hr class="my-4">
-    <p class="lead">Create/Edit a graphic config file</p>
+    <h1 class="display-4"> Create or edit a dashboard graphic</h1>
+    <!--<hr class="my-4">-->
+    <!--<p class="lead">Create or Edit dashboard graphic</p>-->
 </div>
     <div class="container-fluid pl-5 pr-5">
     <div class="row">
@@ -20,14 +23,10 @@
             <div class="row">
                 <div class="w-100" id="editor_holder_graphic"></div>
             </div>
-            <div class="row ml-1 mb-4">
-                <h2>Type of Plot:</h2>
-                <select class="selectpicker mt-1 ml-3" data-dropdown-align-right='auto' id = "plot_type" data-style = "btn-info">
-                    {% for value, selector_text in schema_selector_dict.items() %}
-                        <option value={{ value }} {% if current_schema == value %} selected {% endif %}>{{ selector_text }}</option>
-                    {% endfor %}
-                </select>
+            <div class="row">
+                <div class="w-100" id="editor_holder_plot_selector"></div>
             </div>
+
             <div class="row">
                 <div class="w-100" id="editor_holder_plotly"></div>
             </div>
@@ -36,6 +35,9 @@
             </div>
             <div class="row">
                 <div class="w-100" id="editor_holder_selector"></div>
+            </div>
+            <div class="row">
+                <hr>
             </div>
         </div>
         <div class="col-2 text-center">
@@ -47,38 +49,52 @@
     // Enables all the tooltips
     $(function () {$('[data-toggle="tooltip"]').tooltip({trigger : 'hover'})})
 
-
+    let graphic_status = '{{ graphic_status }}';
     let current_state = {{ current_config | safe }};
     let dict_of_schemas={{ schema | safe }};
     let dict_of_plotly_schemas = dict_of_schemas['plotly_schema'];
     let editors= new Object();
     let current_plot_type = "{{ current_schema }}";
     let saved_plot_type = current_plot_type;
-    make_json_editor();
+    let selector_editor=new_editor('plot_selector',true,{{ schema_selector_dict | safe }})
 
+    make_json_editor();
     {% if graphic_status in ['old', 'copy'] %}
         set_json_editor_value(current_state);
+        selector_editor.setValue({"plot_type":current_plot_type});
     {% endif %}
     let current_data_sources = get_main_data_sources(editors['graphic_meta_info'].getEditor('root.data_sources').getValue());
     add_watcher_to_data_sources();
     function new_editor(type,display_required_only,schema) {
         return new JSONEditor(document.getElementById('editor_holder_'.concat(type)),
             options={theme: 'bootstrap4',display_required_only: display_required_only, disable_edit_json:true,
-                disable_array_delete_last_row:true, iconlib: 'fontawesome4', schema: schema });
+                disable_array_delete_last_row:true, iconlib: 'fontawesome5', show_errors:'always' ,schema: schema });
     }
     function save_json_editor_to_file(redirect){
-        const url = "{{ url_for('.update_graphic_json_config_with_ui_changes') }}";
+        const errors=get_json_editor_errors();
+        if (errors.length){
+            let success_text = document.querySelector('#feedback_message');
+            success_text.innerHTML = "Not a Valid Schema"
+            // Message disappears after 5 secs
+            setTimeout(function() {
+              success_text.innerHTML="";
+            }, 5000);
+        }
+        else{
+            const url = "{{ url_for('.update_graphic_json_config_with_ui_changes') }}";
 
-        let webpage = '';
-        if (redirect) {webpage = "{{ url_for('.file_tree') }}"}
-        current_state=get_json_editor_value();
-        saved_plot_type = current_plot_type;
-        // The form contains nested dictionaries so it is easier to send a json than a form
-        let data = JSON.stringify({"config_dict" : current_state,
-            "page_id":{{ page_id }},
-            "graphic_path": '{{ graphic_path }}',
-            "graphic_status":'{{ graphic_status }}'});
-        send_json_in_post_request(url, data, webpage);// The form contains nested dictionaries so it is easier to send a json than a form
+            let webpage = '';
+            if (redirect) {webpage = "{{ url_for('.file_tree') }}"}
+            current_state=get_json_editor_value();
+            saved_plot_type = current_plot_type;
+            // The form contains nested dictionaries so it is easier to send a json than a form
+            let data = JSON.stringify({"config_dict" : current_state,
+                "page_id":{{ page_id }},
+                "graphic_path": '{{ graphic_path }}',
+                "graphic_status":graphic_status});
+            send_json_in_post_request(url, data, webpage);// The form contains nested dictionaries so it is easier to send a json than a form
+        }
+
     }
     function reset_json_editor(){
         for(let editor_name in editors){
@@ -103,12 +119,18 @@
         }
         return editor_values
     }
+    function get_json_editor_errors(){
+        let errors= [];
+        for(let editor_name in editors){
+            errors=errors.concat(editors[editor_name].validate());
+        }
+        return errors
+    }
+
     function reload_last_save(){
         if (current_plot_type != saved_plot_type){
             current_plot_type=saved_plot_type;
-            let element=document.getElementById('plot_type');
-            element.value=current_plot_type;
-            element.dispatchEvent(new Event('change'));
+            selector_editor.setValue({"plot_type":current_plot_type});
             editors['plotly'].destroy();
             editors['plotly'] = new_editor('plotly',true, dict_of_plotly_schemas[current_plot_type])
         }
@@ -119,9 +141,9 @@
             editors[editor_name].setValue(values_to_set[editor_name]);
         }
     }
-    $("select").on("changed.bs.select",
-          function(e, clickedIndex, newValue, oldValue) {
-        current_plot_type=this.value;
+
+    selector_editor.watch('root.plot_type', () => {
+        current_plot_type = selector_editor.getEditor('root.plot_type').getValue();
         editors['plotly'].destroy();
         editors['plotly'] = new_editor('plotly',true, dict_of_plotly_schemas[current_plot_type]);
 

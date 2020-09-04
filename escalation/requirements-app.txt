@@ -11,7 +11,6 @@ markupsafe
 numpy
 pandas
 pathvalidate
-pg8000
 psycopg2-binary
 plotly
 pyyaml
@@ -21,5 +20,5 @@ six
 sqlacodegen
 sqlalchemy
 tableschema
-werkzeug
+werkzeug[watchdog]
 wheel

@@ -51,6 +51,7 @@ function send_json_in_post_request(url, data, webpage){
         } else {
             success_text.innerHTML = "Failed"
         }
+        // Message disappears after 5 secs
         setTimeout(function() {
               success_text.innerHTML="";
             }, 5000);

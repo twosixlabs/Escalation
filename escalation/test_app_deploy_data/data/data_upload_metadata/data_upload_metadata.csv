@@ -1,0 +1,3 @@
+upload_id,table_name,upload_time,active,username,notes
+penguin_size_2.csv,penguin_size,2020-09-01 12:05:02,True,Nick,My second penguin data!
+mean_penguin_stat.csv,mean_penguin_stat,2020-09-01 12:01:03,True,Nick,Information about mean penguin stats

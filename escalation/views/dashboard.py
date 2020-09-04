@@ -57,7 +57,7 @@ def graphic_page(page_name):
 def create_jumbotron_info():
     config_dict = current_app.config.get(APP_CONFIG_JSON)
     jumbotron_info = {
-        SITE_TITLE: config_dict[SITE_TITLE],
-        SITE_DESC: config_dict[SITE_DESC],
+        SITE_TITLE: config_dict.get(SITE_TITLE, ""),
+        SITE_DESC: config_dict.get(SITE_DESC, ""),
     }
     return jumbotron_info

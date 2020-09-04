@@ -21,33 +21,33 @@ Yes. Escalation has a few advantages:
 - Open-source code
 - Integration with data versioning and analysis pipelines (In development)
 
+## Limitations of Escalation
 
-## What are the limitations of Escalation?
-As of the current version:
-* Plots only a single line or scatter plot.
-* Need to be connected to the internet
-* Use a SQL database or local csv files (assuming csv in local handler)
-* Local handler currently gets most recent data set
+- Currently uses either a SQL database or CSV files to store data. Escalation provides functionality to create a SQL database from CSV files
+
 
 # Setup
 
 ## What do you need for the app to work?
 
-- [Configuration files](#Building-Configuration-files)
+Note, because of Docker issues with Windows, there may be substantial hiccups running on that operating system.
+The instructions below have been tested on Mac and Linux.
+
+- [Configure the app](#2.-Configuring-the-app)
     - Escalation uses configuration files (json) to build the dashboard organizational structure, link the data in visualizations, and construct the visualizations themselves.
     - These configuration files can be built by hand, using the Configuration Wizard, or any combination of the two
-- [Data](#Loading-your-data) 
+- [Data](#2.2-Load-your-data) 
     - When setting up Escalation, you choose to use either a CSV or SQL backend.
     - Depending on the backend, you'll either link the app to a database (new or existing) or a file system path containing your data files. 
      A file backend may be easier for those unfamiliar with SQL, but SQL is more performant, and storing data in a database offers advantages beyond the database's use in Escalation
     - Escalation includes tooling to ingest CSV files into SQL, automatically building the necessary SQL data tables and the code necessary to integrate them with Escalation.
     - ToDo: Data Migration helpers- what happens when the format of your data changes over time?
-- [Python environment to run the app](#Running-the-app)
+- [Python environment to run the app](#3.-Running-the-configured-app)
     - You need a Python environment set up to run the web app. See instructions for setting up an environment, using Docker to handle the environment for you.
 
 Each of these components are discussed further below.
 
-## 1. Stand up empty instances of the web app and database using Docker
+## 1. Set up your local environment to run the web app and database using Docker
 
 From the root level of the code repository, run: 
 
@@ -60,69 +60,63 @@ Here are [instructions](https://docs.docker.com/get-started/) on getting started
 We use the Docker containers to run our configuration wizard, as well as the scripts to ingest csv data into a SQL database.
 Once we set up a configuration and your data, we'll also use these containers to run the web app.
 
-## 2. Load your data
+## 2. Configuring the app
 
-### SQL database backend
-    
-We provide a script to parse csv data files, determine the relevant sql schema, and create tables in the SQL database from your file. 
-The script uses the infrastructure of the Docker containers you built, so there is no need to install anything else.
-
-Run the script from the top level directory of the repo
-
-    ./escalation/csv_to_sql.sh {name_of_sql_table} {ABSOLUTE path_to_csv_file} {replace/append/fail}
-    
-example usage: 
-
-    ./escalation/csv_to_sql.sh experimental_stability_score /Users/nick.leiby/repos/versioned-datasets/data/protein-design/experimental_stability_scores/100K_winter19.v1.experimental_stability_scores.csv replace
-
-This creates sql tables that can be used by the graphics and tables on your Escalation dashboard.
-
-Run this script for each file you'd like to use for your visualizations and include in the database. Note, it may take a little while to run.
-
-The flag replace, append, or fail is instructions for what to do if a sql table of that name already exists,
- as per the [pandas](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_sql.html) method used for ingestion.
-
-If you'd like to add more than one csv to the same table, you have two options: combine them before running the script, or wait until the Escalation web app is running, and submit the additional CSVs as new data to the app (explained below, Todo: Here)
-Todo: If you have an existing SQL database, how do you copy it into Escalation?
-Todo: On the feature roadmap- add csvs using the web interface rather than a shell script
-
-### CSV data file system backend
-
-How to set up a [local file system backed](config_information/local_example/local_data_storage_config_info.md) Escalation app.  
-    
-## 3. Building Configuration files
-
-### Use the Configuration Wizard
+### 2.1 Run the Configuration Wizard
 
 Run the configuration wizard app from the root directory of this repo:
     
-    ./escalation/wizard_ui/wizard_launcher.sh
+    ./escalation/scripts/wizard_launcher.sh
     
-This launches the Configurer UI Wizard in a Docker container. Navigate in your the web app in your browser at: [http://localhost:8001](http://localhost:8001) or [http://127.0.0.1:8001](http://127.0.0.1:8001)
-   
-To see how your config looks in Escalation, launch the web app in debug mode: 
-
-    ./escalation/wizard_ui/web_app_debug_launcher.sh
-
-Navigate to the Escalation app in your browser at: [http://localhost:8000](http://localhost:8000) or [http://127.0.0.1:8000](http://127.0.0.1:8000). 
+This launches the UI Configuration Wizard in a Docker container. Navigate in your the web app in your browser at: 
+[http://localhost:8000/wizard](http://localhost:8000/wizard) or [http://127.0.0.1:8000/wizard](http://127.0.0.1:8000/wizard)
 This app runs in debug mode, and should detect the changes you make as you edit the configuration. 
 Refresh your browser to update the contents to match your saved configuration.
      
 Some notes on [creating your first config files with the UI wizard](config_information/wizard_guide/creating_first_graphic_with_wizard.md).  
 
-
-### Build a config from scratch (advanced)
+#### Build a config from scratch (advanced, optional)
 Run `python build_app_config_json_template.py` to build a base config file. 
 Everything blank or in `<>` should be changed.
 
-### Debugging config files manually (advanced)
+#### Debugging config files manually (advanced, optional)
 
 How to set up [local file system and config](config_information/local_example/local_data_storage_config_info.md) for the app.  
 An example of a [main config file](config_information/main_config_example/main_config_example.md).  
 Examples of [different plots and graphic config files](config_information/plotly_examples/plotly_config_info.md).  
 Examples of [different selectors](config_information/selector_examples/selector_config_info.md). 
 
-## Running the app
+### 2.2 Load your data
+
+#### SQL database backend (recommended)
+    
+Escalation provides functionality to parse csv data files, determine the relevant sql schema,
+ create tables in the SQL database from your file, and create the necessary `models.py` file for the app to interact with the database. 
+This creates sql tables that can be used by the graphics and tables on your Escalation dashboard.
+
+In the configuration wizard in your browser, navigate to [http://localhost:8000/upload](http://localhost:8000/upload)
+
+Use this web form to upload each file you'd like to use for your visualizations and include in the database. 
+Note, it may take a little while to run.
+
+If you'd like to add more than one csv to the same table, you have two options: 
+combine them before uploading, or submit the additional CSVs using the  "Append to existing table" option.
+
+Todo: If you have an existing SQL database, how do you copy it into Escalation?
+ We require each table to have an `upload_id` column, and a key that is unique within an `upload_id` value
+ (i.e, the pair `(upload_id, row_index)` is a unique key.)
+ 
+Todo: Add csvs programatically using a script
+
+#### CSV data file system backend
+
+Instead of using a SQL database to store the data, this uses CSV files stored in a file structure on disk.
+This moves responsibility for file management to the user, and may have performance disadvantages for large files or many files.
+We recommend using the SQL backend, however the file system backend is provided as an alternative. 
+How to set up a [local file system backed](config_information/local_example/local_data_storage_config_info.md) Escalation app.  
+    
+
+## 3. Running the configured app
 
 We recommend running the Escalation web app using the docker container:
 
@@ -132,15 +126,44 @@ Re-run the docker compose build command to re-launch the containers with the app
     
 To use the app, navigate in your browser to: [http://localhost:8000](http://localhost:8000) or [http://127.0.0.1:8000](http://127.0.0.1:8000)
 
-## connecting directly to the SQL database 
+To shut down the app and stop the containers:
+
+    docker-compose down  
+    
+
+## Interacting with the SQL database
+
+The app creates a SQL database running in a Docker container which stores uploaded data.
+In addition to using the Escalation web app functionality, you can interact with this data as you would any other SQL database, writing queries or sql subroutines.
+  
+To connect directly to the SQL database, this command  
 
     docker exec -it escos_db psql -h localhost -p 5432 -U escalation -d escalation
 
-## Resetting the SQL database
+### Resetting the SQL database
 
-Todo: deleting the db volume
+You can re-build the sql database from a blank slate by deleting the "volume" associated with the database, 
+where the data is stored, and relaunching to create a new one.
 
-Todo: running docker cleanup
+1. Run the command `docker-compose down --volumes`
+2. Delete the file `escalation/app_deploy_data/models.py`
+3. Re-start the app
+
+
+You can also manually delete tables in the sql database by connecting to the database directly and using sql commands.
+
+    Connect to db:
+    docker exec -it escos_db psql -h localhost -p 5432 -U escalation -d escalation
+    
+    List tables:
+    \dt
+    
+    Drop table:
+    DROP TABLE my_table;
+    
+    Disconnect:
+    \q
+    
 
 # Running Escalation as a web-accessible server
 
@@ -151,11 +174,11 @@ This can be a server on a local network, e.g. in your lab, or on a cloud provide
 ## Building your Docker image for deployment
 
 1. You'll want to change the default settings for the password and username for the database, defined here: `escos/escalation/app_deploy_data/app_settings.py`
-2. 
+2. Todo: instructions to build docker image and push
 
 # How can I contribute? (advanced)
 
-### Running Locally, without using Docker (useful for Escalation code development, testing)
+## Running Locally, without using Docker (useful for Escalation code development, testing)
 
 You can also set up a custom Python virtual environment and run the server locally as you would any other Flask web app. 
 ToDo: More detailed instructions on virtual env setup, requirements install,  and running the app. Include info about db connection from host to Docker db

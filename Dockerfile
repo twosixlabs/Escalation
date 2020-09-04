@@ -31,7 +31,4 @@ COPY escalation /escalation
 COPY escalation/database/csv_to_sql.py /escalation
 
 RUN chmod +x /escalation/boot.sh
-RUN chmod +x /escalation/wizard_ui/boot_wizard_app.sh
-RUN chmod +x /escalation/csv_to_sql.sh
-
 

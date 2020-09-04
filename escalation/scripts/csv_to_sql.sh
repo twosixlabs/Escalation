@@ -39,10 +39,5 @@ echo "Adding data to $table_name with $table_exists_behavior behavior if it exis
 docker-compose run \
 --entrypoint "python csv_to_sql.py $1 /escalation/data.csv $3" \
 -v $2:/escalation/data.csv \
+-v "$(pwd)/escalation/app_deploy_data/models.py:/escalation/app_deploy_data/models.py" \
 web
-
-docker-compose run \
---entrypoint "sqlacodegen postgresql+pg8000://escalation:escalation_pwd@escos_db:5432/escalation --outfile /escalation/app_deploy_data/models.py" \
--v "$(pwd)/escalation/app_deploy_data/models.py":/escalation/app_deploy_data/models.py \
-web
-

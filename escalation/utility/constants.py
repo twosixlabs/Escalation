@@ -26,6 +26,8 @@ APP_DEPLOY_DATA = "app_deploy_data"
 TEST_APP_DEPLOY_DATA = "test_app_deploy_data"
 MAIN_DATA_SOURCE = "main_data_source"
 ADDITIONAL_DATA_SOURCES = "additional_data_sources"
+SQLALCHEMY_DATABASE_URI = "SQLALCHEMY_DATABASE_URI"
+DEVELOPMENT = "development"
 
 # Plotly constants
 LAYOUT = "layout"
@@ -38,6 +40,7 @@ AGGREGATIONS = "aggregations"
 # path to the file folder for LocalHandler or table name for SqlHandler
 DATA_FILE_DIRECTORY = "data_file_directory"
 DATA_SOURCES = "data_sources"
+DATA_UPLOAD_METADATA = "data_upload_metadata"
 NEW_DATA_SOURCE = "new_data_source"
 DATA_SOURCE_TYPE = "data_source_type"
 JOIN_KEYS = "join_keys"
@@ -104,13 +107,18 @@ ACTIVE_SELECTORS = "active_selector"
 INDEX_COLUMN = "row_index"
 UPLOAD_ID = "upload_id"
 UPLOAD_TIME = "upload_time"
+USERNAME = "username"
+NOTES = "notes"
+INACTIVE = "inactive"
+ACTIVE = "active"
+TABLE_NAME = "table_name"
+DATA_SOURCE = "data_source"
+CSVFILE = "csvfile"
+DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 # addendum constants
-
 GRAPHIC_NAME = "graphic_name"
 NUMERICAL_FILTER_NUM_LOC_TYPE = "numerical_filter_{:d}_{}_{}"
-
-
 PROCESS = "process"
 
 # setup constants
@@ -122,7 +130,7 @@ COPY = "copy"
 OLD = "old"
 NEW = "new"
 
-# schema constants
+# schema constants, these come from json schema
 ADDITIONAL_PROPERTIES = "additionalProperties"
 PROPERTIES = "properties"
 PATTERN_PROPERTIES = "patternProperties"
@@ -137,7 +145,13 @@ OPTIONS = "options"
 DEPENDENCIES = "dependencies"
 ENUM = "enum"
 ONEOF = "oneOf"
+
+# schema constants, these come from https://github.com/json-editor/json-editor
 HIDDEN = "hidden"
+DISABLE_COLLAPSE = "disable_collapse"
+COLLAPSED = "collapsed"
+DISABLE_PROPERTIES = "disable_properties"
+REMOVE_EMPTY_PROPERTIES = "remove_empty_properties"
 
 # plotly constants
 

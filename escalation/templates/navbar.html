@@ -2,15 +2,21 @@
 <!--# Licensed under the Apache License, Version 2.0-->
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <a class="navbar-brand" href="{{ url_for('dashboard.main_page') }}">EscOS</a>
+  <a class="navbar-brand" href="{{ url_for('dashboard.main_page') }}">{{ config.app_config_json.title }}</a>
 
     <ul class="navbar-nav mr-auto">
       <li class="nav-item {% if request.path=="/admin" %} active {% endif %}">
         <a class="nav-link" href={{ url_for('admin.admin_page') }}>Admin</a>
       </li>
+    {% if config.ENV == "development" %}
+        <li class="nav-item {% if request.path==url_for('wizard.data_upload_page_view') or request.path==url_for('upload.submission_view') %} active {% endif %}">
+            <a class="nav-link" href={{ url_for('wizard.data_upload_page_view') }}>Upload</a>
+        </li>
+    {% else %}
       <li class="nav-item {% if request.path==url_for('upload.submission_view') %} active {% endif %}">
         <a class="nav-link" href={{ url_for('upload.submission_view') }}>Upload</a>
       </li>
+    {% endif %}
       <li class="nav-item dropdown {% if "/dashboard/" in request.path %} active {% endif %}">
         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           Dashboards
@@ -22,6 +28,11 @@
         {% endfor %}
         </div>
       </li>
+      {% if config.ENV == "development" %}
+        <li class="nav-item {% if request.path==url_for('wizard.file_tree') %} active {% endif %}">
+          <a class="nav-link" href={{ url_for('wizard.file_tree') }}>Configuration Wizard</a>
+        </li>
+      {% endif %}
 
     </ul>
 </nav>

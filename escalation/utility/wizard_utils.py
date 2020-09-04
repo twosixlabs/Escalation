@@ -5,33 +5,7 @@ import re
 
 from flask import current_app
 
-from app_setup import configure_backend
-from utility.constants import (
-    APP_CONFIG_JSON,
-    CONFIG_FILE_FOLDER,
-    MAIN_CONFIG,
-    PLOTLY,
-    SELECTOR,
-    VISUALIZATION,
-    VISUALIZATION_OPTIONS,
-    SELECTABLE_DATA_DICT,
-    PLOT_SPECIFIC_INFO,
-    COLUMN_NAME,
-    GROUPBY,
-    ENTRIES,
-    GRAPHIC_META_INFO,
-    ADDITIONAL_DATA_SOURCES,
-    DATA_SOURCES,
-    GRAPHIC_PATH,
-    GRAPHIC_TITLE,
-    GRAPHIC_CONFIG_FILES,
-    DATA_SOURCE_TYPE,
-    SITE_DESC,
-    SITE_TITLE,
-    DATA_BACKEND,
-)
-from validate_schema import get_data_inventory_class, get_possible_column_names
-from wizard_ui.schemas_for_ui import build_graphic_schemas_for_ui
+from utility.constants import *
 
 UI_SCHEMA_PAIRS = {
     VISUALIZATION: VISUALIZATION_OPTIONS,
@@ -40,17 +14,11 @@ UI_SCHEMA_PAIRS = {
 }
 
 
-def set_up_backend_for_wizard(config_dict, app):
-    # current app needs to have the config dict before calling configure backend
-    app.config[APP_CONFIG_JSON] = config_dict
-    # the first time the config_dict is made configured we need to get the data backend
-    configure_backend(app)
-
-
 def save_main_config_dict(config_dict):
-    with open(
-        os.path.join(current_app.config[CONFIG_FILE_FOLDER], MAIN_CONFIG), "w"
-    ) as fout:
+    main_config_path = os.path.join(current_app.config[CONFIG_FILE_FOLDER], MAIN_CONFIG)
+    if os.path.exists(main_config_path):
+        os.remove(main_config_path)
+    with open(main_config_path, "w") as fout:
         json.dump(config_dict, fout, indent=4)
 
 
@@ -92,10 +60,23 @@ def graphic_dict_to_graphic_component_dict(graphic_dict):
     :param graphic_dict:
     :return:
     """
+    graphic_dict_copy = copy.deepcopy(graphic_dict)
     component_dict = {}
     for ui_name, schema_name in UI_SCHEMA_PAIRS.items():
-        component_dict[ui_name] = graphic_dict.pop(schema_name, {})
-    component_dict[GRAPHIC_META_INFO] = graphic_dict
+        component_dict[ui_name] = graphic_dict_copy.pop(schema_name, {})
+    component_dict[GRAPHIC_META_INFO] = graphic_dict_copy
+
+    visualization_components = {HOVER_DATA: {}, GROUPBY: {}, AGGREGATE: {}}
+    selector_components = {FILTER: [], NUMERICAL_FILTER: [], AXIS: [], GROUPBY: []}
+    for component, empty_element in visualization_components.items():
+        component_dict[VISUALIZATION][component] = component_dict[VISUALIZATION].get(
+            component, empty_element
+        )
+    for component, empty_element in selector_components.items():
+        component_dict[SELECTOR][component] = component_dict[SELECTOR].get(
+            component, empty_element
+        )
+
     return component_dict
 
 
@@ -135,7 +116,7 @@ def prune_visualization_dict(visualization_dict):
     # when the form is left blank the entries of visualization_dict have
     # COLUMN_NAME key that points to an empty list
     for vis_key, vis_dict in visualization_dict.items():
-        if vis_dict[COLUMN_NAME]:
+        if vis_dict.get(COLUMN_NAME):
             new_visualization_dict[vis_key] = vis_dict
     return new_visualization_dict
 
@@ -148,7 +129,7 @@ def prune_selector_dict(selector_dict):
     """
     new_selector_dict = {}
     for sel_key, sel_info in selector_dict.items():
-        if (sel_key == GROUPBY and sel_info[ENTRIES]) or (
+        if (sel_key == GROUPBY and sel_info.get(ENTRIES)) or (
             sel_key != GROUPBY and sel_info
         ):
             new_selector_dict[sel_key] = sel_info
@@ -186,20 +167,47 @@ def get_layout_for_dashboard(available_pages_list):
     return available_pages_list_copy
 
 
-def get_data_source_info(csv_flag, active_data_source_names=None):
+def get_possible_column_names(data_source_names, data_inventory_class):
+    """
+    Used to populate a dropdown in the config wizard with any column from the data
+    sources included in a figure
+    :param data_source_names: list of data source name strings
+    :param data_inventory_class: backend-specific data inventory class
+    :return: possible_column_names list
+    """
+    possible_column_names = []
+    csv_flag = current_app.config[APP_CONFIG_JSON].get(DATA_BACKEND) == LOCAL_CSV
+    for data_source_name in data_source_names:
+        data_inventory = data_inventory_class(
+            data_sources={MAIN_DATA_SOURCE: {DATA_SOURCE_TYPE: data_source_name}}
+        )
+        column_names = data_inventory.get_schema_for_data_source()
+        possible_column_names.extend(
+            [
+                TABLE_COLUMN_SEPARATOR.join(
+                    [data_source_name, column_name if csv_flag else column_name.name,]
+                )
+                for column_name in column_names
+            ]
+        )
+    return possible_column_names
+
+
+def get_data_source_info(active_data_source_names=None):
     """
     gets the available data sources and the possible column names based on the data source in the config
-    :param csv_flag:
-    :param active_data_source_names:
+    :param active_data_source_names: list of data source name strings
     :return:
     """
-    data_inventory_class = get_data_inventory_class(csv_flag)
+    if active_data_source_names is None:
+        active_data_source_names = []
+    data_inventory_class = current_app.config.data_backend_writer
     data_source_names = data_inventory_class.get_available_data_sources()
-    if not active_data_source_names:
+    if data_source_names and not active_data_source_names:
         # default to the first in alphabetical order
         active_data_source_names = [min(data_source_names)]
     possible_column_names = get_possible_column_names(
-        active_data_source_names, data_inventory_class, csv_flag
+        active_data_source_names, data_inventory_class
     )
     return data_source_names, possible_column_names
 
@@ -210,10 +218,15 @@ def extract_data_sources_from_config(graphic_config):
     :param graphic_config:
     :return:
     """
-    data_sources = set()
-    for data_source_dict in graphic_config[DATA_SOURCES].values():
-        data_sources.add(data_source_dict.get(DATA_SOURCE_TYPE))
-    return list(data_sources)
+    if DATA_SOURCES in graphic_config:
+        data_source_dict = graphic_config[DATA_SOURCES]
+        data_sources = set([data_source_dict[MAIN_DATA_SOURCE].get(DATA_SOURCE_TYPE)])
+        additional_data_source_list = data_source_dict.get(ADDITIONAL_DATA_SOURCES, [])
+        for additional_data_source_dict in additional_data_source_list:
+            data_sources.add(additional_data_source_dict.get(DATA_SOURCE_TYPE))
+        return list(data_sources)
+    else:
+        return []
 
 
 def copy_data_from_form_to_config(main_config, form):

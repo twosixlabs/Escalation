@@ -25,8 +25,8 @@ from utility.constants import (
 )
 
 
-def test_extract_buttons(main_json_fixture):
-    aval_pg = main_json_fixture["available_pages"]
+def test_extract_buttons(main_json_csv_backend_fixture):
+    aval_pg = main_json_csv_backend_fixture["available_pages"]
     buttons = create_labels_for_available_pages(aval_pg)
 
     button1 = {"webpage_label": "PENGUINS!", "link": "penguin"}

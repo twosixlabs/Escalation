@@ -4,15 +4,13 @@ from utility.build_plotly_schema import build_plotly_schema_individual_dicts
 from utility.build_schema import *
 from utility.constants import PROPERTIES, REQUIRED, ENUM
 
-BACKEND_TYPES = {LOCAL_CSV: [LOCAL_CSV], DATABASE: [POSTGRES]}
-
 
 def build_main_schemas_for_ui():
     schema_local = build_settings_schema()
     schema_database = copy.deepcopy(schema_local)
-    schema_local[PROPERTIES][DATA_BACKEND][ENUM] = BACKEND_TYPES[LOCAL_CSV]
-    schema_database[PROPERTIES][DATA_BACKEND][ENUM] = BACKEND_TYPES[DATABASE]
-    return {LOCAL_CSV: schema_local, DATABASE: schema_database}
+    schema_local[PROPERTIES][DATA_BACKEND][ENUM] = LOCAL_CSV
+    schema_database[PROPERTIES][DATA_BACKEND][ENUM] = POSTGRES
+    return {LOCAL_CSV: schema_local, POSTGRES: schema_database}
 
 
 def build_graphic_schemas_for_ui(data_source_names=None, column_names=None):

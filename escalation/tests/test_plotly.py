@@ -51,7 +51,7 @@ def test_plotly_draw_scatter(make_data):
     assert len(graph_dict[DATA][0][TRANSFORMS]) == 0
 
 
-def test_plotly_visualization_options(make_data, test_app_client):
+def test_plotly_visualization_options(make_data, test_app_client_csv_backed):
     plot_options = {
         DATA: [{"type": "scatter", "x": TITLE1, "y": TITLE2, "mode": "markers"}]
     }
