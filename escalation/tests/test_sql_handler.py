@@ -189,26 +189,49 @@ def test_get_available_data_sources(rebuild_test_database):
     assert len(file_names) == 3
 
 
-def test_get_schema_for_data_source(rebuild_test_database):
-    column_names = SqlDataInventory(
-        {MAIN_DATA_SOURCE: {DATA_SOURCE_TYPE: "penguin_size"}}
-    ).get_schema_for_data_source()
-    expected_column_names = [
-        "upload_id",
-        "row_index",
-        "study_name",
-        "species",
-        "island",
-        "sex",
-        "region",
-        "culmen_depth_mm",
-        "culmen_length_mm",
-        "flipper_length_mm",
-        "body_mass_g",
-    ]
+def test_get_schema_for_data_source(get_sql_handler_fixture):
+    column_names = get_sql_handler_fixture.get_schema_for_data_source()
+    expected_column_names = {
+        "mean_penguin_stat:body_mass",
+        "mean_penguin_stat:culmen_depth",
+        "mean_penguin_stat:culmen_length",
+        "mean_penguin_stat:delta_13_c",
+        "mean_penguin_stat:delta_15_n",
+        "mean_penguin_stat:flipper_length",
+        "mean_penguin_stat:row_index",
+        "mean_penguin_stat:sex",
+        "mean_penguin_stat:species",
+        "mean_penguin_stat:study_name",
+        "mean_penguin_stat:upload_id",
+        "penguin_size:body_mass_g",
+        "penguin_size:culmen_depth_mm",
+        "penguin_size:culmen_length_mm",
+        "penguin_size:flipper_length_mm",
+        "penguin_size:island",
+        "penguin_size:region",
+        "penguin_size:row_index",
+        "penguin_size:sex",
+        "penguin_size:species",
+        "penguin_size:study_name",
+        "penguin_size:upload_id",
+    }
 
-    assert {column.name for column in column_names} == set(expected_column_names)
+    assert set(column_names) == expected_column_names
 
 
 def test_write_data_upload_to_backend():
     assert False
+
+
+def test_get_table_data(get_sql_handler_fixture_small):
+    result = get_sql_handler_fixture_small.get_table_data()
+
+    penguin_small = pd.read_csv(
+        "test_app_deploy_data/data/penguin_size_small/penguin_size_small.csv"
+    )
+    penguin_small["upload_id"] = 1
+    penguin_small["row_index"] = [0, 1, 2]
+    assert all(
+        result.sort_index().sort_index(axis=1)
+        == penguin_small.sort_index().sort_index(axis=1)
+    )

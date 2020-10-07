@@ -2,12 +2,9 @@
 # Licensed under the Apache License, Version 2.0
 import copy
 
-from graphics.plotly_plot import LAYOUT
+from graphics.plotly_plot import LAYOUT, X, Y, Z, ERROR_X, ERROR_Y, ERROR_Z, ARRAY
 from utility.constants import *
 
-X = "x"
-Y = "y"
-Z = "z"
 MODE = "mode"
 
 BAR = "bar"
@@ -123,9 +120,42 @@ def build_plotly_schema(column_names):
                             "enum": column_names,
                         },
                         Z: {
-                            "type": "string",
-                            TITLE: "Data on Z Axis",
-                            "enum": column_names,
+                            TYPE: "string",
+                            TITLE: "Data on Y Axis",
+                            ENUM: column_names,
+                        },
+                        ERROR_X: {
+                            TYPE: "object",
+                            "properties": {
+                                ARRAY: {
+                                    "type": "string",
+                                    TITLE: "Data column to use for error bars",
+                                    ENUM: column_names,
+                                },
+                            },
+                            TITLE: "Symmetric error bars in the Y axis",
+                        },
+                        ERROR_Y: {
+                            TYPE: "object",
+                            "properties": {
+                                ARRAY: {
+                                    "type": "string",
+                                    TITLE: "Data column to use for error bars",
+                                    ENUM: column_names,
+                                },
+                            },
+                            TITLE: "Symmetric error bars in the Y axis",
+                        },
+                        ERROR_Z: {
+                            TYPE: "object",
+                            "properties": {
+                                ARRAY: {
+                                    "type": "string",
+                                    TITLE: "Data column to use for error bars",
+                                    ENUM: column_names,
+                                },
+                            },
+                            TITLE: "Symmetric error bars in the Z axis",
                         },
                         "mode": {
                             "type": "string",
@@ -142,6 +172,12 @@ def build_plotly_schema(column_names):
                                 "none",
                                 "group",
                             ],
+                        },
+                        "opacity": {
+                            "type": "number",
+                            TITLE: "Opacity",
+                            "minimum": 0,
+                            "maximum": 1,
                         },
                     },
                 },
@@ -183,6 +219,10 @@ def build_plotly_schema(column_names):
                             "x unified",
                             "y unified",
                         ],
+                    },
+                    "barmode": {
+                        "type": "string",
+                        "enum": ["stack", "group", "overlay", "relative"],
                     },
                 },
             },

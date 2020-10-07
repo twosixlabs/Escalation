@@ -234,3 +234,23 @@ def make_pages_dict(available_pages_list, config_file_folder) -> dict:
             page_dict[graphic_key] = config_dict
         available_pages_dict[page[URL_ENDPOINT]] = page_dict
     return available_pages_dict
+
+
+def get_metadata():
+    """
+    gets meta data for admin and download page
+    :return:
+    """
+    data_inventory = current_app.config.data_backend_writer
+    existing_data_sources = data_inventory.get_available_data_sources()
+    data_sources = sorted(existing_data_sources)
+    data_source_dict = data_inventory.get_data_upload_metadata(data_sources)
+    # this allows the dictionary to work with bootstrap-table with html form as a post request.
+    data_source_dict = {
+        data_source: {
+            "ids": [element[UPLOAD_ID] for element in identifiers_metadata_dict_list],
+            "data": json.dumps(identifiers_metadata_dict_list),
+        }
+        for data_source, identifiers_metadata_dict_list in data_source_dict.items()
+    }
+    return data_source_dict

@@ -1,4 +1,5 @@
 # Designing your dashboard layout using the Configuration Wizard UI
+
 Before starting this tutorial, you should have your wizard app launched. 
 
 Ready? Let's begin.

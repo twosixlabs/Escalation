@@ -3,42 +3,25 @@
 
 {% extends 'base.html' %}
 
-{% block header %}
-<script>
-    function any_identifiers_active(data_source) {
-        let web_form=$('#form_'.concat(data_source));
-        const table_data=$(`#table_${data_source}`).bootstrapTable('getData')
-        let flag=0;
-        function active_table_data_to_form(dict) {
-            web_form[0][dict['upload_id']].value=(dict['active'] ? 'active' : 'inactive');
-          if (dict['active']){
-              flag=1
-          }
-        }
-        table_data.forEach(active_table_data_to_form)
-        if (flag){
-            web_form.attr('action','#'.concat(data_source));
-            web_form.submit()
-        }
-        else{
-           alert('At least one identifier needs to be active');
-        }
-
-        };
-
-</script>
-{% endblock %}
-
 
 {% block content %}
 {% include 'navbar.html' %}
+{% if admin %}
 <div class="jumbotron">
     <h1 class="display-4">Administration Options</h1>
     <hr class="my-4">
     <p class="lead">Select which data uploads are included in the visualizations produced in the Escalation
-        dashboard</p>
+        dashboard
+    </p>
 </div>
-
+{% else %}
+    <div class="jumbotron">
+    <h1 class="display-4">Download</h1>
+    <hr class="my-4">
+    <p class="lead">Select which data is downloaded
+    </p>
+</div>
+{% endif %}
 <div class="container-fluid pl-5 pr-5">
     {% for data_source, identifiers_metadata_dict_list in data_source_dict.items() %}
         <form method="post" id={{"form_" ~ data_source }}>
@@ -68,7 +51,7 @@
                         <th scope="col" data-field="username" data-sortable="true">Username</th>
                         <th scope="col" data-field="upload_time" data-sortable="true">Upload Time</th>
                         <th scope="col" data-field="notes" data-sortable="true">Notes</th>
-                        <th scope="col" data-field="active" data-checkbox="true" data-show-select-title="true">Data Set Active</th>
+                        <th scope="col" data-field="active" data-checkbox="true" data-show-select-title="true">{{ "Data Set Active" if admin else "Download" }}</th>
                     </tr>
                     </thead>
                 </table>
@@ -92,7 +75,8 @@
                         })
                       })
                     </script>
-                    <button type="button" class="btn btn-primary btn-block m-2" onclick=any_identifiers_active("{{ data_source }}")>Update</button>
+                    <button id="{{ "update_" ~ data_source }}" type="button" class="btn btn-primary btn-block m-2" onclick=any_identifiers_active("{{ data_source }}")>{{ "Update" if admin else "Download" }}</button>
+
                 </div>
             </div>
         </div>

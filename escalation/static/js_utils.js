@@ -15,6 +15,29 @@ function reset_form(id_on_web_page) {
 
 }
 
+function show_all_row_handler(selector_id, exclusive_value) {
+    let selector = $("#".concat(selector_id));
+    const selected_elements = selector.val();
+    if (selected_elements.length==0){
+        selector.val(exclusive_value);
+        selector.attr('data-top_selected',true)
+    }
+    else if (selector.attr('data-top_selected')=="true"){
+        // If something is selected along with show all rows
+        // Pop the show all rows item out using shift, then set elements to remaining
+        selected_elements.shift();
+        selector.val(selected_elements);
+        selector.attr('data-top_selected',false)
+    }
+    else if (selected_elements.includes(exclusive_value)){
+        // If the user has selected show all rows, deselect everything else
+        selector.selectpicker('deselectAll');
+        selector.val(exclusive_value);
+        selector.attr('data-top_selected',true)
+    }
+    selector.selectpicker('refresh');
+}
+
 
 function edit_graphic(page_id,graphic,graphic_status) {
     //This allows the web page to focus where the plot was updated instead of starting at the top of the web page
@@ -28,35 +51,17 @@ function edit_graphic(page_id,graphic,graphic_status) {
 function modify_config(modification, page_id=-1,graphic=''){
     let graphic_form=$('#form_button_click');
     let add_page_form = $('#form_add_page');
-    if (modification!='add_page' || add_page_form[0].webpage_label.value) {
+    let name = document.getElementById("webpage_label_".concat(page_id)).value;
+    if ((!modification.includes('delete') || confirm('Confirm deletion')) && ((modification!='add_page' && modification!='rename_page') || name)) {
         add_page_form[0].page_id.value = page_id;
         add_page_form[0].graphic.value = graphic;
         add_page_form[0].modification.value = modification;
         add_page_form[0].title.value = graphic_form[0].title.value;
         add_page_form[0].brief_desc.value = graphic_form[0].brief_desc.value;
         add_page_form[0].data_backend.value = graphic_form[0].data_backend.value;
+        add_page_form[0].webpage_label.value = name;
         add_page_form.submit();
     }
-}
-
-function send_json_in_post_request(url, data, webpage){
-    let xhr = new XMLHttpRequest();
-    xhr.open("POST", url);
-    xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-    xhr.onreadystatechange = function () {
-        let success_text = document.querySelector('#feedback_message');
-        if (xhr.readyState === 4 && xhr.status === 200) {
-            if (webpage) {window.location.href = webpage}
-            success_text.innerHTML = "Applied"
-        } else {
-            success_text.innerHTML = "Failed"
-        }
-        // Message disappears after 5 secs
-        setTimeout(function() {
-              success_text.innerHTML="";
-            }, 5000);
-        };
-    xhr.send(data);
 }
 
 function get_main_data_sources(data_source_dict){
@@ -69,4 +74,52 @@ function get_main_data_sources(data_source_dict){
         }
     }
     return data_sources
+}
+
+function any_identifiers_active(data_source) {
+    let web_form=$('#form_'.concat(data_source));
+    const table_data=$(`#table_${data_source}`).bootstrapTable('getData')
+    let flag=0;
+    function active_table_data_to_form(dict) {
+        web_form[0][dict['upload_id']].value=(dict['active'] ? 'active' : 'inactive');
+      if (dict['active']){
+          flag=1
+      }
+    }
+    table_data.forEach(active_table_data_to_form)
+    if (flag){
+        web_form.attr('action','#'.concat(data_source));
+        web_form.submit()
+    }
+    else{
+       alert('At least one identifier needs to be selected');
+    }
+}
+
+function toggle_rename_page(page_id) {
+    let page_div = document.getElementById("page_".concat(page_id));
+    let rename_page_div = document.getElementById("rename_page_".concat(page_id));
+    if (page_div.style.display === "none") {
+        page_div.style.display = "block";
+        rename_page_div.style.display = "none";
+    } else {
+        page_div.style.display = "none";
+        rename_page_div.style.display = "block";
+    }
+}
+
+
+function get_collapse_dict(editors) {
+    let collapse_dict= new Object();
+    collapse_dict['additional_data_sources'] =  editors['graphic_meta_info'].getEditor('root.data_sources.additional_data_sources').collapsed
+    collapse_dict['hover_data'] = editors['visualization'].getEditor('root.hover_data').collapsed
+    collapse_dict['groupby'] =  editors['visualization'].getEditor('root.groupby').collapsed
+    collapse_dict['aggregate'] = editors['visualization'].getEditor('root.aggregate').collapsed
+    collapse_dict['filter'] = editors['selector'].getEditor('root.filter').collapsed
+    collapse_dict['numerical_filter'] = editors['selector'].getEditor('root.numerical_filter').collapsed
+    collapse_dict['axis'] = editors['selector'].getEditor('root.axis').collapsed
+    collapse_dict['groupby_selector'] = editors['selector'].getEditor('root.groupby').collapsed
+    collapse_dict['visualization_options'] = editors['visualization'].getEditor('root').collapsed
+    collapse_dict['selectable_data_dict'] = editors['selector'].getEditor('root').collapsed
+    return collapse_dict
 }

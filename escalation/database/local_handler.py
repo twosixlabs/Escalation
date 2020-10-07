@@ -35,12 +35,13 @@ from utility.constants import (
     USERNAME,
     NOTES,
     DATETIME_FORMAT,
+    INDEX_COLUMN,
 )
 from utility.exceptions import ValidationError
 
 
 class LocalCSVHandler(DataHandler):
-    def __init__(self, data_sources):
+    def __init__(self, data_sources, only_use_active: bool = True):
         """
         :param data_sources: dict defining data files and join rules
         e.g., {MAIN_DATA_SOURCE: {DATA_SOURCE_TYPE: "file_type_a"},
@@ -49,6 +50,7 @@ class LocalCSVHandler(DataHandler):
         (..., ...)]]
         """
         self.data_sources = data_sources
+        self.only_use_active = only_use_active
         self.data_file_directory = os.path.join(
             current_app.config[CONFIG_FILE_FOLDER], DATA
         )
@@ -92,9 +94,10 @@ class LocalCSVHandler(DataHandler):
         data_source_name = data_source[DATA_SOURCE_TYPE]
         data_source_subfolder = os.path.join(self.data_file_directory, data_source_name)
         filepaths_list = glob.glob(f"{data_source_subfolder}/*.csv")
-        filepaths_list = self.filter_out_inactive_files(
-            filepaths_list, data_source_name,
-        )
+        if self.only_use_active:
+            filepaths_list = self.filter_out_inactive_files(
+                filepaths_list, data_source_name,
+            )
         assert len(filepaths_list) > 0
         return filepaths_list
 
@@ -133,6 +136,13 @@ class LocalCSVHandler(DataHandler):
             )
         return combined_data_table
 
+    def get_schema_for_data_source(self):
+        """
+        :return: list of named tuples that contain the name and data type of the df columns
+        This is designed to match the data format of the column tuples used in sqlalchemy
+        """
+        return self.combined_data_table.columns
+
     def get_column_data(self, cols: list, filters: list = None) -> dict:
         # error checking would be good
         """
@@ -150,6 +160,15 @@ class LocalCSVHandler(DataHandler):
             df = df[local_csv_handler_filter_operation(column, filter_dict)]
 
         return df[cols]
+
+    def get_table_data(self, filters: list = None) -> dict:
+        df = self.combined_data_table
+        if filters is None:
+            filters = []
+        for filter_dict in filters:
+            column = df[filter_dict[OPTION_COL]]
+            df = df[local_csv_handler_filter_operation(column, filter_dict)]
+        return df
 
     def get_column_unique_entries(self, cols: list, filters: list = None) -> dict:
         if filters is None:
@@ -184,6 +203,10 @@ class LocalCSVHandler(DataHandler):
 
 
 class LocalCSVDataInventory(LocalCSVHandler):
+    """
+    Used for getting meta data information and uploading to backend
+    """
+
     def __init__(self, data_sources):
         # Instance methods for this class refer to single data source table
         assert len(data_sources) == 1
@@ -295,26 +318,6 @@ class LocalCSVDataInventory(LocalCSVHandler):
         )
         data_upload_metadata.to_csv(cls.get_data_upload_metadata_path(), index=False)
 
-    def get_schema_for_data_source(self):
-        """
-        :return: list of namedtuples that contain the name and data type of the df columns
-        This is designed to match the data format of the column tuples used in sqlalchemy
-        """
-        files_by_source = self.get_data_upload_metadata([self.data_source_name])
-        list_of_files = [
-            os.path.join(self.data_file_directory, f[UPLOAD_ID])
-            for f in files_by_source[self.data_source_name]
-            if f.get(ACTIVE)
-        ]
-        if not list_of_files:
-            return []
-        latest_filepath = max(list_of_files, key=os.path.getctime)
-        data_types = pd.read_csv(latest_filepath, nrows=1).dtypes
-        column_schema = namedtuple("column_schema", ["name", "data_type"])
-        return [
-            column_schema(k, v) for k, v in zip(data_types.index, data_types.values)
-        ]
-
     def delete_data_source(self):
         # if there are files in this data source directory, clear it out
         if os.path.exists(self.data_file_directory):
@@ -353,7 +356,9 @@ class LocalCSVDataInventory(LocalCSVHandler):
             raise ValidationError(
                 f"Filename {filename} already exists for data source type {self.data_source_name}"
             )
-        uploaded_data_df.to_csv(file_path, index=False)
+        # write UPLOAD_ID and INDEX_COLUMN to match SQL handler
+        uploaded_data_df[UPLOAD_ID] = filename
+        uploaded_data_df.to_csv(file_path, index_label=INDEX_COLUMN)
 
         # update the data upload metadata
         data_upload_metadata = self.get_data_upload_metadata_df()

@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 
 class DataHandler(ABC):
     @abstractmethod
-    def __init__(self):
+    def __init__(self, data_sources, only_use_active: bool = True):
         pass
 
     @abstractmethod

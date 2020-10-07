@@ -1,6 +1,6 @@
 # Copyright [2020] [Two Six Labs, LLC]
 # Licensed under the Apache License, Version 2.0
-
+import itertools
 from io import open as io_open
 import json
 import os
@@ -41,6 +41,8 @@ from utility.constants import (
     DATA_SOURCE_TYPE,
     LOCAL_CSV,
     DATA_SOURCE,
+    DATA_SOURCES,
+    COLLAPSE_DICT,
 )
 from utility.schemas_for_ui import build_graphic_schemas_for_ui
 from utility.wizard_utils import (
@@ -56,6 +58,9 @@ from utility.wizard_utils import (
     get_data_source_info,
     extract_data_sources_from_config,
     copy_data_from_form_to_config,
+    make_page_dict_for_main_config,
+    generate_collapse_dict_from_graphic_component_dict,
+    get_default_collapse_dict,
 )
 
 GRAPHIC_CONFIG_EDITOR_HTML = "wizard_graphic_config_editor.html"
@@ -87,31 +92,29 @@ def modify_layout():
     MODIFICATION = "modification"
     ADD_PAGE = "add_page"
     DELETE_PAGE = "delete_page"
+    RENAME_PAGE = "rename_page"
     DELETE_GRAPHIC = "delete_graphic"
+
     config_dict = load_main_config_dict_if_exists(current_app)
     copy_data_from_form_to_config(config_dict, request.form)
     available_pages = config_dict.get(AVAILABLE_PAGES, [])
     modification = request.form[MODIFICATION]
+    webpage_label = request.form[WEBPAGE_LABEL]
+    page_id = int(request.form[PAGE_ID])
     if modification == ADD_PAGE:
-        webpage_label = request.form[WEBPAGE_LABEL]
         page_urls = [page_dict[URL_ENDPOINT] for page_dict in available_pages]
-        candidate_url = sanitize_string(
-            webpage_label
-        )  # sanitizing the string so it is valid url
-        if candidate_url in page_urls:
-            i = 0
-            while f"{candidate_url}_{i}" in page_urls:
-                i += 1
-            candidate_url = f"{candidate_url}_{i}"
-
-        page_dict = {
-            WEBPAGE_LABEL: webpage_label,
-            URL_ENDPOINT: candidate_url,
-            GRAPHIC_CONFIG_FILES: [],
-        }
+        page_dict = make_page_dict_for_main_config(webpage_label, page_urls)
         available_pages.append(page_dict)
+    elif modification == RENAME_PAGE:
+        page_urls = [page_dict[URL_ENDPOINT] for page_dict in available_pages]
+        page_urls.pop(page_id)
+        page_dict = make_page_dict_for_main_config(webpage_label, page_urls)
+        page_dict[GRAPHIC_CONFIG_FILES] = available_pages[page_id].get(
+            GRAPHIC_CONFIG_FILES, []
+        )
+        available_pages[page_id] = page_dict
     elif modification == DELETE_PAGE:
-        del available_pages[int(request.form[PAGE_ID])]
+        del available_pages[page_id]
         # todo: iterate and delete actual json configs? But add confirmation?
     elif modification == DELETE_GRAPHIC:
         graphic_filename = request.form[GRAPHIC]
@@ -121,9 +124,7 @@ def modify_layout():
         # remove and write new file to trigger file watcher and refresh flask app
         if os.path.exists(graphic_filepath):
             os.remove(graphic_filepath)
-        available_pages[int(request.form[PAGE_ID])][GRAPHIC_CONFIG_FILES].remove(
-            graphic_filename
-        )
+        available_pages[page_id][GRAPHIC_CONFIG_FILES].remove(graphic_filename)
 
     config_dict[AVAILABLE_PAGES] = available_pages
     save_main_config_dict(config_dict)
@@ -138,15 +139,23 @@ def graphic_config_setup():
     copy_data_from_form_to_config(config_dict, request.form)
     save_main_config_dict(config_dict)
     active_data_source_names = None
+    collapse_dict = get_default_collapse_dict()
     if graphic_status in [COPY, OLD]:
         graphic_dict = json.loads(load_graphic_config_dict(request.form[GRAPHIC]))
         active_data_source_names = extract_data_sources_from_config(graphic_dict)
+        collapse_dict = generate_collapse_dict_from_graphic_component_dict(graphic_dict)
 
-    data_source_names, possible_column_names = get_data_source_info(
-        active_data_source_names
+    (
+        data_source_names,
+        possible_column_names,
+        unique_entries_dict,
+    ) = get_data_source_info(active_data_source_names)
+    # concatenating into one large list with no duplicates
+    unique_entries_list = list(
+        set(itertools.chain.from_iterable(unique_entries_dict.values()))
     )
     graphic_schemas, schema_to_type = build_graphic_schemas_for_ui(
-        data_source_names, possible_column_names
+        data_source_names, possible_column_names, unique_entries_list, collapse_dict
     )
     component_graphic_dict = make_empty_component_dict()
     current_schema = SCATTER
@@ -167,6 +176,7 @@ def graphic_config_setup():
         schema_selector_dict=json.dumps(SELECTOR_DICT),
         current_schema=current_schema,
         graphic_path=request.form[GRAPHIC],
+        default_entries_dict=json.dumps(unique_entries_dict),
     )
 
 
@@ -222,17 +232,26 @@ def update_graphic_json_config_with_ui_changes():
         os.remove(graphic_filepath)
     with open(graphic_filepath, "w") as fout:
         json.dump(graphic_dict, fout, indent=4)
-    return json.dumps({"success": True}), 200, {"ContentType": "application/json"}
+    return (
+        json.dumps({"success": True, GRAPHIC_PATH: graphic_filename}),
+        200,
+        {"ContentType": "application/json"},
+    )
 
 
 @wizard_blueprint.route("/wizard/graphic/update_schemas", methods=("POST",))
 def get_updated_schemas():
-    active_data_source_names = request.get_json()
-    data_source_names, possible_column_names = get_data_source_info(
-        active_data_source_names
-    )
+
+    ui_editor_info_dict = request.get_json()
+    (
+        data_source_names,
+        possible_column_names,
+        unique_entries_dict,
+    ) = get_data_source_info(ui_editor_info_dict[DATA_SOURCES])
     graphic_schemas, schema_to_type = build_graphic_schemas_for_ui(
-        data_source_names, possible_column_names
+        data_source_names=data_source_names,
+        column_names=possible_column_names,
+        collapse_dict=ui_editor_info_dict[COLLAPSE_DICT],
     )
 
     return (
@@ -283,7 +302,7 @@ def validate_table_name():
 
 
 def sql_backend_file_upload(upload_form, csvfile):
-    table_name = upload_form.get(DATA_SOURCE)
+    table_name = sanitize_string(upload_form.get(DATA_SOURCE))
     username = upload_form.get(USERNAME)
     notes = upload_form.get(NOTES)
     csv_sql_writer = CreateTablesFromCSVs(current_app.config[SQLALCHEMY_DATABASE_URI])
@@ -319,7 +338,7 @@ def sql_backend_file_upload(upload_form, csvfile):
 
 
 def csv_backend_file_upload(upload_form, csvfile):
-    table_name = upload_form.get(DATA_SOURCE)
+    table_name = sanitize_string(upload_form.get(DATA_SOURCE))
     username = upload_form.get(USERNAME)
     notes = upload_form.get(NOTES)
     df = LocalCSVHandler.load_df_from_csv(csvfile)

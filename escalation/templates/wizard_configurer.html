@@ -38,51 +38,65 @@
             </form>
         </div>
         <div class="row">
-            <p class="lead">Dashboard Panels</p>
+            <p class="lead mt-3">Dashboard Panels</p>
         </div>
-        <div class="row">
+
         <form method="post" action={{ url_for('.modify_layout') }} id="form_add_page">
-            <div class="form-group mb-1 mt-4">
-                <div class="input-group">
-                    <input type="hidden" name="modification" value='add_page'>
-                    <input type="hidden" name="title" value=''>
-                    <input type="hidden" name="brief_desc" value=''>
-                    <input type="hidden" name="data_backend" value=''>
-                    <input type="hidden" name="page_id" value=''>
-                    <input type="hidden" name="graphic" value=''>
-                    <input type="text" class="form-control" name="webpage_label" placeholder="Dashboard Panel Name">
+            <input type="hidden" name="modification" value='add_page'>
+            <input type="hidden" name="title" value=''>
+            <input type="hidden" name="brief_desc" value=''>
+            <input type="hidden" name="data_backend" value=''>
+            <input type="hidden" name="page_id" value=''>
+            <input type="hidden" name="graphic" value=''>
+            <input type="hidden" name="webpage_label" value=''>
+        </form>
+        <div class="row">
+            <div class="input-group mb-1 mt-1">
+                <input type="text" id="webpage_label_-1" placeholder="Dashboard Panel Name">
+                <div class="input-group-append">
+                    <button type="button" class="btn btn-outline-primary" onclick=modify_config('add_page')>Add a Dashboard Panel
+                    </button>
+                </div>
+            </div>
+        </div>
+            {% for page in available_pages %}
+                {% set page_id=loop.index0 %}
+                <div class="row" id="{{ "rename_page_" ~ page_id }}" style="display: none">
+                <div class="input-group mb-1 mt-1">
+                <input type="text" id="{{ "webpage_label_" ~ page_id }}" placeholder="New Name" value="{{ page["webpage_label"] }}">
                     <div class="input-group-append">
-                        <button type="button" class="btn btn-outline-primary" onclick=modify_config('add_page')>Add a Dashboard Panel
+                        <button type="button" class="btn btn-secondary" onclick=modify_config('rename_page',{{ page_id }})><i class="fas fa-check"></i>
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick=toggle_rename_page({{ page_id }})><i class="fas fa-times"></i>
                         </button>
                     </div>
                 </div>
-            </div>
-
-        </form>
-
-        </div>
-
-            {% for page in available_pages %}
-                <div class="row">
-                {% set page_id=loop.index0 %}
-                    <button type="button" class="btn btn-secondary dropdown-toggle mb-1 mt-1 pr-5 pl-5" data-toggle="collapse" data-target={{ "#page_" ~ page_id ~ "_graphics" }}>
-                        {{ page["webpage_label"] }}
-                    </button>
-                    <button class="btn btn-outline-danger mb-1 mt-1 ml-1 pr-3 pl-3" type="button" onclick=modify_config('delete_page',{{ page_id }})>Delete</button>
                 </div>
-                <div class="collapse show" id={{ "page_" ~ page_id ~ "_graphics" }}>
-                    {% for graphic in page["graphic_config_files"] %}
-                        <div class="row">
-                            <button class="btn btn-outline-secondary mb-1 mt-1 ml-5 pr-3 pl-3" type="button" onclick=edit_graphic({{ page_id }},'{{ graphic['graphic_path'] }}','old')>Edit - {{ graphic['title'] }}</button>
-                            <button class="btn btn-outline-success mb-1 mt-1 ml-1 pr-3 pl-3" type="button" onclick=edit_graphic({{ page_id }},'{{ graphic['graphic_path'] }}','copy')>Copy</button>
-                            <button class="btn btn-outline-danger mb-1 mt-1 ml-1 pr-3 pl-3" type="button" onclick=modify_config('delete_graphic',{{ page_id }},'{{ graphic['graphic_path'] }}')>Delete</button>
-                        </div>
-                    {% endfor %}
+                <div class="row" id={{ "page_" ~ page_id }}>
+
+                    <div class="btn-group  mb-1 mt-1">
+                        <button type="button" class="btn btn-secondary pr-5 pl-5">
+                            {{ page["webpage_label"] }}
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary pr-3 pl-3" onclick=toggle_rename_page({{ page_id }})>
+                        Rename
+                        </button>
+                        <button class="btn btn-outline-danger pr-3 pl-3" type="button" onclick=modify_config('delete_page',{{ page_id }})><i class="far fa-trash-alt"></i></button>
+                    </div>
+                </div>
+                {% for graphic in page["graphic_config_files"] %}
                     <div class="row">
-                        <div class="form-group mb-1 mt-1 ml-5">
-                            <button type="button" class="btn btn-outline-primary" onclick=edit_graphic({{ page_id }},'','new')>Add a Graphic
-                            </button>
-                        </div>
+                    <div class="btn-group  mb-1 mt-1 ml-5">
+                        <button class="btn btn-outline-secondary pr-3 pl-3" type="button" onclick=edit_graphic({{ page_id }},'{{ graphic['graphic_path'] }}','old')>{{ graphic['title'] }} <i class="far fa-edit"></i> </button>
+                        <button class="btn btn-outline-secondary" type="button" onclick=edit_graphic({{ page_id }},'{{ graphic['graphic_path'] }}','copy')>Duplicate Graphic</button>
+                        <button class="btn btn-outline-danger" type="button" onclick=modify_config('delete_graphic',{{ page_id }},'{{ graphic['graphic_path'] }}')><i class="far fa-trash-alt"></i></button>
+                    </div>
+                    </div>
+                {% endfor %}
+                <div class="row">
+                    <div class="form-group mb-1 mt-1 ml-5">
+                        <button type="button" class="btn btn-outline-primary" onclick=edit_graphic({{ page_id }},'','new')>Add a Graphic
+                        </button>
                     </div>
                 </div>
 
@@ -92,4 +106,9 @@
 
 
 </div>
+
+    <script>
+
+
+    </script>
 {% endblock %}

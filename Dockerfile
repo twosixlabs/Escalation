@@ -18,6 +18,7 @@ FROM python:3.7.8-buster
 #Set escalation as working directory
 WORKDIR /escalation
 ENV PYTHONPATH "${PYTHONPATH}:/escalation"
+ENV DOCKER_DEPLOYED true
 
 #install dependencies
 RUN apt-get update
@@ -28,7 +29,7 @@ RUN pip install --trusted-host pypi.python.org -r requirements-app.txt
 #copy data from current dir into container
 COPY escalation /escalation
 # imports for this script behave strangely- copy to workdir to prevent issues
-COPY escalation/database/csv_to_sql.py /escalation
+COPY escalation/scripts/csv_to_sql.py /escalation
 
 RUN chmod +x /escalation/boot.sh
 

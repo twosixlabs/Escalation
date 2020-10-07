@@ -15,7 +15,7 @@ NUMERICAL_FILTER_DEFAULT = {
 
 
 def add_instructions_to_config_dict(
-    single_page_graphic_config_dict: dict, addendum_dict: ImmutableMultiDict = None
+    single_page_graphic_config_dict: dict, addendum_dict: dict = None
 ) -> dict:
     """
     We build a page based on 2 dictonaries, what is in the config and what is submitted in the HTML form.
@@ -27,21 +27,21 @@ def add_instructions_to_config_dict(
     :return: modified single_page_config_dict
     """
     if addendum_dict is None:
-        addendum_dict = ImmutableMultiDict()
+        addendum_dict = {}
 
     for graphic_name, graphic_dict in single_page_graphic_config_dict.items():
         if SELECTABLE_DATA_DICT in graphic_dict:
             selector_dict = graphic_dict[SELECTABLE_DATA_DICT]
             data_info_dict = graphic_dict[PLOT_SPECIFIC_INFO][DATA]
-            if addendum_dict.get(GRAPHIC_NAME) == graphic_name:
+            if graphic_name in addendum_dict:
                 add_active_selectors_to_selectable_data_list(
-                    selector_dict, data_info_dict, addendum_dict
+                    selector_dict, data_info_dict, addendum_dict[graphic_name]
                 )
                 (
                     graphic_dict[DATA_FILTERS],
                     groupby_dict,
                 ) = add_operations_to_the_data_from_addendum(
-                    selector_dict, data_info_dict, addendum_dict,
+                    selector_dict, data_info_dict, addendum_dict[graphic_name],
                 )
                 # Visualization options does not have to be in the dictionary
                 if groupby_dict:
@@ -61,9 +61,7 @@ def add_instructions_to_config_dict(
 
 
 def add_active_selectors_to_selectable_data_list(
-    selectable_data_dict: dict,
-    data_info_dict: dict,
-    addendum_dict: ImmutableMultiDict = None,
+    selectable_data_dict: dict, data_info_dict: dict, addendum_dict: dict = None,
 ):
     """
     Sets which selectors are active based on user choices.
@@ -76,18 +74,20 @@ def add_active_selectors_to_selectable_data_list(
     """
 
     if addendum_dict is None:
-        addendum_dict = ImmutableMultiDict()
+        addendum_dict = {}
 
     axis_list = selectable_data_dict.get(AXIS, [])
     for index, axis_dict in enumerate(axis_list):
-        axis_dict[ACTIVE_SELECTORS] = addendum_dict.get(
-            get_key_for_form(AXIS, index), data_info_dict[0][axis_dict[COLUMN_NAME]],
+        # all values in addendum_dict are lists
+        axis_label = addendum_dict.get(get_key_for_form(AXIS, index))
+        axis_dict[ACTIVE_SELECTORS] = (
+            axis_label[0] if axis_label else data_info_dict[0][axis_dict[COLUMN_NAME]]
         )
 
     if GROUPBY in selectable_data_dict:
         group_by_dict = selectable_data_dict[GROUPBY]
-        selected_group_by = addendum_dict.getlist(get_key_for_form(GROUPBY, ""))
-        if NO_GROUP_BY in selected_group_by:
+        selected_group_by = addendum_dict.get(get_key_for_form(GROUPBY, ""))
+        if not selected_group_by or NO_GROUP_BY in selected_group_by:
             group_by_dict[ACTIVE_SELECTORS] = [NO_GROUP_BY]
         else:
             group_by_dict[ACTIVE_SELECTORS] = selected_group_by or group_by_dict.get(
@@ -97,7 +97,7 @@ def add_active_selectors_to_selectable_data_list(
     filter_list = selectable_data_dict.get(FILTER, [])
     for index, filter_dict in enumerate(filter_list):
 
-        selected_filters = addendum_dict.getlist(get_key_for_form(FILTER, index))
+        selected_filters = addendum_dict.get(get_key_for_form(FILTER, index), [])
         if SHOW_ALL_ROW in selected_filters:
             filter_dict[ACTIVE_SELECTORS] = [SHOW_ALL_ROW]
         else:
@@ -112,15 +112,21 @@ def add_active_selectors_to_selectable_data_list(
         for loc in locations:
             for input_type in [OPERATION, VALUE]:
                 # pull the relevant filter info from the submitted form
-                active_numerical_filter_dict[loc][input_type] = addendum_dict.get(
-                    NUMERICAL_FILTER_NUM_LOC_TYPE.format(index, loc, input_type),
-                    NUMERICAL_FILTER_DEFAULT[loc][input_type],
+                # all values in addendum_dict are lists
+                numerical_filter_value = addendum_dict.get(
+                    NUMERICAL_FILTER_NUM_LOC_TYPE.format(index, loc, input_type)
                 )
+                active_numerical_filter_dict[loc][input_type] = (
+                    numerical_filter_value[0]
+                    if numerical_filter_value
+                    else NUMERICAL_FILTER_DEFAULT[loc][input_type]
+                )
+
         numerical_filter_dict[ACTIVE_SELECTORS] = active_numerical_filter_dict
 
 
 def add_operations_to_the_data_from_addendum(
-    selectable_data_dict: dict, data_info_list: list, addendum_dict: ImmutableMultiDict,
+    selectable_data_dict: dict, data_info_list: list, addendum_dict: dict,
 ) -> list:
     """
     Adds operations to be passed to the data handlers for the data
@@ -138,14 +144,14 @@ def add_operations_to_the_data_from_addendum(
     # modifies the axis shown in the config
     axis_list = selectable_data_dict.get(AXIS, [])
     for index, axis_dict in enumerate(axis_list):
-        new_column_for_axis = addendum_dict.get(get_key_for_form(AXIS, index))
+        new_column_for_axis = addendum_dict.get(get_key_for_form(AXIS, index))[0]
         axis = axis_dict[COLUMN_NAME]
         for axis_data_dict in data_info_list:
             axis_data_dict[axis] = new_column_for_axis
 
     # adds a group by
     if GROUPBY in selectable_data_dict:
-        selection = addendum_dict.getlist(get_key_for_form(GROUPBY, ""))
+        selection = addendum_dict.get(get_key_for_form(GROUPBY, ""))
         if len(selection) > 0 and NO_GROUP_BY not in selection:
             groupby_dict = {COLUMN_NAME: selection}
 
@@ -153,7 +159,7 @@ def add_operations_to_the_data_from_addendum(
     filter_list = selectable_data_dict.get(FILTER, [])
     for index, filter_dict in enumerate(filter_list):
         base_info_dict_for_selector = get_base_info_for_selector(filter_dict, FILTER)
-        selection = addendum_dict.getlist(get_key_for_form(FILTER, index))
+        selection = addendum_dict.get(get_key_for_form(FILTER, index))
         if len(selection) == 0 or SHOW_ALL_ROW in selection:
             continue
         base_info_dict_for_selector[SELECTED] = selection
@@ -170,21 +176,21 @@ def add_operations_to_the_data_from_addendum(
         for loc in [UPPER_INEQUALITY, LOWER_INEQUALITY]:
             # get the value submitted in the web form by using its name
             # format specified in numeric_filter.html
+            # the value is a list of length one
             numerical_value = addendum_dict[
                 NUMERICAL_FILTER_NUM_LOC_TYPE.format(index, loc, VALUE)
-            ]
+            ][0]
             if numerical_value == "":
                 continue
             numerical_filter_info = {
                 VALUE: float(numerical_value),
                 OPERATION: addendum_dict[
                     NUMERICAL_FILTER_NUM_LOC_TYPE.format(index, loc, OPERATION)
-                ],
+                ][0],
             }
             operation_list.append(
                 {**base_info_dict_for_selector, **numerical_filter_info}
             )
-
     return operation_list, groupby_dict
 
 
@@ -236,3 +242,19 @@ def get_key_for_form(selector_type, index):
         index
     )
     return selection_index_str
+
+
+def add_form_to_addendum_dict(form: ImmutableMultiDict, addendum_dict: dict):
+    """
+    Used to update the addendum_dict that contains the previous graphic
+     selection elements with a new set of selections from a posted form
+    :param form:
+    :param addendum_dict:
+    :return:
+    """
+    graphic_dict = {}
+    for key, value in form.lists():
+        if key in [GRAPHIC_NAME, PROCESS]:
+            continue
+        graphic_dict[key] = value
+    addendum_dict[form.get(GRAPHIC_NAME)] = graphic_dict

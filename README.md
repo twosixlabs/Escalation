@@ -75,6 +75,11 @@ Refresh your browser to update the contents to match your saved configuration.
      
 Some notes on [creating your first config files with the UI wizard](config_information/wizard_guide/creating_first_graphic_with_wizard.md).  
 
+This includes a gallery of various chart types and how they're configured.
+
+![config_gallery_thumbnail](config_information/gallery/images/gallery_thumbnail.png)
+
+
 #### Build a config from scratch (advanced, optional)
 Run `python build_app_config_json_template.py` to build a base config file. 
 Everything blank or in `<>` should be changed.
@@ -142,15 +147,16 @@ To connect directly to the SQL database, this command
 
 ### Resetting the SQL database
 
-You can re-build the sql database from a blank slate by deleting the "volume" associated with the database, 
-where the data is stored, and relaunching to create a new one.
+Run the reset script from the top level of the repository
 
-1. Run the command `docker-compose down --volumes`
-2. Delete the file `escalation/app_deploy_data/models.py`
-3. Re-start the app
+    ./escalation/scripts/escalation-reset.sh
+    
+This deletes the volume associated with the database, where the data is stored, and resets a models.py code file that decribes the database.
+
+Simply re-start the configuration as above(#2.-Configuring-the-app) to work from this blank state.
 
 
-You can also manually delete tables in the sql database by connecting to the database directly and using sql commands.
+You can also manually delete tables in the sql database by connecting to the database directly and using sql commands. Note that this doesn't reset the models.py file, so may result in strange behavior.
 
     Connect to db:
     docker exec -it escos_db psql -h localhost -p 5432 -U escalation -d escalation
@@ -163,6 +169,15 @@ You can also manually delete tables in the sql database by connecting to the dat
     
     Disconnect:
     \q
+   
+### Uploading data files to the db from the command line
+
+You can directly upload files by POSTing requests to the Escalalation upload endpoints.
+
+http://localhost:8000/wizard/upload
+http://localhost:8000/upload
+
+There is a helper script in `escalation/scripts/csv_to_sql.py` that does this, with documentation there about how to use it.
     
 
 # Running Escalation as a web-accessible server

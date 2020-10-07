@@ -10,6 +10,10 @@ if not os.environ.get("DATABASE_CONFIG"):
         "password": "escalation_pwd",
         "database": "escalation",
     }
+    # for debugging- if running locally and not container, reference the db on localhost
+    if os.environ.get("DOCKER_DEPLOYED") is None:
+        DATABASE_CONFIG["host"] = "localhost"
+
 else:
     from sqlalchemy.engine.url import make_url
 

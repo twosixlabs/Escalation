@@ -50,13 +50,24 @@
     $(function () {$('[data-toggle="tooltip"]').tooltip({trigger : 'hover'})})
 
     let graphic_status = '{{ graphic_status }}';
+    let graphic_path = '{{ graphic_path }}'
     let current_state = {{ current_config | safe }};
     let dict_of_schemas={{ schema | safe }};
     let dict_of_plotly_schemas = dict_of_schemas['plotly_schema'];
     let editors= new Object();
     let current_plot_type = "{{ current_schema }}";
     let saved_plot_type = current_plot_type;
-    let selector_editor=new_editor('plot_selector',true,{{ schema_selector_dict | safe }})
+    let selector_editor=new_editor('plot_selector',true,{{ schema_selector_dict | safe }});
+
+    // The only values shown in default filter are the ones corresponding to the column
+    const default_entries_dict ={{ default_entries_dict | safe }}
+    window.JSONEditor.defaults.callbacks.template = {
+        "default_selected_filter": (jseditor, e) => {
+            if (default_entries_dict[e.watched.column].includes(e.item)) return e.item;
+            return "";
+          },
+        "identity_callback": (jseditor, e) => e.item,
+    };
 
     make_json_editor();
     {% if graphic_status in ['old', 'copy'] %}
@@ -88,13 +99,36 @@
             current_state=get_json_editor_value();
             saved_plot_type = current_plot_type;
             // The form contains nested dictionaries so it is easier to send a json than a form
+            console.log(graphic_path)
             let data = JSON.stringify({"config_dict" : current_state,
                 "page_id":{{ page_id }},
-                "graphic_path": '{{ graphic_path }}',
+                "graphic_path": graphic_path,
                 "graphic_status":graphic_status});
             send_json_in_post_request(url, data, webpage);// The form contains nested dictionaries so it is easier to send a json than a form
         }
 
+    }
+    function send_json_in_post_request(url, data, webpage){
+        let xhr = new XMLHttpRequest();
+        xhr.open("POST", url);
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        xhr.onreadystatechange = function () {
+            let success_text = document.querySelector('#feedback_message');
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                if (webpage) {window.location.href = webpage}
+                success_text.innerHTML = "Applied";
+                const jsonResponse = JSON.parse(xhr.response);
+                graphic_status = "old";
+                graphic_path = jsonResponse['graphic_path'];
+            } else {
+                success_text.innerHTML = "Failed";
+            }
+            // Message disappears after 5 secs
+            setTimeout(function() {
+                  success_text.innerHTML="";
+                }, 5000);
+            };
+        xhr.send(data);
     }
     function reset_json_editor(){
         for(let editor_name in editors){
@@ -126,7 +160,6 @@
         }
         return errors
     }
-
     function reload_last_save(){
         if (current_plot_type != saved_plot_type){
             current_plot_type=saved_plot_type;
@@ -141,7 +174,6 @@
             editors[editor_name].setValue(values_to_set[editor_name]);
         }
     }
-
     selector_editor.watch('root.plot_type', () => {
         current_plot_type = selector_editor.getEditor('root.plot_type').getValue();
         editors['plotly'].destroy();
@@ -154,6 +186,7 @@
             // check if sets are not equal
             if (!(new_data_sources.size === current_data_sources.size && [...new_data_sources].every(value => current_data_sources.has(value)))) {
                 current_data_sources = new_data_sources;
+                const collapse_dict=get_collapse_dict(editors)
 
                 let xhr = new XMLHttpRequest();
                 xhr.open("POST", "{{ url_for('.get_updated_schemas') }}");
@@ -173,7 +206,10 @@
                         console.log("Failed")
                     }
                 };
-                xhr.send(JSON.stringify(Array.from(new_data_sources)));
+                xhr.send(JSON.stringify({
+                      "data_sources": Array.from(new_data_sources),
+                      "collapse_dict": collapse_dict
+                    }));
 
             }
         });
