@@ -25,6 +25,8 @@ from utility.constants import (
     POSTGRES,
     PLOT_SPECIFIC_INFO,
     SELECTABLE_DATA_DICT,
+    VISUALIZATION_OPTIONS,
+    GROUPBY_SELECTOR,
 )
 from utility.wizard_utils import (
     invert_dict_lists,
@@ -36,6 +38,7 @@ from utility.wizard_utils import (
     copy_data_from_form_to_config,
     graphic_dict_to_graphic_component_dict,
     graphic_component_dict_to_graphic_dict,
+    generate_collapse_dict_from_graphic_component_dict,
 )
 
 
@@ -184,3 +187,21 @@ def test_graphic_component_dict_to_graphic_dict(graphic_json_fixture):
 
 def test_get_data_source_info():
     assert False
+
+
+def test_generate_collapse_dict_from_graphic_component_dict(graphic_json_fixture):
+    test_config = graphic_json_fixture["graphic_0"]
+    collapse_dict = generate_collapse_dict_from_graphic_component_dict(test_config)
+    true_collapse_dict = {
+        ADDITIONAL_DATA_SOURCES: True,
+        HOVER_DATA: False,
+        GROUPBY: False,
+        AGGREGATE: True,
+        FILTER: False,
+        NUMERICAL_FILTER: False,
+        AXIS: True,
+        GROUPBY_SELECTOR: True,
+        VISUALIZATION_OPTIONS: False,
+        SELECTABLE_DATA_DICT: False,
+    }
+    assert collapse_dict == true_collapse_dict

@@ -74,6 +74,7 @@ TEXT = "text"
 SELECT_OPTION = "options"
 AXIS = "axis"
 GROUPBY = "groupby"
+GROUPBY_SELECTOR = "groupby_selector"
 SELECTOR_TYPE = "type"
 FILTER = "filter"
 UNFILTERED_SELECTOR = "unfiltered_selector"
@@ -117,6 +118,7 @@ CSVFILE = "csvfile"
 DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 # addendum constants
+ADDENDUM_DICT = "addendum_dict"
 GRAPHIC_NAME = "graphic_name"
 NUMERICAL_FILTER_NUM_LOC_TYPE = "numerical_filter_{:d}_{}_{}"
 PROCESS = "process"
@@ -129,6 +131,7 @@ GRAPHIC_STATUS = "graphic_status"
 COPY = "copy"
 OLD = "old"
 NEW = "new"
+COLLAPSE_DICT = "collapse_dict"
 
 # schema constants, these come from json schema
 ADDITIONAL_PROPERTIES = "additionalProperties"

@@ -2,6 +2,7 @@
 # Licensed under the Apache License, Version 2.0
 
 import json
+from collections import defaultdict
 
 from graphics.plotly_plot import STYLES
 from utility.build_plotly_schema import build_plotly_schema
@@ -78,16 +79,25 @@ def build_settings_schema():
     return schema
 
 
-def build_graphic_schema(data_source_names=None, column_names=None):
+def build_graphic_schema(
+    data_source_names=None, column_names=None, unique_entries=None, collapse_dict=None
+):
     """
+
     :param data_source_names: names from DATA_SOURCES, already checked against the file system
     :param column_names: possible column names from files or database (format data_source_name.column_name)
+    :param unique_entries: values from possible column names
+    :param collapse_dict: whether the element should be collapsed or not
     :return:
     """
+    if not collapse_dict:
+        collapse_dict = defaultdict(lambda: True)
     if data_source_names:
         data_source_names.sort()
     if column_names:
         column_names.sort()
+    if unique_entries:
+        unique_entries.sort()
     schema = {
         "$schema": "http://json-schema.org/draft/2019-09/schema#",
         "type": "object",
@@ -144,7 +154,8 @@ def build_graphic_schema(data_source_names=None, column_names=None):
                     },
                     ADDITIONAL_DATA_SOURCES: {
                         "type": "array",
-                        OPTIONS: {COLLAPSED: True,},
+                        TITLE: "Additional Data Sources",
+                        OPTIONS: {COLLAPSED: collapse_dict[ADDITIONAL_DATA_SOURCES],},
                         ITEMS: {
                             "type": "object",
                             TITLE: "Additional Data Source",
@@ -163,6 +174,7 @@ def build_graphic_schema(data_source_names=None, column_names=None):
                                     " (in the case of 2 or more tables)",
                                     ITEMS: {
                                         TITLE: "Pairs of Keys",
+                                        DESCRIPTION: "Use the command/ctr key to select more than one entry",
                                         "type": "array",
                                         "uniqueItems": True,
                                         "minItems": 2,
@@ -189,14 +201,17 @@ def build_graphic_schema(data_source_names=None, column_names=None):
                 "title": "Visualization Options",
                 "description": "Graph options: hover tooltips, aggregation functions, group by",
                 "additionalProperties": False,
-                OPTIONS: {COLLAPSED: True, REMOVE_EMPTY_PROPERTIES: True},
+                OPTIONS: {
+                    COLLAPSED: collapse_dict[VISUALIZATION_OPTIONS],
+                    REMOVE_EMPTY_PROPERTIES: True,
+                },
                 PROPERTIES: {
                     HOVER_DATA: {
                         "type": "object",
                         "title": "Hover Data",
                         "description": "data shown on hover over by mouse",
                         "required": [COLUMN_NAME],
-                        OPTIONS: {COLLAPSED: True},
+                        OPTIONS: {COLLAPSED: collapse_dict[HOVER_DATA]},
                         "properties": {
                             COLUMN_NAME: {
                                 "type": "array",
@@ -215,7 +230,10 @@ def build_graphic_schema(data_source_names=None, column_names=None):
                         "title": "Group By",
                         "description": "Grouping of the data see https://plotly.com/javascript/group-by/",
                         "required": [COLUMN_NAME],
-                        OPTIONS: {COLLAPSED: True, REMOVE_EMPTY_PROPERTIES: True},
+                        OPTIONS: {
+                            COLLAPSED: collapse_dict[GROUPBY],
+                            REMOVE_EMPTY_PROPERTIES: True,
+                        },
                         "properties": {
                             COLUMN_NAME: {
                                 "type": "array",
@@ -240,7 +258,7 @@ def build_graphic_schema(data_source_names=None, column_names=None):
                         "title": "Aggregate",
                         "description": "See https://plotly.com/javascript/aggregations/ for examples",
                         "required": [COLUMN_NAME, AGGREGATIONS],
-                        OPTIONS: {COLLAPSED: True},
+                        OPTIONS: {COLLAPSED: collapse_dict[AGGREGATE]},
                         "properties": {
                             COLUMN_NAME: {
                                 "type": "array",
@@ -283,18 +301,23 @@ def build_graphic_schema(data_source_names=None, column_names=None):
             SELECTABLE_DATA_DICT: {
                 "type": "object",
                 "title": "Data Selector Options",
-                "description": "Interactive data selectors: filter data by values, change axes, change columns to group by",
+                "description": "Interactive data selectors: filter data by values, change axes,"
+                " change columns to group by",
                 ADDITIONAL_PROPERTIES: False,
-                OPTIONS: {COLLAPSED: True, REMOVE_EMPTY_PROPERTIES: True},
+                OPTIONS: {
+                    COLLAPSED: collapse_dict[SELECTABLE_DATA_DICT],
+                    REMOVE_EMPTY_PROPERTIES: True,
+                },
                 PROPERTIES: {
                     FILTER: {
                         "type": "array",
                         "title": "List of Filters",
                         DESCRIPTION: "a filter operation based on label",
-                        OPTIONS: {COLLAPSED: True},
+                        OPTIONS: {COLLAPSED: collapse_dict[FILTER]},
                         "items": {
                             "type": "object",
                             TITLE: "Filter",
+                            "id": "filter_item",
                             "required": [COLUMN_NAME],
                             "additionalProperties": False,
                             OPTIONS: {DISABLE_COLLAPSE: True},
@@ -313,13 +336,35 @@ def build_graphic_schema(data_source_names=None, column_names=None):
                                 DEFAULT_SELECTED: {
                                     "type": "array",
                                     TITLE: "Default Selected",
-                                    "description": "Optional, Default value(s) selected in this filter, a list of values to include",
-                                    "items": {"type": "string"},
+                                    "description": "Optional, Default value(s) selected in this filter,"
+                                    " a list of values to include",
+                                    "items": {
+                                        "type": "string",
+                                        # watch will call the functions in enumSource (default_selected_filter,
+                                        # identity_callback; defined in the JS) whenever COLUMN_NAME is changed,
+                                        # it will also store the value of COLUMN_NAME to a variable called COLUMN_NAME
+                                        #  to be used by the JS
+                                        "watch": {
+                                            COLUMN_NAME: ".".join(
+                                                ["filter_item", COLUMN_NAME]
+                                            )
+                                        },
+                                        "enumSource": [
+                                            {
+                                                "source": unique_entries,
+                                                "filter": "default_selected_filter",
+                                                "title": "identity_callback",
+                                                "value": "identity_callback",
+                                            }
+                                        ],
+                                    },
                                 },
                                 UNFILTERED_SELECTOR: {
                                     "type": "boolean",
                                     TITLE: "Should Selector Be Filtered",
-                                    DESCRIPTION: "If selector is filtered, the user can only select values in this field that are present in the data subsetted by the currently-applied filters",
+                                    DESCRIPTION: "If selector is filtered, the user can only select values in this"
+                                    " field that are present in the data subsetted by the"
+                                    " currently-applied filters",
                                 },
                             },
                         },
@@ -328,7 +373,7 @@ def build_graphic_schema(data_source_names=None, column_names=None):
                         "type": "array",
                         "title": "List of Numerical Filters",
                         DESCRIPTION: "a filter operation on numerical data",
-                        OPTIONS: {COLLAPSED: True},
+                        OPTIONS: {COLLAPSED: collapse_dict[NUMERICAL_FILTER]},
                         "items": {
                             TITLE: "Numerical Filters",
                             "type": "object",
@@ -349,7 +394,7 @@ def build_graphic_schema(data_source_names=None, column_names=None):
                         "type": "array",
                         "title": "List of Axis Selectors",
                         DESCRIPTION: "change what column data is shown on a axis",
-                        OPTIONS: {COLLAPSED: True},
+                        OPTIONS: {COLLAPSED: collapse_dict[AXIS]},
                         "items": {
                             "type": "object",
                             TITLE: "Axis Selector",
@@ -374,7 +419,7 @@ def build_graphic_schema(data_source_names=None, column_names=None):
                         "type": "object",
                         "title": "Group By Selector",
                         "required": [ENTRIES],
-                        OPTIONS: {COLLAPSED: True},
+                        OPTIONS: {COLLAPSED: collapse_dict[GROUPBY_SELECTOR]},
                         "additionalProperties": False,
                         PROPERTIES: {
                             ENTRIES: {

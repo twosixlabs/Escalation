@@ -13,14 +13,18 @@ def build_main_schemas_for_ui():
     return {LOCAL_CSV: schema_local, POSTGRES: schema_database}
 
 
-def build_graphic_schemas_for_ui(data_source_names=None, column_names=None):
+def build_graphic_schemas_for_ui(
+    data_source_names=None, column_names=None, unique_entries=None, collapse_dict=None
+):
     """
     If you are using the app with plotly this puts the plotly schema into the graphic schema
     :param data_source_names:
     :param column_names:
     :return:
     """
-    graphic_schema = build_graphic_schema(data_source_names, column_names)
+    graphic_schema = build_graphic_schema(
+        data_source_names, column_names, unique_entries, collapse_dict
+    )
     plotly_schemas, schema_to_type = build_plotly_schema_individual_dicts(column_names)
     visualization_schema = graphic_schema[PROPERTIES].pop(VISUALIZATION_OPTIONS)
     selector_schema = graphic_schema[PROPERTIES].pop(SELECTABLE_DATA_DICT)

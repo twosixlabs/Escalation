@@ -125,9 +125,15 @@ def psycopg2_copy_from_stringio(conn, df, table_name):
 
 
 class SqlHandler(DataHandler):
-    def __init__(self, data_sources):
+    def __init__(self, data_sources, only_use_active: bool = True):
+        """
+        :param only_use_active: filters the query based on the "active" value
+        in the upload_metadata table for each upload
+        :param data_sources:
+        """
         self.data_sources = data_sources
         self.table_lookup_by_name = {}
+        self.only_use_active = only_use_active
         # create a flattened list from the data_sources object
         self.flat_data_sources = [
             self.data_sources[MAIN_DATA_SOURCE]
@@ -221,6 +227,18 @@ class SqlHandler(DataHandler):
         # todo: better match how our auto schema is working to catch all rename logic
         return column_name.replace(TABLE_COLUMN_SEPARATOR, "_")
 
+    def get_schema_for_data_source(self):
+        """
+        gets the column names for the current handler object
+        todo: debate whether we should prefix the table name
+        :return: list of sqlalchemy column objects
+        """
+        return [
+            TABLE_COLUMN_SEPARATOR.join([data_source, c.name])
+            for data_source, column_object in self.table_lookup_by_name.items()
+            for c in column_object.columns
+        ]
+
     def get_column_data(self, columns: list, filters: [] = None) -> dict:
         """
         :param columns: A complete list of the columns to be returned
@@ -238,8 +256,9 @@ class SqlHandler(DataHandler):
         query = current_app.db_session.query(
             *[self.column_lookup_by_name[c] for c in all_column_rename_dict.keys()]
         )
-        active_data_filters = self.build_filters_from_active_data_source()
-        filters.extend(active_data_filters)
+        if self.only_use_active:
+            active_data_filters = self.build_filters_from_active_data_source()
+            filters.extend(active_data_filters)
         query = self.apply_filters_to_query(query, filters)
         response_rows = query.all()
         if response_rows:
@@ -251,6 +270,44 @@ class SqlHandler(DataHandler):
             # if the sql query returns no rows, we want an empty df to format our response
             response_as_df = pd.DataFrame(columns=columns)
         return response_as_df[columns]
+
+    def get_table_data(self, filters: [] = None) -> dict:
+        """
+        :param filters: Optional list specifying how to filter the requested columns based on the row values
+        :return: a dict keyed by column name and valued with lists of row datapoints for the column
+        """
+
+        def remove_tablename_prefix_from_column_name(text, list_prefix):
+            for prefix in list_prefix:
+                prefix = f"{prefix}_"
+                if text.startswith(prefix):
+                    return text[len(prefix) :]
+            return text
+
+        if filters is None:
+            filters = []
+        # build basic query requesting all of the columns needed
+        column_rename_dict = {
+            c: remove_tablename_prefix_from_column_name(
+                c, self.table_lookup_by_name.keys()
+            )
+            for c in self.column_lookup_by_name.keys()
+        }
+        query = current_app.db_session.query(*self.column_lookup_by_name.values())
+        if self.only_use_active:
+            active_data_filters = self.build_filters_from_active_data_source()
+            filters.extend(active_data_filters)
+        query = self.apply_filters_to_query(query, filters)
+        response_rows = query.all()
+        if response_rows:
+            # rename is switching the '_' separation back to TABLE_COLUMN_SEPARATOR
+            response_as_df = pd.DataFrame(response_rows).rename(
+                columns=column_rename_dict
+            )
+        else:
+            # if the sql query returns no rows, we want an empty df to format our response
+            response_as_df = pd.DataFrame(columns=column_rename_dict.values())
+        return response_as_df
 
     def get_column_unique_entries(
         self, cols: list, filter_active_data=True, filters: list = None
@@ -341,6 +398,10 @@ class DataFrameConverter:
 
 
 class SqlDataInventory(SqlHandler, DataFrameConverter):
+    """
+    Used for getting meta data information and uploading to backend
+    """
+
     def __init__(self, data_sources):
         # Instance methods for this class refer to single data source table
         assert len(data_sources) == 1
@@ -448,13 +509,6 @@ class SqlDataInventory(SqlHandler, DataFrameConverter):
         max_upload_id = max_upload_id or 0
         upload_id = max_upload_id + 1
         return upload_id
-
-    def get_schema_for_data_source(self):
-        """
-        :param data_source_name: str
-        :return: list of sqlalchemy column objects
-        """
-        return [c for c in self.table_lookup_by_name[self.data_source_name].columns]
 
     def write_data_upload_to_backend(
         self, uploaded_data_df, username, notes, filename=None

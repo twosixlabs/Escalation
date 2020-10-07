@@ -27,15 +27,25 @@ from version import VERSION
 from views.dashboard import dashboard_blueprint
 from views.file_upload import upload_blueprint
 from views.admin import admin_blueprint
+from views.download import download_blueprint
 from views.wizard_view import wizard_blueprint
 
-ENV_SPECIFIED_URL = os.environ.get("DATABASE_URL")
 
-
-def create_app(db_uri=ENV_SPECIFIED_URL):
+def create_app(db_uri=None):
     app = Flask(__name__)
+    # specify the env variable DATABASE_CONFIG to control the content of DATABASE_CONFIG
+    if db_uri:
+        if isinstance(db_uri, URL):
+            sqlalchemy_database_uri = db_uri
+        elif isinstance(db_uri, str):
+            sqlalchemy_database_uri = URL(db_uri)
+        else:
+            raise TypeError("db_uri must be url string or sqlalchemy URL object")
+    else:
+        sqlalchemy_database_uri = URL(**DATABASE_CONFIG)
+
     app.config.from_mapping(
-        SQLALCHEMY_DATABASE_URI=db_uri or URL(**DATABASE_CONFIG),
+        SQLALCHEMY_DATABASE_URI=sqlalchemy_database_uri,
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         VERSION=VERSION,
     )
@@ -44,6 +54,7 @@ def create_app(db_uri=ENV_SPECIFIED_URL):
     app.register_blueprint(dashboard_blueprint)
     app.register_blueprint(upload_blueprint)
     app.register_blueprint(admin_blueprint)
+    app.register_blueprint(download_blueprint)
     if app.config.get("ENV") == DEVELOPMENT:
         # only include the wizard blueprint when running in debug mode
         app.register_blueprint(wizard_blueprint)

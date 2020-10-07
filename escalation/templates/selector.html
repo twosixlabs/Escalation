@@ -2,12 +2,13 @@
 <!--# Licensed under the Apache License, Version 2.0-->
 
 {% set selector_name=selector['name'] %}
-
+{% set selector_id=plot_id ~ "_" ~ selector['name'] %}
 <h6>{{ selector['text'] }}</h6>
-    <select class="selectpicker form-control m-2" data-dropdown-align-right='auto' id={{ selector_name }} name={{ selector_name }} form={{ "form_" ~ plot_id }}
-            {% if selector['multiple'] %}  multiple> {% else %} > {% endif %}
+    <select class="selectpicker form-control m-2" data-dropdown-align-right='auto' id={{ selector_id }} name={{ selector_name }} form={{ "form_" ~ plot_id }}
+       {% if selector['multiple'] -%} {% if selector['entries'][0] in selector['active_selector'] %} data-top_selected=true {% else %} data-top_selected=false {% endif %} onchange="show_all_row_handler('{{ selector_id }}','{{ selector['entries'][0] }}')"  multiple {%- endif %}>
     {% for col_name in selector['entries'] %}
-  <option value="{{ col_name }}"
-                  {% if col_name in selector['active_selector'] %}selected> {% else %}> {% endif %} {{ col_name }}</option>
+  <option value="{{ col_name }}" {% if col_name in selector['active_selector'] -%} selected {%- endif %}> {{ col_name }}</option>
+        {% if selector['multiple'] and  loop.index0==0 -%} <option data-divider="true"></option> {% endif %}
     {% endfor %}
 </select>
+

@@ -9,6 +9,7 @@ from utility.constants import (
     UPLOAD_ID,
     DATA_SOURCE_TYPE,
     MAIN_DATA_SOURCE,
+    TABLE_COLUMN_SEPARATOR,
 )
 from utility.exceptions import ValidationError
 
@@ -49,7 +50,9 @@ def validate_submission_content(csvfile, data_source_schema):
     """
     try:
         df = pd.read_csv(csvfile, sep=",", comment="#")
-        existing_column_names = set([x.name for x in data_source_schema])
+        existing_column_names = {
+            x.split(TABLE_COLUMN_SEPARATOR)[-1] for x in data_source_schema
+        }
         # if we have added an index column on the backend, don't look for it in the data
         for app_added_column in [INDEX_COLUMN, UPLOAD_ID]:
             if app_added_column in existing_column_names:
@@ -92,7 +95,11 @@ def submission():
         data_inventory = current_app.config.data_backend_writer(
             data_sources={MAIN_DATA_SOURCE: {DATA_SOURCE_TYPE: data_source_name}}
         )
-        data_source_schema = data_inventory.get_schema_for_data_source()
+        data_handler_class = current_app.config.data_handler(
+            data_sources={MAIN_DATA_SOURCE: {DATA_SOURCE_TYPE: data_source_name}}
+        )
+        data_source_schema = data_handler_class.get_schema_for_data_source()
+
         df = validate_submission_content(csvfile, data_source_schema)
         data_inventory.write_data_upload_to_backend(
             df, username, notes, filename=csvfile.filename

@@ -68,6 +68,12 @@ def graphic_dict_to_graphic_component_dict(graphic_dict):
 
     visualization_components = {HOVER_DATA: {}, GROUPBY: {}, AGGREGATE: {}}
     selector_components = {FILTER: [], NUMERICAL_FILTER: [], AXIS: [], GROUPBY: []}
+
+    # add in missing elements so the options show up in the json editor
+    component_dict[GRAPHIC_META_INFO][DATA_SOURCES][
+        ADDITIONAL_DATA_SOURCES
+    ] = component_dict[GRAPHIC_META_INFO][DATA_SOURCES].get(ADDITIONAL_DATA_SOURCES, [])
+
     for component, empty_element in visualization_components.items():
         component_dict[VISUALIZATION][component] = component_dict[VISUALIZATION].get(
             component, empty_element
@@ -104,6 +110,59 @@ def graphic_component_dict_to_graphic_dict(graphic_component_dict):
         graphic_dict[SELECTABLE_DATA_DICT] = selector_dict
 
     return graphic_dict
+
+
+def generate_collapse_dict_from_graphic_component_dict(graphic_dict):
+    """
+    Makes a dictionary for the ui wizard which elements should be collapsed (True)/ not collapsed (False)
+    :param graphic_dict:
+    :return:
+    """
+    HIGH_LEVEL_COLLAPSE = {
+        ADDITIONAL_DATA_SOURCES: [DATA_SOURCES, ADDITIONAL_DATA_SOURCES],
+        HOVER_DATA: [VISUALIZATION_OPTIONS, HOVER_DATA],
+        GROUPBY: [VISUALIZATION_OPTIONS, GROUPBY],
+        AGGREGATE: [VISUALIZATION_OPTIONS, AGGREGATE],
+        FILTER: [SELECTABLE_DATA_DICT, FILTER],
+        NUMERICAL_FILTER: [SELECTABLE_DATA_DICT, NUMERICAL_FILTER],
+        AXIS: [SELECTABLE_DATA_DICT, AXIS],
+        GROUPBY_SELECTOR: [SELECTABLE_DATA_DICT, GROUPBY],
+    }
+    FIRST_LEVEL_COLLAPSE = {
+        VISUALIZATION_OPTIONS: [HOVER_DATA, GROUPBY, AGGREGATE],
+        SELECTABLE_DATA_DICT: [FILTER, NUMERICAL_FILTER, AXIS, GROUPBY],
+    }
+
+    collapse_dict = {}
+    for key, path in HIGH_LEVEL_COLLAPSE.items():
+        collapse_dict[key] = (
+            False if graphic_dict.get(path[0], {}).get(path[1]) else True
+        )
+
+    for key, dependant_elements in FIRST_LEVEL_COLLAPSE.items():
+        collapse_dict[key] = all([collapse_dict[item] for item in dependant_elements])
+
+    return collapse_dict
+
+
+def get_default_collapse_dict():
+    """
+    collapse dict for a new graphic
+    :return:
+    """
+    keys = [
+        SELECTABLE_DATA_DICT,
+        VISUALIZATION_OPTIONS,
+        ADDITIONAL_DATA_SOURCES,
+        HOVER_DATA,
+        GROUPBY,
+        AGGREGATE,
+        FILTER,
+        NUMERICAL_FILTER,
+        AXIS,
+        GROUPBY_SELECTOR,
+    ]
+    return dict.fromkeys(keys, True)
 
 
 def prune_visualization_dict(visualization_dict):
@@ -167,30 +226,31 @@ def get_layout_for_dashboard(available_pages_list):
     return available_pages_list_copy
 
 
-def get_possible_column_names(data_source_names, data_inventory_class):
+def get_possible_column_names_and_values(
+    data_source_names, data_handler_class, get_unique_values=True
+):
     """
     Used to populate a dropdown in the config wizard with any column from the data
-    sources included in a figure
+    sources included in a figure, unique_entries used to populate default selected.
     :param data_source_names: list of data source name strings
-    :param data_inventory_class: backend-specific data inventory class
-    :return: possible_column_names list
+    :param data_handler_class: backend-specific data inventory class
+    :return: possible_column_names list, unique_entries dict.
+    :param get_unique_values: if true calculates unique values for each column
     """
     possible_column_names = []
-    csv_flag = current_app.config[APP_CONFIG_JSON].get(DATA_BACKEND) == LOCAL_CSV
+    unique_entries = {}
     for data_source_name in data_source_names:
-        data_inventory = data_inventory_class(
+        data_inventory = data_handler_class(
             data_sources={MAIN_DATA_SOURCE: {DATA_SOURCE_TYPE: data_source_name}}
         )
-        column_names = data_inventory.get_schema_for_data_source()
-        possible_column_names.extend(
-            [
-                TABLE_COLUMN_SEPARATOR.join(
-                    [data_source_name, column_name if csv_flag else column_name.name,]
-                )
-                for column_name in column_names
-            ]
-        )
-    return possible_column_names
+        column_names_for_data_source = data_inventory.get_schema_for_data_source()
+        possible_column_names.extend(column_names_for_data_source)
+        if get_unique_values:
+            unique_entries_for_data_source = data_inventory.get_column_unique_entries(
+                column_names_for_data_source
+            )
+            unique_entries.update(unique_entries_for_data_source)
+    return possible_column_names, unique_entries
 
 
 def get_data_source_info(active_data_source_names=None):
@@ -203,13 +263,18 @@ def get_data_source_info(active_data_source_names=None):
         active_data_source_names = []
     data_inventory_class = current_app.config.data_backend_writer
     data_source_names = data_inventory_class.get_available_data_sources()
+    active_data_source_names = [
+        data_source_name
+        for data_source_name in active_data_source_names
+        if data_source_name in data_source_names
+    ]
     if data_source_names and not active_data_source_names:
         # default to the first in alphabetical order
         active_data_source_names = [min(data_source_names)]
-    possible_column_names = get_possible_column_names(
-        active_data_source_names, data_inventory_class
+    possible_column_names, unique_entries = get_possible_column_names_and_values(
+        active_data_source_names, current_app.config.data_handler
     )
-    return data_source_names, possible_column_names
+    return data_source_names, possible_column_names, unique_entries
 
 
 def extract_data_sources_from_config(graphic_config):
@@ -238,3 +303,27 @@ def copy_data_from_form_to_config(main_config, form):
     """
     for key in [SITE_TITLE, SITE_DESC, DATA_BACKEND]:
         main_config[key] = form[key]
+
+
+def make_page_dict_for_main_config(webpage_label, page_urls):
+    """
+    Helper function for adding or renaming a page
+    :param webpage_label:
+    :param page_urls:
+    :return:
+    """
+    candidate_url = sanitize_string(
+        webpage_label
+    )  # sanitizing the string so it is valid url
+    if candidate_url in page_urls:
+        i = 0
+        while f"{candidate_url}_{i}" in page_urls:
+            i += 1
+        candidate_url = f"{candidate_url}_{i}"
+
+    page_dict = {
+        WEBPAGE_LABEL: webpage_label,
+        URL_ENDPOINT: candidate_url,
+        GRAPHIC_CONFIG_FILES: [],
+    }
+    return page_dict

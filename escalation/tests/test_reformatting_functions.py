@@ -26,12 +26,15 @@ from utility.constants import (
     AXIS,
     COLUMN_NAME,
     PLOT_SPECIFIC_INFO,
+    GRAPHIC_NAME,
+    DEFAULT_SELECTED,
 )
 from utility.reformatting_functions import (
     add_operations_to_the_data_from_addendum,
     add_active_selectors_to_selectable_data_list,
     add_instructions_to_config_dict,
     get_key_for_form,
+    add_form_to_addendum_dict,
 )
 
 
@@ -45,7 +48,21 @@ def single_page_config_dict():
 
 @pytest.fixture()
 def addendum_dict():
-    addendum_dict = ImmutableMultiDict(
+    addendum_dict = {
+        "graphic_0": {
+            "filter_0": ["MALE"],
+            "filter_1": ["Torgersen", "Dream"],
+            "numerical_filter_0_upper_operation": [">"],
+            "numerical_filter_0_upper_value": ["4"],
+            "numerical_filter_0_lower_operation": [">="],
+            "numerical_filter_0_lower_value": [""],
+        }
+    }
+    return addendum_dict
+
+
+def test_add_form_to_addendum_dict(addendum_dict):
+    form = ImmutableMultiDict(
         [
             ("graphic_name", "graphic_0"),
             ("filter_0", "MALE"),
@@ -57,7 +74,9 @@ def addendum_dict():
             ("numerical_filter_0_lower_value", ""),
         ]
     )
-    return addendum_dict
+    new_addendum_dict = {}
+    add_form_to_addendum_dict(form, new_addendum_dict)
+    assert new_addendum_dict == addendum_dict
 
 
 def test_add_active_selectors_to_selectable_data_list_with_addendum(
@@ -67,7 +86,7 @@ def test_add_active_selectors_to_selectable_data_list_with_addendum(
     add_active_selectors_to_selectable_data_list(
         graphic_0_dict[SELECTABLE_DATA_DICT],
         graphic_0_dict[PLOT_SPECIFIC_INFO][DATA],
-        addendum_dict,
+        addendum_dict["graphic_0"],
     )
     filter_list = graphic_0_dict[SELECTABLE_DATA_DICT][FILTER]
     assert len(filter_list[0][ACTIVE_SELECTORS]) == 1
@@ -83,22 +102,17 @@ def test_add_active_selectors_to_selectable_data_list_with_addendum(
     )
 
 
-def test_add_active_selectors_to_selectable_data_list_with_SHOW_ALL_ROWS_chosen_with_others(
+def test_add_active_selectors_to_selectable_data_list_with_SHOW_ALL_ROWS_chosen(
     single_page_config_dict,
 ):
-    addendum_dict = ImmutableMultiDict(
-        [
-            ("graphic_name", "graphic_0"),
-            ("filter_0", "MALE"),
-            ("filter_1", "Torgersen"),
-            ("filter_1", "Dream"),
-            ("filter_1", SHOW_ALL_ROW),
-            ("numerical_filter_0_upper_operation", ">"),
-            ("numerical_filter_0_upper_value", "4"),
-            ("numerical_filter_0_lower_operation", ">="),
-            ("numerical_filter_0_lower_value", ""),
-        ]
-    )
+    addendum_dict = {
+        "filter_0": ["MALE"],
+        "filter_1": [SHOW_ALL_ROW],
+        "numerical_filter_0_upper_operation": [">"],
+        "numerical_filter_0_upper_value": ["4"],
+        "numerical_filter_0_lower_operation": [">="],
+        "numerical_filter_0_lower_value": [""],
+    }
     graphic_0_dict = single_page_config_dict["graphic_0"]
     add_active_selectors_to_selectable_data_list(
         graphic_0_dict[SELECTABLE_DATA_DICT],
@@ -117,17 +131,18 @@ def test_add_active_selectors_to_selectable_data_list_without_addendum(
 ):
     single_page_config_dict = single_page_config_dict
     graphic_0_dict = single_page_config_dict["graphic_0"]
+    graphic_0_dict[SELECTABLE_DATA_DICT][FILTER][1][DEFAULT_SELECTED] = ["Dream"]
     add_active_selectors_to_selectable_data_list(
         graphic_0_dict[SELECTABLE_DATA_DICT],
         graphic_0_dict[PLOT_SPECIFIC_INFO][DATA],
-        ImmutableMultiDict(),
+        {},
     )
 
     filter_list = graphic_0_dict[SELECTABLE_DATA_DICT][FILTER]
     assert len(filter_list[0][ACTIVE_SELECTORS]) == 1
     assert SHOW_ALL_ROW in filter_list[0][ACTIVE_SELECTORS]
     assert len(filter_list[1][ACTIVE_SELECTORS]) == 1
-    assert SHOW_ALL_ROW in filter_list[1][ACTIVE_SELECTORS]
+    assert "Dream" in filter_list[1][ACTIVE_SELECTORS]
 
     numerical_filter_list = graphic_0_dict[SELECTABLE_DATA_DICT][NUMERICAL_FILTER]
     assert numerical_filter_list[0][ACTIVE_SELECTORS][UPPER_INEQUALITY][VALUE] == ""
@@ -142,7 +157,7 @@ def test_add_operations_to_the_data(single_page_config_dict, addendum_dict):
     operations_list, groupby_dict = add_operations_to_the_data_from_addendum(
         graphic_0_dict[SELECTABLE_DATA_DICT],
         graphic_0_dict[PLOT_SPECIFIC_INFO][DATA],
-        addendum_dict,
+        addendum_dict["graphic_0"],
     )
     assert not groupby_dict
     assert len(operations_list) == 3
@@ -167,13 +182,10 @@ def test_add_operations_to_the_data(single_page_config_dict, addendum_dict):
     # test two
 
     graphic_1_dict = single_page_config_dict["graphic_1"]
-    addendum_dict = ImmutableMultiDict(
-        [
-            ("graphic_index", "graphic_1"),
-            ("axis_0", "penguin_size:culmen_depth_mm"),
-            (GROUPBY, "penguin_size:island"),
-        ]
-    )
+    addendum_dict = {
+        "axis_0": ["penguin_size:culmen_depth_mm"],
+        GROUPBY: ["penguin_size:island"],
+    }
 
     operations_list, groupby_dict = add_operations_to_the_data_from_addendum(
         graphic_1_dict[SELECTABLE_DATA_DICT],
@@ -209,24 +221,13 @@ def test_add_instructions_to_config_dict(single_page_config_dict, addendum_dict)
 
 
 def test_add_instructions_to_config_dict_with_different_addendum(
-    single_page_config_dict,
+    single_page_config_dict, addendum_dict
 ):
     single_page_config_dict = single_page_config_dict
     single_page_config_dict_test = copy.deepcopy(single_page_config_dict)
-    addendum_dict = ImmutableMultiDict(
-        [
-            ("graphic_name", "a_different_graph"),
-            ("filter_0", "MALE"),
-            ("filter_1", "Torgersen"),
-            ("filter_1", "Dream"),
-            ("numerical_filter_0_upper_operation", ">"),
-            ("numerical_filter_0_upper_value", "4"),
-            ("numerical_filter_0_lower_operation", ">="),
-            ("numerical_filter_0_lower_value", ""),
-        ]
-    )
+    new_addendum_dict = {"a_different_graph": addendum_dict["graphic_0"]}
     single_page_config_dict_test = add_instructions_to_config_dict(
-        single_page_config_dict_test, addendum_dict
+        single_page_config_dict_test, new_addendum_dict
     )
     graphic_0_dict = single_page_config_dict_test["graphic_0"]
     assert len(graphic_0_dict[SELECTABLE_DATA_DICT][FILTER][0][ACTIVE_SELECTORS]) == 1

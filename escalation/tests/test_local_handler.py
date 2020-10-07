@@ -163,23 +163,22 @@ def test_get_available_data_sources(test_app_client_csv_backed):
 
 
 def test_get_schema_for_data_source(test_app_client_csv_backed):
-    column_names = LocalCSVDataInventory(
+    column_names = LocalCSVHandler(
         {MAIN_DATA_SOURCE: {DATA_SOURCE_TYPE: "penguin_size"}}
     ).get_schema_for_data_source()
-    column_schema = namedtuple("column_schema", ["name", "data_type"])
     expected_column_names = [
-        column_schema("study_name", np.dtype("O")),
-        column_schema("species", np.dtype("O")),
-        column_schema("island", np.dtype("O")),
-        column_schema("sex", np.dtype("O")),
-        column_schema("region", np.dtype("O")),
-        column_schema("culmen_depth_mm", np.dtype("float64")),
-        column_schema("culmen_length_mm", np.dtype("float64")),
-        column_schema("flipper_length_mm", np.dtype("float64")),
-        column_schema("body_mass_g", np.dtype("float64")),
+        "penguin_size:study_name",
+        "penguin_size:species",
+        "penguin_size:island",
+        "penguin_size:sex",
+        "penguin_size:region",
+        "penguin_size:culmen_depth_mm",
+        "penguin_size:culmen_length_mm",
+        "penguin_size:flipper_length_mm",
+        "penguin_size:body_mass_g",
     ]
 
-    assert column_names == expected_column_names
+    assert set(column_names) == set(expected_column_names)
 
 
 def test_get_data_upload_metadata(test_app_client_csv_backed):

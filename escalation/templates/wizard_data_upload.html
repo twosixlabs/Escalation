@@ -28,7 +28,9 @@
 </div>
 {% endif %}
 <div class="row mb-3">
-<button type="button" class="btn btn-secondary">Create/Replace a Table</button> <a class="btn btn-outline-secondary" href={{ url_for('upload.submission_view') }} role="button">Append to a Existing Table</a>
+    <div class="btn-group" role="group">
+        <button type="button" class="btn btn-secondary">Create/Replace a Table</button> <a class="btn btn-outline-secondary" href={{ url_for('upload.submission_view') }} role="button">Append to a Existing Table</a>
+    </div>
  </div>
 <div class="row">
 <form id="upload_form" method="post" enctype="multipart/form-data">

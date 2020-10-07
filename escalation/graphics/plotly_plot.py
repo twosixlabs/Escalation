@@ -13,6 +13,7 @@ from utility.constants import (
     AGGREGATIONS,
     SCATTER,
     SCATTERGL,
+    TYPE,
 )
 
 HOVER_TEMPLATE_HTML = "hover_template.html"
@@ -41,7 +42,24 @@ AXIS_TO_SORT_ALONG = "x"
 AUTOMARGIN = "automargin"
 HOVERMODE = "hovermode"
 CLOSEST = "closest"
-POSSIBLE_AXIS = ["x", "y", "z"]
+X = "x"
+Y = "y"
+Z = "z"
+ERROR_X = "error_x"
+ERROR_Y = "error_y"
+ERROR_Z = "error_z"
+POSSIBLE_AXIS = [X, Y, Z]
+POSSIBLE_ERROR_AXES = [ERROR_X, ERROR_Y, ERROR_Z]
+
+ARRAY = "array"
+CONFIG = "config"
+
+MODE_BAR_REMOVE = "modeBarButtonsToRemove"
+MODE_BAR_ADD = "modeBarButtonsToAdd"
+
+DISPLAY_LOGO = "displaylogo"
+UPDATE_MENUS = "updatemenus"
+BUTTONS = "buttons"
 
 
 def get_hover_data_in_plotly_form(
@@ -151,6 +169,54 @@ def add_layout_axis_defaults(layout_dict: dict, axis, column_name):
     return layout_dict
 
 
+def add_config_defaults(config_dict: dict):
+    """
+    Removes buttons from the mode bar
+    :param config_dict:
+    :return:
+    """
+    if MODE_BAR_REMOVE not in config_dict:
+        config_dict[MODE_BAR_REMOVE] = [
+            "select2d",
+            "lasso2d",
+            "autoScale2d",
+            "toggleSpikelines",
+        ]
+    if DISPLAY_LOGO not in config_dict:
+        config_dict[DISPLAY_LOGO] = False
+    return config_dict
+
+
+def add_toggle_layout_button(layout_dict: dict):
+    """
+    Adds a button that toggles the legend
+    :param layout_dict:
+    :return:
+    """
+    updatemenus = layout_dict.get(UPDATE_MENUS, [])
+    updatemenus.append(
+        {
+            TYPE: BUTTONS,
+            BUTTONS: [
+                {
+                    "method": "relayout",
+                    "label": "Show/Hide Legend",
+                    "args": ["showlegend", True],
+                    "args2": ["showlegend", False],
+                }
+            ],
+            # these align the button with the legend labels
+            "xanchor": "left",
+            "yanchor": "bottom",
+            X: 1.0,
+            Y: 1.0,
+            "pad": {"r": 2, "l": 38},
+        }
+    )
+    layout_dict[UPDATE_MENUS] = updatemenus
+    return layout_dict
+
+
 class PlotlyPlot(Graphic):
     @staticmethod
     def make_dict_for_html_plot(data, plot_options, visualization_options=None):
@@ -164,6 +230,14 @@ class PlotlyPlot(Graphic):
         """
         # todo: cut off all text data to used in group by or titles to 47 charaters
         data_sorted = False
+        plot_options[CONFIG] = add_config_defaults(plot_options.get(CONFIG, {}))
+        # only have a legend if there is more than one plot by having a group by.
+        # Future: if we support having more than graphic plotted need-
+        # or len(plot_options[DATA]) > 1 with some other logic.
+        if visualization_options and GROUPBY in visualization_options:
+            plot_options[LAYOUT] = add_toggle_layout_button(
+                plot_options.get(LAYOUT, {})
+            )
         for index, plotly_data_dict in enumerate(plot_options[DATA]):
             if not data_sorted and does_data_need_to_be_sorted(plotly_data_dict):
                 data.sort_values(plotly_data_dict[AXIS_TO_SORT_ALONG], inplace=True)
@@ -182,7 +256,11 @@ class PlotlyPlot(Graphic):
                     # moving the contents of the data to where plotly expects it
                     # from the output of the database
                     plotly_data_dict[axis] = data[plotly_data_dict[axis]]
-
+            for error_axis in POSSIBLE_ERROR_AXES:
+                if error_axis in plotly_data_dict:
+                    plotly_data_dict[error_axis][ARRAY] = data[
+                        plotly_data_dict[error_axis][ARRAY]
+                    ]
             plotly_data_dict[TRANSFORMS] = []
 
             if visualization_options is not None:
@@ -212,4 +290,10 @@ class PlotlyPlot(Graphic):
             for axis in POSSIBLE_AXIS:
                 if axis in dict_of_data_for_each_plot:
                     set_of_column_names.add(dict_of_data_for_each_plot[axis])
+            for error_axis in POSSIBLE_ERROR_AXES:
+                if error_axis in dict_of_data_for_each_plot:
+                    # this is error specified in data
+                    set_of_column_names.add(
+                        dict_of_data_for_each_plot[error_axis][ARRAY]
+                    )
         return set_of_column_names
