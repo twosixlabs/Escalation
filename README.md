@@ -11,7 +11,7 @@ Some user cases for Escalation:
 All that is required for is to set a config file, either by hand or using the included UI Configuration Wizard, 
 and you can run Escalation locally or on a server for others to view.
 
-You can see an example of Escalation running on data for DARPA's Synergistic Discovery and Design program [here](http://escalation-demo.sd2e.org/). We also have a demo app (ToDo: Include link to Penguin demo app instructions)
+We have a demo app running and [here](http://escalation-demo.sd2e.org/).
 
 
 ## Wait, aren't there already lots of different visualization tools out there?
