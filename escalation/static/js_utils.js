@@ -51,16 +51,20 @@ function edit_graphic(page_id,graphic,graphic_status) {
 function modify_config(modification, page_id=-1,graphic=''){
     let graphic_form=$('#form_button_click');
     let add_page_form = $('#form_add_page');
-    let name = document.getElementById("webpage_label_".concat(page_id)).value;
-    if ((!modification.includes('delete') || confirm('Confirm deletion')) && ((modification!='add_page' && modification!='rename_page') || name)) {
+    let input_box = document.getElementById("webpage_label_".concat(page_id.toString()))
+    let name = input_box.value;
+    if ((!modification.includes('delete') || confirm('Confirm deletion'))
+        && ((modification!='add_page' && modification!='rename_page') || name)) {
         add_page_form[0].page_id.value = page_id;
         add_page_form[0].graphic.value = graphic;
         add_page_form[0].modification.value = modification;
         add_page_form[0].title.value = graphic_form[0].title.value;
         add_page_form[0].brief_desc.value = graphic_form[0].brief_desc.value;
-        add_page_form[0].data_backend.value = graphic_form[0].data_backend.value;
         add_page_form[0].webpage_label.value = name;
         add_page_form.submit();
+    }
+    else if((modification=='add_page' || modification=='rename_page') && !name){
+        input_box.classList.add("is-invalid");
     }
 }
 
@@ -74,6 +78,25 @@ function get_main_data_sources(data_source_dict){
         }
     }
     return data_sources
+}
+
+function check_duplicate_data_sources(data_source_dict){
+    let data_sources = new Set();
+    data_sources.add(data_source_dict['main_data_source']['data_source_type']);
+    let additional_data_source;
+    let data_source;
+    if ('additional_data_sources' in data_source_dict) {
+        for (additional_data_source of data_source_dict['additional_data_sources']) {
+            data_source=additional_data_source['data_source_type'];
+            if (data_sources.has(data_source)){
+                return true
+            }else{
+                data_sources.add(data_source)
+            }
+
+        }
+    }
+    return false
 }
 
 function any_identifiers_active(data_source) {

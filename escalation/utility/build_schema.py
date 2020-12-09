@@ -40,7 +40,7 @@ def build_settings_schema():
                 "type": "string",
                 TITLE: "Data Backend",
                 "description": "How the data is being managed on the server",
-                "enum": [POSTGRES, LOCAL_CSV],
+                "enum": [POSTGRES],
             },
             AVAILABLE_PAGES: {
                 "type": "array",
@@ -80,24 +80,34 @@ def build_settings_schema():
 
 
 def build_graphic_schema(
-    data_source_names=None, column_names=None, unique_entries=None, collapse_dict=None
+    data_source_names=None,
+    column_names=None,
+    filter_column_names=None,
+    numerical_filter_column_names=None,
+    unique_entries=None,
+    collapse_dict=None,
 ):
     """
 
     :param data_source_names: names from DATA_SOURCES, already checked against the file system
     :param column_names: possible column names from files or database (format data_source_name.column_name)
+    :param filter_column_names: possible column names from files or database for filtering or group by
+    :param numerical_filter_column_names: possible column names from files or database for numerical filter
     :param unique_entries: values from possible column names
     :param collapse_dict: whether the element should be collapsed or not
     :return:
     """
     if not collapse_dict:
         collapse_dict = defaultdict(lambda: True)
-    if data_source_names:
-        data_source_names.sort()
-    if column_names:
-        column_names.sort()
-    if unique_entries:
-        unique_entries.sort()
+    for info_list in [
+        data_source_names,
+        column_names,
+        filter_column_names,
+        numerical_filter_column_names,
+        unique_entries,
+    ]:
+        if info_list:
+            info_list.sort()
     schema = {
         "$schema": "http://json-schema.org/draft/2019-09/schema#",
         "type": "object",
@@ -242,7 +252,7 @@ def build_graphic_schema(
                                 "items": {
                                     "type": "string",
                                     TITLE: "Column Name",
-                                    "enum": column_names,
+                                    "enum": filter_column_names,
                                 },
                             },
                             STYLES: {
@@ -325,8 +335,9 @@ def build_graphic_schema(
                                 COLUMN_NAME: {
                                     "type": "string",
                                     TITLE: "Column Name",
-                                    "description": "name in table",
-                                    "enum": column_names,
+                                    "description": "any data column with fewer than 200 unique entries can be filtered"
+                                    " by identity matching and is listed here",
+                                    "enum": filter_column_names,
                                 },
                                 "multiple": {
                                     "type": "boolean",
@@ -385,8 +396,18 @@ def build_graphic_schema(
                                     "type": "string",
                                     TITLE: "Column Name",
                                     "description": "name in table",
-                                    "enum": column_names,
-                                }
+                                    "enum": numerical_filter_column_names,
+                                },
+                                MAX: {
+                                    TITLE: "Default Maximum",
+                                    "description": "Optional, set null for no max",
+                                    "oneOf": [{"type": "null"}, {"type": "number"},],
+                                },
+                                MIN: {
+                                    TITLE: "Default Minimum",
+                                    "description": "Optional, set null for no min",
+                                    "oneOf": [{"type": "null"}, {"type": "number"},],
+                                },
                             },
                         },
                     },
@@ -405,7 +426,10 @@ def build_graphic_schema(
                                 COLUMN_NAME: {
                                     "type": "string",
                                     TITLE: "Axis Name",
-                                    "pattern": ONE_LETTER,
+                                    ENUM: ["x", "y", "z"],
+                                    OPTIONS: {
+                                        "enum_titles": ["X Axis", "Y Axis", "Z Axis"]
+                                    },
                                 },
                                 ENTRIES: {
                                     "type": "array",
@@ -426,14 +450,20 @@ def build_graphic_schema(
                                 "type": "array",
                                 OPTIONS: {DISABLE_COLLAPSE: True},
                                 TITLE: "Entries",
-                                "items": {"type": "string", "enum": column_names},
+                                "items": {
+                                    "type": "string",
+                                    "enum": filter_column_names,
+                                },
                             },
                             "multiple": {"type": "boolean"},
                             DEFAULT_SELECTED: {
                                 "type": "array",
                                 TITLE: "Default Selected",
                                 "description": "optional, default filter, list of column values",
-                                "items": {"type": "string"},
+                                "items": {
+                                    "type": "string",
+                                    "enum": filter_column_names,
+                                },
                             },
                         },
                     },
@@ -444,14 +474,26 @@ def build_graphic_schema(
     return schema
 
 
-def build_graphic_schema_with_plotly(data_source_names=None, column_names=None):
+def build_graphic_schema_with_plotly(
+    data_source_names=None,
+    column_names=None,
+    filter_column_names=None,
+    numerical_filter_column_names=None,
+    unique_entries=None,
+):
     """
     If you are using the app with plotly this puts the plotly schema into the graphic schema
     :param data_source_names:
     :param column_names:
     :return:
     """
-    schema = build_graphic_schema(data_source_names, column_names)
+    schema = build_graphic_schema(
+        data_source_names,
+        column_names,
+        filter_column_names,
+        numerical_filter_column_names,
+        unique_entries,
+    )
     plotly_schema = build_plotly_schema(column_names)
     schema[PROPERTIES][PLOT_SPECIFIC_INFO] = plotly_schema
     return schema

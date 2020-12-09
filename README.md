@@ -23,7 +23,7 @@ Yes. Escalation has a few advantages:
 
 ## Limitations of Escalation
 
-- Currently uses either a SQL database or CSV files to store data. Escalation provides functionality to create a SQL database from CSV files
+- Currently uses a SQL database to store data. Escalation provides functionality to automatically create a SQL database from CSV files
 
 
 # Setup
@@ -73,11 +73,11 @@ This launches the UI Configuration Wizard in a Docker container. Navigate in you
 This app runs in debug mode, and should detect the changes you make as you edit the configuration. 
 Refresh your browser to update the contents to match your saved configuration.
      
-Some notes on [creating your first config files with the UI wizard](config_information/wizard_guide/creating_first_graphic_with_wizard.md).  
+Some notes on [creating your first config files with the UI wizard](documentation/wizard_guide/creating_first_graphic_with_wizard.md).  
 
 This includes a gallery of various chart types and how they're configured.
 
-![config_gallery_thumbnail](config_information/gallery/images/gallery_thumbnail.png)
+![config_gallery_thumbnail](documentation/gallery/images/gallery_thumbnail.png)
 
 
 #### Build a config from scratch (advanced, optional)
@@ -86,10 +86,9 @@ Everything blank or in `<>` should be changed.
 
 #### Debugging config files manually (advanced, optional)
 
-How to set up [local file system and config](config_information/local_example/local_data_storage_config_info.md) for the app.  
-An example of a [main config file](config_information/main_config_example/main_config_example.md).  
-Examples of [different plots and graphic config files](config_information/plotly_examples/plotly_config_info.md).  
-Examples of [different selectors](config_information/selector_examples/selector_config_info.md). 
+An example of a [main config file](documentation/main_config_example/main_config_example.md).  
+Examples of [different plots and graphic config files](documentation/plotly_examples/plotly_config_info.md).  
+Examples of [different selectors](documentation/selector_examples/selector_config_info.md). 
 
 ### 2.2 Load your data
 
@@ -113,13 +112,6 @@ Todo: If you have an existing SQL database, how do you copy it into Escalation?
  
 Todo: Add csvs programatically using a script
 
-#### CSV data file system backend
-
-Instead of using a SQL database to store the data, this uses CSV files stored in a file structure on disk.
-This moves responsibility for file management to the user, and may have performance disadvantages for large files or many files.
-We recommend using the SQL backend, however the file system backend is provided as an alternative. 
-How to set up a [local file system backed](config_information/local_example/local_data_storage_config_info.md) Escalation app.  
-    
 
 ## 3. Running the configured app
 
@@ -182,9 +174,12 @@ There is a helper script in `escalation/scripts/csv_to_sql.py` that does this, w
 
 # Running Escalation as a web-accessible server
 
-
 In summary, you'll build a Docker-compose image that includes your dashboard configuration, and deploy it on a web-accessible server. 
 This can be a server on a local network, e.g. in your lab, or on a cloud provider like [DigitalOcean](https://www.digitalocean.com/docs/droplets/quickstart/), Heroku, or AWS.
+
+Escalation-specific instructions for Digital Ocean [here](documentation/droplet_directions.md).
+
+Todo: Heroku, AWS
 
 ## Building your Docker image for deployment
 

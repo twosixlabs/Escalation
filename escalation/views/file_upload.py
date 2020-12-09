@@ -2,14 +2,20 @@
 # Licensed under the Apache License, Version 2.0
 
 from flask import current_app, render_template, Blueprint, request, jsonify
+from io import BufferedReader
 import pandas as pd
 
+from app_deploy_data.authentication import auth
 from utility.constants import (
     INDEX_COLUMN,
     UPLOAD_ID,
     DATA_SOURCE_TYPE,
     MAIN_DATA_SOURCE,
     TABLE_COLUMN_SEPARATOR,
+    NOTES,
+    USERNAME,
+    DATA_SOURCE,
+    CSVFILE,
 )
 from utility.exceptions import ValidationError
 
@@ -26,17 +32,17 @@ def validate_data_form(request_form, request_files):
     :param request_files: flask request.files object
     :return: required fields
     """
-    for key in ("username", "data_source", "notes"):
-        if key not in request_form:
-            raise ValidationError("Key %s not present in POST" % key)
     try:
-        username = request_form["username"]
-        data_source_name = request_form["data_source"]
-        csvfile = request_files["csvfile"]
-    # todo: validate upload filename with secure_filename, sql table name validator
-    except KeyError:
-        raise ValidationError
-    current_app.logger.info(f"POST {username} {data_source_name} {csvfile.filename}")
+        notes = request_form[
+            NOTES
+        ]  # require this field to be here, but no other checks
+        username = request_form[USERNAME]
+        data_source_name = request_form[DATA_SOURCE]
+        csvfile = request_files[CSVFILE]
+    except KeyError as e:
+        raise ValidationError(e)
+
+    current_app.logger.info(f"POST {username} {data_source_name}")
     return username, data_source_name, csvfile
 
 
@@ -77,19 +83,15 @@ def upload_page(success_text=None):
     )
 
 
-@upload_blueprint.route("/upload", methods=("GET",))
-def submission_view():
-    return upload_page()
-
-
 @upload_blueprint.route("/upload", methods=("POST",))
+@auth.login_required
 def submission():
     try:
         # check the submission form
         username, data_source_name, csvfile = validate_data_form(
             request.form, request.files
         )
-        notes = request.form.get("notes")
+        notes = request.form.get(NOTES)
 
         # if the form of the submission is right, let's validate the content of the submitted file
         data_inventory = current_app.config.data_backend_writer(
@@ -98,12 +100,10 @@ def submission():
         data_handler_class = current_app.config.data_handler(
             data_sources={MAIN_DATA_SOURCE: {DATA_SOURCE_TYPE: data_source_name}}
         )
-        data_source_schema = data_handler_class.get_schema_for_data_source()
+        data_source_schema = data_handler_class.get_column_names_for_data_source()
 
         df = validate_submission_content(csvfile, data_source_schema)
-        data_inventory.write_data_upload_to_backend(
-            df, username, notes, filename=csvfile.filename
-        )
+        data_inventory.write_data_upload_to_backend(df, username, notes)
         # write upload history table record at the same time
 
     except ValidationError as e:
@@ -114,3 +114,8 @@ def submission():
     # todo: log information about what the submission is
     current_app.logger.info("Added submission")
     return upload_page("Success")
+
+
+@upload_blueprint.route("/upload", methods=("GET",))
+def submission_view():
+    return upload_page()

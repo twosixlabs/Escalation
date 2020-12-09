@@ -22,6 +22,32 @@ MESH3D = "mesh3d"
 
 PLOT_TYPE = "plot_type"
 
+COLORS = [
+    "#1f77b4",
+    "#ff7f0e",
+    "#2ca02c",
+    "#d62728",
+    "#9467bd",
+    "#8c564b",
+    "#e377c2",
+    "#7f7f7f",
+    "#bcbd22",
+    "#17becf",
+]
+
+COLOR_NAMES = [
+    "blue",
+    "orange",
+    "green",
+    "red",
+    "purple",
+    "brown",
+    "pink",
+    "gray",
+    "yellow-green",
+    "blue-teal",
+]
+
 SELECTOR_DICT = {
     "$schema": "http://json-schema.org/draft/2019-09/schema#",
     "title": "Type of Plot",
@@ -71,7 +97,8 @@ def build_plotly_schema(column_names):
         "description": "dictionary that follows https://plotly.com/javascript/reference/",
         "type": "object",
         "required": [DATA],
-        OPTIONS: {DISABLE_COLLAPSE: True},
+        OPTIONS: {DISABLE_COLLAPSE: True, REMOVE_EMPTY_PROPERTIES: True},
+        "defaultProperties": [DATA, LAYOUT],
         "properties": {
             DATA: {
                 "type": "array",
@@ -184,8 +211,9 @@ def build_plotly_schema(column_names):
             },
             LAYOUT: {
                 "title": "Graph Layout",
-                "description": "Determines how the graph looks",
+                "description": "Determines how the graph looks (optional)",
                 "type": "object",
+                OPTIONS: {DISABLE_COLLAPSE: True, REMOVE_EMPTY_PROPERTIES: True},
                 "properties": {
                     "height": {"type": "number", "minimum": 10},
                     "width": {"type": "number", "minimum": 10},
@@ -223,6 +251,58 @@ def build_plotly_schema(column_names):
                     "barmode": {
                         "type": "string",
                         "enum": ["stack", "group", "overlay", "relative"],
+                    },
+                    "shapes": {
+                        TYPE: ARRAY,
+                        ITEMS: {
+                            "type": "object",
+                            "title": "Shape Dictionary",
+                            REQUIRED: ["type", "x0", "y0", "x1", "y1"],
+                            PROPERTIES: {
+                                "type": {
+                                    TYPE: "string",
+                                    "enum": ["line", "rect", "circle", "path",],
+                                },
+                                "layer": {TYPE: "string", "enum": ["above", "below",],},
+                                "xref": {TYPE: "string", "enum": [X, "paper"]},
+                                "yref": {TYPE: "string", "enum": [Y, "paper"]},
+                                "x0": {TYPE: "number"},
+                                "x1": {TYPE: "number"},
+                                "y0": {TYPE: "number"},
+                                "y1": {TYPE: "number"},
+                                "line": {
+                                    TYPE: "object",
+                                    PROPERTIES: {
+                                        "color": {
+                                            TYPE: "string",
+                                            ENUM: COLORS,
+                                            "options": {"enum_titles": COLOR_NAMES},
+                                        },
+                                        "width": {
+                                            TYPE: "number",
+                                            "default": 2,
+                                            "minimum": 0,
+                                        },
+                                        "dash": {
+                                            TYPE: "string",
+                                            ENUM: [
+                                                "solid",
+                                                "dot",
+                                                "dash",
+                                                "longdash",
+                                                "dashdot",
+                                                "longdashdot",
+                                            ],
+                                        },
+                                    },
+                                },
+                                "fillcolor": {
+                                    TYPE: "string",
+                                    ENUM: ["#ffffff"] + COLORS,
+                                    "options": {"enum_titles": ["white"] + COLOR_NAMES},
+                                },
+                            },
+                        },
                     },
                 },
             },

@@ -10,17 +10,14 @@ This readme walks through the [main_config_file_example.json](main_config_file_e
 
 ##
 
-"data_backend": "local_csv",  
-"data_file_directory": "tests/test_data/",  
+"data_backend": "postgres",  
 "data_sources": \[
     "penguin_size",
     "mean_penguin_stat",
     "penguin_size_small"
 \],  
 
-data_backend -- should the website search for data in files (local_csv)
-or in a database  
-data_file_directory -- path to files  
+data_backend -- Indicates that the data is stored in a Postres SQL db (currently the only supported backend)
 data_sources -- folders that the website uses in data_file_directory (local_csv) (TODO: add for database)
 ##
 

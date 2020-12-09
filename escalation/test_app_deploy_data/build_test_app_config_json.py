@@ -162,7 +162,6 @@ if __name__ == "__main__":
     PATH_TO_GRAPHIC_CONFIG_FILES = "path_to_graphic_config_files"
     path_to_test_files = os.path.join("test_app_deploy_data")
     config_file_definitions = {
-        "test_app_local_config.json": {DATA_BACKEND: LOCAL_CSV,},
         "test_app_sql_config.json": {DATA_BACKEND: POSTGRES},
     }
 

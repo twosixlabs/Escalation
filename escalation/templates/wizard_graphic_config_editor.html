@@ -7,10 +7,18 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@json-editor/json-editor@latest/dist/jsoneditor.min.js"></script>
     <link rel="stylesheet" href="/static/lighter_buttons.css">
+    <link rel="stylesheet" href="/static/loading.css">
 {% endblock %}
 
 {% block content %}
 {% include 'navbar.html' %}
+
+<div id="loading">
+    <div class="spinner-border text-light" style="width: 20vmin; height: 20vmin;
+     position: fixed; top: 25%; left: 50%; margin-left: -10vmin;" role="status">
+          <span class="sr-only">Loading...</span>
+    </div>
+</div>
 
 <div class="jumbotron">
     <h1 class="display-4"> Create or edit a dashboard graphic</h1>
@@ -60,7 +68,7 @@
     let selector_editor=new_editor('plot_selector',true,{{ schema_selector_dict | safe }});
 
     // The only values shown in default filter are the ones corresponding to the column
-    const default_entries_dict ={{ default_entries_dict | safe }}
+    let default_entries_dict ={{ default_entries_dict | safe }}
     window.JSONEditor.defaults.callbacks.template = {
         "default_selected_filter": (jseditor, e) => {
             if (default_entries_dict[e.watched.column].includes(e.item)) return e.item;
@@ -83,9 +91,15 @@
     }
     function save_json_editor_to_file(redirect){
         const errors=get_json_editor_errors();
-        if (errors.length){
+        const duplicate_data_source = check_duplicate_data_sources(editors['graphic_meta_info'].getEditor('root.data_sources').getValue());
+        if (errors.length || duplicate_data_source){
             let success_text = document.querySelector('#feedback_message');
-            success_text.innerHTML = "Not a Valid Schema"
+            if(duplicate_data_source){
+                success_text.innerHTML = "Not a Valid Schema\n (Duplicate Data Source)"
+            }
+            else{
+                success_text.innerHTML = "Not a Valid Schema"
+            }
             // Message disappears after 5 secs
             setTimeout(function() {
               success_text.innerHTML="";
@@ -99,7 +113,6 @@
             current_state=get_json_editor_value();
             saved_plot_type = current_plot_type;
             // The form contains nested dictionaries so it is easier to send a json than a form
-            console.log(graphic_path)
             let data = JSON.stringify({"config_dict" : current_state,
                 "page_id":{{ page_id }},
                 "graphic_path": graphic_path,
@@ -188,13 +201,17 @@
                 current_data_sources = new_data_sources;
                 const collapse_dict=get_collapse_dict(editors)
 
+                var loading_div = document.getElementById("loading")
+                loading_div.style.display = "block";
+
                 let xhr = new XMLHttpRequest();
                 xhr.open("POST", "{{ url_for('.get_updated_schemas') }}");
                 xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState === 4 && xhr.status === 200) {
                         const jsonResponse = JSON.parse(xhr.response);
-                        dict_of_schemas = jsonResponse;
+                        dict_of_schemas = jsonResponse["new_schemas"];
+                        default_entries_dict = jsonResponse["new_default_entries_dict"];
                         dict_of_plotly_schemas = dict_of_schemas['plotly_schema'];
                         current_data_sources = new_data_sources;
                         let save_state = get_json_editor_value();
@@ -202,9 +219,13 @@
                         make_json_editor();
                         set_json_editor_value(save_state);
                         add_watcher_to_data_sources();
+                        loading_div.style.display = "none";
                     } else if (xhr.readyState === 4) {
                         console.log("Failed")
+                        loading_div.style.display = "none";
+
                     }
+
                 };
                 xhr.send(JSON.stringify({
                       "data_sources": Array.from(new_data_sources),

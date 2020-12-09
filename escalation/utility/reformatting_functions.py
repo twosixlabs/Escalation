@@ -8,10 +8,7 @@ from werkzeug.datastructures import ImmutableMultiDict
 from utility.available_selectors import AVAILABLE_SELECTORS
 from utility.constants import *
 
-NUMERICAL_FILTER_DEFAULT = {
-    UPPER_INEQUALITY: {OPERATION: "<=", VALUE: ""},
-    LOWER_INEQUALITY: {OPERATION: ">=", VALUE: ""},
-}
+NUMERICAL_FILTER_DICT = {MAX: "<=", MIN: ">="}
 
 
 def add_instructions_to_config_dict(
@@ -107,20 +104,19 @@ def add_active_selectors_to_selectable_data_list(
 
     numerical_filter_list = selectable_data_dict.get(NUMERICAL_FILTER, [])
     for index, numerical_filter_dict in enumerate(numerical_filter_list):
-        locations = [UPPER_INEQUALITY, LOWER_INEQUALITY]
+        extrema = [MAX, MIN]
         active_numerical_filter_dict = defaultdict(dict)
-        for loc in locations:
-            for input_type in [OPERATION, VALUE]:
-                # pull the relevant filter info from the submitted form
-                # all values in addendum_dict are lists
-                numerical_filter_value = addendum_dict.get(
-                    NUMERICAL_FILTER_NUM_LOC_TYPE.format(index, loc, input_type)
-                )
-                active_numerical_filter_dict[loc][input_type] = (
-                    numerical_filter_value[0]
-                    if numerical_filter_value
-                    else NUMERICAL_FILTER_DEFAULT[loc][input_type]
-                )
+        for extremum in extrema:
+            # pull the relevant filter info from the submitted form
+            # all values in addendum_dict are lists
+            numerical_filter_value = addendum_dict.get(
+                NUMERICAL_FILTER_NUM_LOC_TYPE.format(index, extremum, VALUE)
+            )
+            active_numerical_filter_dict[extremum][VALUE] = (
+                numerical_filter_value[0]
+                if numerical_filter_value
+                else numerical_filter_dict.get(extremum, "")
+            )
 
         numerical_filter_dict[ACTIVE_SELECTORS] = active_numerical_filter_dict
 
@@ -173,20 +169,18 @@ def add_operations_to_the_data_from_addendum(
             numerical_filter_dict, NUMERICAL_FILTER
         )
         # the numerical filter contains two filters so add them separately
-        for loc in [UPPER_INEQUALITY, LOWER_INEQUALITY]:
+        for extremum in [MAX, MIN]:
             # get the value submitted in the web form by using its name
             # format specified in numeric_filter.html
             # the value is a list of length one
             numerical_value = addendum_dict[
-                NUMERICAL_FILTER_NUM_LOC_TYPE.format(index, loc, VALUE)
+                NUMERICAL_FILTER_NUM_LOC_TYPE.format(index, extremum, VALUE)
             ][0]
             if numerical_value == "":
                 continue
             numerical_filter_info = {
                 VALUE: float(numerical_value),
-                OPERATION: addendum_dict[
-                    NUMERICAL_FILTER_NUM_LOC_TYPE.format(index, loc, OPERATION)
-                ][0],
+                OPERATION: NUMERICAL_FILTER_DICT[extremum],
             }
             operation_list.append(
                 {**base_info_dict_for_selector, **numerical_filter_info}
@@ -217,6 +211,23 @@ def add_operations_to_the_data_from_defaults(selectable_data_dict: dict) -> list
                     selection if isinstance(selection, list) else [selection]
                 )
                 operation_list.append(base_info_dict_for_selector)
+
+    numerical_filter_list = selectable_data_dict.get(NUMERICAL_FILTER, [])
+    for index, numerical_filter_dict in enumerate(numerical_filter_list):
+        for extremum in [MAX, MIN]:
+            numerical_value = numerical_filter_dict.get(extremum)
+            if numerical_value == "" or numerical_value is None:
+                continue
+            base_info_dict_for_selector = get_base_info_for_selector(
+                numerical_filter_dict, NUMERICAL_FILTER
+            )
+            numerical_filter_info = {
+                VALUE: float(numerical_value),
+                OPERATION: NUMERICAL_FILTER_DICT[extremum],
+            }
+            operation_list.append(
+                {**base_info_dict_for_selector, **numerical_filter_info}
+            )
 
     return operation_list
 
