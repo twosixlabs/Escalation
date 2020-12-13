@@ -4,6 +4,7 @@ import os
 import re
 
 from flask import current_app
+from sqlalchemy import Integer, Float, DateTime
 
 from utility.constants import *
 
@@ -188,10 +189,29 @@ def prune_selector_dict(selector_dict):
     """
     new_selector_dict = {}
     for sel_key, sel_info in selector_dict.items():
-        if (sel_key == GROUPBY and sel_info.get(ENTRIES)) or (
-            sel_key != GROUPBY and sel_info
-        ):
+        if sel_key == GROUPBY and sel_info.get(ENTRIES):
             new_selector_dict[sel_key] = sel_info
+        if sel_key == AXIS and sel_info:
+            new_selector_dict[sel_key] = sel_info
+        if sel_key == FILTER and sel_info:
+
+            new_sel_info = []
+            # Getting rid empty DEFAULT_SELECTED
+            for filter_dict in sel_info:
+                if not filter_dict.get(DEFAULT_SELECTED, []):
+                    filter_dict.pop(DEFAULT_SELECTED, None)
+                new_sel_info.append(filter_dict)
+            new_selector_dict[sel_key] = new_sel_info
+        if sel_key == NUMERICAL_FILTER and sel_info:
+            new_sel_info = []
+            # Getting rid of null values in max and min
+            for numerical_filter_dict in sel_info:
+                for extrema in [MAX, MIN]:
+                    if numerical_filter_dict.get(extrema, None) is None:
+                        numerical_filter_dict.pop(extrema, None)
+                new_sel_info.append(numerical_filter_dict)
+                new_selector_dict[sel_key] = new_sel_info
+
     return new_selector_dict
 
 
@@ -239,18 +259,22 @@ def get_possible_column_names_and_values(
     """
     possible_column_names = []
     unique_entries = {}
+    column_types_dict = {}
     for data_source_name in data_source_names:
         data_inventory = data_handler_class(
             data_sources={MAIN_DATA_SOURCE: {DATA_SOURCE_TYPE: data_source_name}}
         )
-        column_names_for_data_source = data_inventory.get_schema_for_data_source()
+        column_names_for_data_source = data_inventory.get_column_names_for_data_source()
+        column_types_dict_for_data_source = data_inventory.get_schema_for_data_source()
+
         possible_column_names.extend(column_names_for_data_source)
+        column_types_dict.update(column_types_dict_for_data_source)
         if get_unique_values:
             unique_entries_for_data_source = data_inventory.get_column_unique_entries(
                 column_names_for_data_source
             )
             unique_entries.update(unique_entries_for_data_source)
-    return possible_column_names, unique_entries
+    return possible_column_names, column_types_dict, unique_entries
 
 
 def get_data_source_info(active_data_source_names=None):
@@ -259,6 +283,7 @@ def get_data_source_info(active_data_source_names=None):
     :param active_data_source_names: list of data source name strings
     :return:
     """
+
     if active_data_source_names is None:
         active_data_source_names = []
     data_inventory_class = current_app.config.data_backend_writer
@@ -271,10 +296,54 @@ def get_data_source_info(active_data_source_names=None):
     if data_source_names and not active_data_source_names:
         # default to the first in alphabetical order
         active_data_source_names = [min(data_source_names)]
-    possible_column_names, unique_entries = get_possible_column_names_and_values(
+    (
+        possible_column_names,
+        column_types_dict,
+        unique_entries,
+    ) = get_possible_column_names_and_values(
         active_data_source_names, current_app.config.data_handler
     )
-    return data_source_names, possible_column_names, unique_entries
+
+    (
+        filter_column_names,
+        numerical_filter_column_names,
+        unique_entries_dict,
+    ) = divide_columns_into_type_of_filters(unique_entries, column_types_dict)
+    return (
+        data_source_names,
+        possible_column_names,
+        filter_column_names,
+        numerical_filter_column_names,
+        unique_entries_dict,
+    )
+
+
+def divide_columns_into_type_of_filters(unique_entries, column_types_dict):
+    """
+    We only allow numerical data types to be filtered with a numerical inequality filter,
+    and any data column with fewer than MAX_ENTRIES_FOR_FILTER_SELECTOR unique entries
+    to be filtered by identity matching
+    :param unique_entries:
+    :param column_types_dict:
+    :return:
+    """
+    numerical_types = [Integer, Float, DateTime]
+    filter_column_names = []
+    numerical_filter_column_names = []
+    unique_entries_dict = {}
+    for col_name, list_of_entries in unique_entries.items():
+        if any(
+            [
+                isinstance(column_types_dict[col_name], num_type)
+                for num_type in numerical_types
+            ]
+        ):
+            numerical_filter_column_names.append(col_name)
+        if len(list_of_entries) <= MAX_ENTRIES_FOR_FILTER_SELECTOR:
+            filter_column_names.append(col_name)
+            unique_entries_dict[col_name] = list_of_entries
+
+    return filter_column_names, numerical_filter_column_names, unique_entries_dict
 
 
 def extract_data_sources_from_config(graphic_config):

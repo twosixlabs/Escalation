@@ -50,6 +50,7 @@ from utility.constants import (
     UPLOAD_TIME,
     NOTES,
     DATETIME_FORMAT,
+    MAX_ENTRIES_FOR_FILTER_SELECTOR,
 )
 
 # from: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.api.types.infer_dtype.html
@@ -227,10 +228,9 @@ class SqlHandler(DataHandler):
         # todo: better match how our auto schema is working to catch all rename logic
         return column_name.replace(TABLE_COLUMN_SEPARATOR, "_")
 
-    def get_schema_for_data_source(self):
+    def get_column_names_for_data_source(self):
         """
         gets the column names for the current handler object
-        todo: debate whether we should prefix the table name
         :return: list of sqlalchemy column objects
         """
         return [
@@ -238,6 +238,17 @@ class SqlHandler(DataHandler):
             for data_source, column_object in self.table_lookup_by_name.items()
             for c in column_object.columns
         ]
+
+    def get_schema_for_data_source(self):
+        """
+        gets the data type for each column for the current handler object
+        :return: dict keyed by column name, valued with sqlalchemy column objects
+        """
+        return {
+            TABLE_COLUMN_SEPARATOR.join([data_source, c.name]): c.type
+            for data_source, column_object in self.table_lookup_by_name.items()
+            for c in column_object.columns
+        }
 
     def get_column_data(self, columns: list, filters: [] = None) -> dict:
         """
@@ -337,7 +348,10 @@ class SqlHandler(DataHandler):
                 ]
             ):
                 query = self.apply_filters_to_query(query, filters)
-            response = query.all()
+            # we never show more than MAX_ENTRIES_NUMERICAL_COLUMN- adding one here
+            # tells downstream users that there are too many values to render
+            limit_values_returned = MAX_ENTRIES_FOR_FILTER_SELECTOR + 1
+            response = query.limit(limit_values_returned).all()
             unique_dict[col] = [str(r[0]) for r in response if r[0] is not None]
         return unique_dict
 
@@ -452,11 +466,11 @@ class SqlDataInventory(SqlHandler, DataFrameConverter):
     @classmethod
     def update_data_upload_metadata_active(cls, data_source_name, active_data_dict):
         """
-       Edits the data_upload_metadata table to indicate the active/inactive status of uploads as indicated in the admin panel
-       :param data_source_name: data source table name
-       :param active_data_dict: dict keyed by upload_id, valued with string INACTIVE or ACTIVE
-       :return: None. updates rows in the data_upload_metadata table
-       """
+        Edits the data_upload_metadata table to indicate the active/inactive status of uploads as indicated in the admin panel
+        :param data_source_name: data source table name
+        :param active_data_dict: dict keyed by upload_id, valued with string INACTIVE or ACTIVE
+        :return: None. updates rows in the data_upload_metadata table
+        """
         data_upload_metadata = cls.get_sqlalchemy_model_class_for_data_upload_metadata()
         for upload_id, active_status in active_data_dict.items():
             row = (
@@ -510,15 +524,16 @@ class SqlDataInventory(SqlHandler, DataFrameConverter):
         upload_id = max_upload_id + 1
         return upload_id
 
-    def write_data_upload_to_backend(
-        self, uploaded_data_df, username, notes, filename=None
-    ):
+    @staticmethod
+    def get_upload_time():
+        """Factored out for testing and for future timezone control implementation"""
+        return datetime.utcnow()
+
+    def write_data_upload_to_backend(self, uploaded_data_df, username, notes):
         """
         :param uploaded_data_df: pandas dataframe on which we have already done validation
         :param data_source_name: str
-        :param filename: str. Unused, just matching csvhandler. Todo: consider using this as identifier instead of integer?
         Assumption: data_source for this upload is only one table, even though they can generally refer to more than one table
-
         :return: list of df columns not written to the db (no corresponding db column)
         """
         uploaded_data_df = self.cast_dataframe_datatypes(uploaded_data_df)
@@ -534,9 +549,8 @@ class SqlDataInventory(SqlHandler, DataFrameConverter):
         uploaded_data_df = uploaded_data_df[existing_columns]
         conn = connect_to_db_using_psycopg2()
         psycopg2_copy_from_stringio(conn, uploaded_data_df, self.data_source_name)
-        upload_time = datetime.utcnow()
         self.write_upload_metadata_row(
-            upload_time=upload_time,
+            upload_time=self.get_upload_time(),
             upload_id=new_upload_id,
             table_name=self.data_source_name,
             active=True,

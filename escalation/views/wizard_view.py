@@ -9,7 +9,6 @@ from flask import current_app, render_template, Blueprint, request
 from sqlacodegen.codegen import CodeGenerator
 
 from database.sql_handler import CreateTablesFromCSVs, REPLACE, SqlDataInventory
-from database.local_handler import LocalCSVHandler, LocalCSVDataInventory
 from utility.build_plotly_schema import SELECTOR_DICT
 from utility.constants import (
     DATA_BACKEND,
@@ -37,9 +36,6 @@ from utility.constants import (
     USERNAME,
     NOTES,
     APP_CONFIG_JSON,
-    MAIN_DATA_SOURCE,
-    DATA_SOURCE_TYPE,
-    LOCAL_CSV,
     DATA_SOURCE,
     DATA_SOURCES,
     COLLAPSE_DICT,
@@ -135,9 +131,6 @@ def modify_layout():
 def graphic_config_setup():
     graphic_status = request.form[GRAPHIC_STATUS]
 
-    config_dict = load_main_config_dict_if_exists(current_app)
-    copy_data_from_form_to_config(config_dict, request.form)
-    save_main_config_dict(config_dict)
     active_data_source_names = None
     collapse_dict = get_default_collapse_dict()
     if graphic_status in [COPY, OLD]:
@@ -147,15 +140,23 @@ def graphic_config_setup():
 
     (
         data_source_names,
-        possible_column_names,
+        all_column_names,
+        filter_column_names,
+        numerical_filter_column_names,
         unique_entries_dict,
     ) = get_data_source_info(active_data_source_names)
+
     # concatenating into one large list with no duplicates
     unique_entries_list = list(
         set(itertools.chain.from_iterable(unique_entries_dict.values()))
     )
     graphic_schemas, schema_to_type = build_graphic_schemas_for_ui(
-        data_source_names, possible_column_names, unique_entries_list, collapse_dict
+        data_source_names,
+        all_column_names,
+        filter_column_names,
+        numerical_filter_column_names,
+        unique_entries_list,
+        collapse_dict,
     )
     component_graphic_dict = make_empty_component_dict()
     current_schema = SCATTER
@@ -245,17 +246,26 @@ def get_updated_schemas():
     ui_editor_info_dict = request.get_json()
     (
         data_source_names,
-        possible_column_names,
+        all_column_names,
+        filter_column_names,
+        numerical_filter_column_names,
         unique_entries_dict,
     ) = get_data_source_info(ui_editor_info_dict[DATA_SOURCES])
-    graphic_schemas, schema_to_type = build_graphic_schemas_for_ui(
-        data_source_names=data_source_names,
-        column_names=possible_column_names,
-        collapse_dict=ui_editor_info_dict[COLLAPSE_DICT],
-    )
 
+    # concatenating into one large list with no duplicates
+    unique_entries_list = list(
+        set(itertools.chain.from_iterable(unique_entries_dict.values()))
+    )
+    graphic_schemas, schema_to_type = build_graphic_schemas_for_ui(
+        data_source_names,
+        all_column_names,
+        filter_column_names,
+        numerical_filter_column_names,
+        unique_entries_list,
+        ui_editor_info_dict[COLLAPSE_DICT],
+    )
     return (
-        json.dumps(graphic_schemas, indent=4,),
+        json.dumps({"new_schemas": graphic_schemas, "new_default_entries_dict": unique_entries_dict}, indent=4,),
         200,
         {"ContentType": "application/json"},
     )
@@ -337,20 +347,6 @@ def sql_backend_file_upload(upload_form, csvfile):
         generator.render(outfile)
 
 
-def csv_backend_file_upload(upload_form, csvfile):
-    table_name = sanitize_string(upload_form.get(DATA_SOURCE))
-    username = upload_form.get(USERNAME)
-    notes = upload_form.get(NOTES)
-    df = LocalCSVHandler.load_df_from_csv(csvfile)
-    data_inventory = LocalCSVDataInventory(
-        data_sources={MAIN_DATA_SOURCE: {DATA_SOURCE_TYPE: table_name}}
-    )
-    data_inventory.delete_data_source()
-    data_inventory.write_data_upload_to_backend(
-        uploaded_data_df=df, filename=csvfile.filename, username=username, notes=notes
-    )
-
-
 @wizard_blueprint.route("/wizard/upload", methods=("POST",))
 def upload_csv_to_database():
     upload_form = request.form
@@ -358,8 +354,6 @@ def upload_csv_to_database():
     data_backend = current_app.config[APP_CONFIG_JSON].get(DATA_BACKEND)
     if data_backend in [POSTGRES]:
         sql_backend_file_upload(upload_form, csvfile)
-    elif data_backend in [LOCAL_CSV]:
-        csv_backend_file_upload(upload_form, csvfile)
     else:
         return data_upload_page("Failure- data backend not recognized")
     return data_upload_page("success")

@@ -4,11 +4,12 @@ Before starting this tutorial, you should have your wizard app launched.
 
 Ready? Let's begin.
 
-- First open the url where wizard app is being hosted: [http://localhost:8000/wizard](http://localhost:8000/wizard). Once open you should see
+- First open the url where wizard app is being hosted (e.g. http://localhost:8000/). Click on "Configuration Wizard" on the navbar at the top. You should see
 
 ![](images/first_look.png)
-- First, fill out the title, a description for your dashboard, select the data backend you're using and click save.
-- Next, to add data to the app, click on "Upload" on the navigation bar on the top. Give a username for the uploader, name your data table (Data File Type), pick a csv file to upload, and click submit. 
+- First, fill out the title, a description for your dashboard, select the data backend you're using (SQL recommended) and click save.
+- Next, to add data to the app, click on "Upload" on the navigation bar on the top. Name your data table (Data File Type),
+ pick a csv file to upload (the csv file must have a header with column names), give a username for the uploader, and click submit. 
   
 ![](images/add_csv.png)
 

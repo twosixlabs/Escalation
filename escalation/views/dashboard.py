@@ -14,6 +14,7 @@ from utility.constants import (
     JINJA_PLOT,
     CURRENT_PAGE,
     ADDENDUM_DICT,
+    DEVELOPMENT,
 )
 from controller import get_data_for_page
 from utility.reformatting_functions import add_form_to_addendum_dict
@@ -38,7 +39,11 @@ def graphic_page(page_name):
     :param page_name:
     :return:
     """
-    addendum_dict = json.loads(request.cookies.get(ADDENDUM_DICT, "{}"))
+    # Do not read in cookies in development mode
+    if current_app.config.get("ENV") != DEVELOPMENT:
+        addendum_dict = json.loads(request.cookies.get(ADDENDUM_DICT, "{}"))
+    else:
+        addendum_dict = {}
     if request.form:
         # request.form[PROCESS]=='' means the reset button sent the request
         if request.form[PROCESS]:
@@ -67,7 +72,9 @@ def graphic_page(page_name):
         )
     )
     # we're attaching a cookie tracking the state of the filters to the rendered template response.
-    resp.set_cookie(ADDENDUM_DICT, json.dumps(addendum_dict))
+    # Do not write cookies in development mode
+    if current_app.config.get("ENV") != DEVELOPMENT:
+        resp.set_cookie(ADDENDUM_DICT, json.dumps(addendum_dict))
     return resp
 
 

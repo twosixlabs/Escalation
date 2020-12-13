@@ -28,6 +28,8 @@ from utility.constants import (
     PLOT_SPECIFIC_INFO,
     GRAPHIC_NAME,
     DEFAULT_SELECTED,
+    MAX,
+    MIN,
 )
 from utility.reformatting_functions import (
     add_operations_to_the_data_from_addendum,
@@ -35,6 +37,7 @@ from utility.reformatting_functions import (
     add_instructions_to_config_dict,
     get_key_for_form,
     add_form_to_addendum_dict,
+    add_operations_to_the_data_from_defaults,
 )
 
 
@@ -52,10 +55,8 @@ def addendum_dict():
         "graphic_0": {
             "filter_0": ["MALE"],
             "filter_1": ["Torgersen", "Dream"],
-            "numerical_filter_0_upper_operation": [">"],
-            "numerical_filter_0_upper_value": ["4"],
-            "numerical_filter_0_lower_operation": [">="],
-            "numerical_filter_0_lower_value": [""],
+            "numerical_filter_0_max_value": ["4"],
+            "numerical_filter_0_min_value": [""],
         }
     }
     return addendum_dict
@@ -68,10 +69,8 @@ def test_add_form_to_addendum_dict(addendum_dict):
             ("filter_0", "MALE"),
             ("filter_1", "Torgersen"),
             ("filter_1", "Dream"),
-            ("numerical_filter_0_upper_operation", ">"),
-            ("numerical_filter_0_upper_value", "4"),
-            ("numerical_filter_0_lower_operation", ">="),
-            ("numerical_filter_0_lower_value", ""),
+            ("numerical_filter_0_max_value", "4"),
+            ("numerical_filter_0_min_value", ""),
         ]
     )
     new_addendum_dict = {}
@@ -96,10 +95,8 @@ def test_add_active_selectors_to_selectable_data_list_with_addendum(
     assert "Dream" in filter_list[1][ACTIVE_SELECTORS]
 
     numerical_filter_list = graphic_0_dict[SELECTABLE_DATA_DICT][NUMERICAL_FILTER]
-    assert numerical_filter_list[0][ACTIVE_SELECTORS][UPPER_INEQUALITY][VALUE] == "4"
-    assert (
-        numerical_filter_list[0][ACTIVE_SELECTORS][UPPER_INEQUALITY][OPERATION] == ">"
-    )
+    assert numerical_filter_list[0][ACTIVE_SELECTORS][MAX][VALUE] == "4"
+    assert numerical_filter_list[0][ACTIVE_SELECTORS][MIN][VALUE] == ""
 
 
 def test_add_active_selectors_to_selectable_data_list_with_SHOW_ALL_ROWS_chosen(
@@ -108,10 +105,8 @@ def test_add_active_selectors_to_selectable_data_list_with_SHOW_ALL_ROWS_chosen(
     addendum_dict = {
         "filter_0": ["MALE"],
         "filter_1": [SHOW_ALL_ROW],
-        "numerical_filter_0_upper_operation": [">"],
-        "numerical_filter_0_upper_value": ["4"],
-        "numerical_filter_0_lower_operation": [">="],
-        "numerical_filter_0_lower_value": [""],
+        "numerical_filter_0_max_value": ["4"],
+        "numerical_filter_0_min_value": [""],
     }
     graphic_0_dict = single_page_config_dict["graphic_0"]
     add_active_selectors_to_selectable_data_list(
@@ -145,10 +140,8 @@ def test_add_active_selectors_to_selectable_data_list_without_addendum(
     assert "Dream" in filter_list[1][ACTIVE_SELECTORS]
 
     numerical_filter_list = graphic_0_dict[SELECTABLE_DATA_DICT][NUMERICAL_FILTER]
-    assert numerical_filter_list[0][ACTIVE_SELECTORS][UPPER_INEQUALITY][VALUE] == ""
-    assert (
-        numerical_filter_list[0][ACTIVE_SELECTORS][UPPER_INEQUALITY][OPERATION] == "<="
-    )
+    assert numerical_filter_list[0][ACTIVE_SELECTORS][MAX][VALUE] == ""
+    assert numerical_filter_list[0][ACTIVE_SELECTORS][MIN][VALUE] == ""
 
 
 def test_add_operations_to_the_data(single_page_config_dict, addendum_dict):
@@ -175,7 +168,7 @@ def test_add_operations_to_the_data(single_page_config_dict, addendum_dict):
     assert operations_list[2] == {
         "type": "numerical_filter",
         "column": "penguin_size:culmen_length_mm",
-        "operation": ">",
+        "operation": "<=",
         "value": 4.0,
     }
 
@@ -242,3 +235,18 @@ def test_get_key_for_form():
     assert "numerical_filter_4" == get_key_for_form(NUMERICAL_FILTER, 4)
     assert "groupby" == get_key_for_form(GROUPBY, "")
     assert "axis_0" == get_key_for_form(AXIS, 0)
+
+
+def test_add_operations_to_the_data_from_defaults(single_page_config_dict):
+    selectable_data_dict = single_page_config_dict["graphic_0"][SELECTABLE_DATA_DICT]
+    selectable_data_dict[NUMERICAL_FILTER][0][MIN] = 2
+    operations_list = add_operations_to_the_data_from_defaults(selectable_data_dict)
+
+    assert len(operations_list) == 1
+
+    assert operations_list[0] == {
+        "type": "numerical_filter",
+        "column": "penguin_size:culmen_length_mm",
+        "operation": ">=",
+        "value": 2.0,
+    }

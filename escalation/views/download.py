@@ -4,7 +4,7 @@ import json
 
 from flask import current_app, render_template, Blueprint, request, Response
 
-from controller import get_metadata
+from controller import get_datasource_metadata_formatted_for_admin_panel
 from utility.constants import (
     DATA_SOURCES,
     MAIN_DATA_SOURCE,
@@ -25,7 +25,7 @@ download_blueprint = Blueprint("download", __name__)
 
 @download_blueprint.route("/download", methods=("GET",))
 def download_page():
-    data_source_dict = get_metadata()
+    data_source_dict = get_datasource_metadata_formatted_for_admin_panel()
     return render_template(
         DOWNLOAD_HTML, data_source_dict=data_source_dict, admin=False
     )

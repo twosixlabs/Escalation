@@ -1,4 +1,3 @@
-# todo: move this to config json
 import os
 
 if not os.environ.get("DATABASE_CONFIG"):
@@ -26,3 +25,10 @@ else:
         "password": url.password,
         "database": url.database,
     }
+
+
+# password required for endpoints that use the @auth.login_required decorator
+# NB: real versions of these passwords should be passed in as environment variables to the app
+# Don't check in secrets to version control!
+
+USERS = {"admin": "escalation"}

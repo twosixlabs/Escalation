@@ -1,16 +1,12 @@
 # Copyright [2020] [Two Six Labs, LLC]
 # Licensed under the Apache License, Version 2.0
-import os
 
-from flask import current_app
 import pandas as pd
 import pytest
-from sqlalchemy import create_engine, MetaData
+from sqlalchemy.types import Integer, Text, Float, DateTime, ARRAY, Boolean
 
 from database.sql_handler import SqlDataInventory, SqlHandler
-from database.utils import sql_handler_filter_operation
 from utility.constants import *
-from tests.conftest import TESTING_DB_URI
 
 PENGUIN_SIZE = "penguin_size"
 PENGUIN_SIZE_SMALL = "penguin_size_small"
@@ -24,45 +20,9 @@ FLIPPER_LENGTH = "flipper_length_mm"
 
 
 @pytest.fixture()
-def rebuild_test_database(test_app_client_sql_backed):
-    # drop all tables associated with the testing app Sqlalchemy Base
-    engine = create_engine(TESTING_DB_URI)
-    current_app.engine = engine
-    current_app.Base.metadata.drop_all(bind=engine)
-    current_app.Base.metadata.create_all(bind=engine)
-
-    test_app_data_path = os.path.join(TEST_APP_DEPLOY_DATA, DATA)
-    data_sources = os.listdir(test_app_data_path)
-    for data_source in data_sources:
-        if data_source == DATA_UPLOAD_METADATA or data_source.startswith("."):
-            continue
-        data_inventory = SqlDataInventory(
-            data_sources={MAIN_DATA_SOURCE: {DATA_SOURCE_TYPE: data_source}}
-        )
-        data_source_path = os.path.join(test_app_data_path, data_source)
-        files = os.listdir(data_source_path)
-        for file in files:
-            df = pd.read_csv(os.path.join(data_source_path, file), sep=",", comment="#")
-            data_inventory.write_data_upload_to_backend(
-                df, username="test_fixture", notes="test case upload"
-            )
-    return True
-
-
-@pytest.fixture()
-def get_sql_handler_fixture(rebuild_test_database):
+def get_sql_handler_fixture_lter_table(rebuild_test_database):
     data_sources = {
-        MAIN_DATA_SOURCE: {DATA_SOURCE_TYPE: "penguin_size"},
-        ADDITIONAL_DATA_SOURCES: [
-            {
-                DATA_SOURCE_TYPE: "mean_penguin_stat",
-                JOIN_KEYS: [
-                    ["penguin_size:study_name", "mean_penguin_stat:study_name"],
-                    ["penguin_size:sex", "mean_penguin_stat:sex"],
-                    ["penguin_size:species", "mean_penguin_stat:species"],
-                ],
-            }
-        ],
+        MAIN_DATA_SOURCE: {DATA_SOURCE_TYPE: "penguin_lter_small"},
     }
     return SqlHandler(data_sources)
 
@@ -72,8 +32,8 @@ def get_sql_handler_fixture_small(rebuild_test_database):
     return SqlHandler({MAIN_DATA_SOURCE: {DATA_SOURCE_TYPE: "penguin_size_small"}})
 
 
-def test_sql_handler_init(get_sql_handler_fixture):
-    data_sources = get_sql_handler_fixture.flat_data_sources
+def test_sql_handler_init(sql_handler_fixture):
+    data_sources = sql_handler_fixture.flat_data_sources
     assert "penguin_size" == data_sources[0][DATA_SOURCE_TYPE]
     assert "mean_penguin_stat" == data_sources[1][DATA_SOURCE_TYPE]
 
@@ -124,8 +84,8 @@ def test_get_column_data_numerical_filter(get_sql_handler_fixture_small):
     assert list(test_dict["penguin_size_small:flipper_length_mm"]) == [181, 186]
 
 
-def test_get_column_unique_entries(get_sql_handler_fixture):
-    unique_entries = get_sql_handler_fixture.get_column_unique_entries(
+def test_get_column_unique_entries(sql_handler_fixture):
+    unique_entries = sql_handler_fixture.get_column_unique_entries(
         ["penguin_size:sex", "penguin_size:island",]
     )
     assert set(unique_entries["penguin_size:sex"]) == {"MALE", "FEMALE", "."}
@@ -136,7 +96,7 @@ def test_get_column_unique_entries(get_sql_handler_fixture):
     }
 
 
-def test_build_combined_data_table(get_sql_handler_fixture):
+def test_build_combined_data_table(sql_handler_fixture):
     penguin_size = pd.concat(
         [
             pd.read_csv("test_app_deploy_data/data/penguin_size/penguin_size.csv"),
@@ -150,14 +110,14 @@ def test_build_combined_data_table(get_sql_handler_fixture):
         penguin_size, penguin_mean, how="inner", on=["study_name", "sex", "species"]
     )
     num_rows_in_inner_table = inner_join_table.shape[0]
-    rows = get_sql_handler_fixture.get_column_data([f"{PENGUIN_SIZE}:{CULMEN_DEPTH}"])[
+    rows = sql_handler_fixture.get_column_data([f"{PENGUIN_SIZE}:{CULMEN_DEPTH}"])[
         f"{PENGUIN_SIZE}:{CULMEN_DEPTH}"
     ]
     num_rows_in_combined_table = len(rows)
     assert num_rows_in_inner_table == num_rows_in_combined_table
 
 
-def test_build_combined_data_table_with_filtered_data_source(get_sql_handler_fixture):
+def test_build_combined_data_table_with_filtered_data_source(sql_handler_fixture):
     # only the one included penguin size is loaded, not the second
     penguin_size = pd.read_csv(
         "test_app_deploy_data/data/penguin_size/penguin_size.csv"
@@ -173,7 +133,7 @@ def test_build_combined_data_table_with_filtered_data_source(get_sql_handler_fix
         PENGUIN_SIZE, {1: "ACTIVE", 2: "INACTIVE"}
     )
     num_rows_in_combined_table = len(
-        get_sql_handler_fixture.get_column_data(
+        sql_handler_fixture.get_column_data(
             [f"{PENGUIN_SIZE}:{ISLAND}"],
             [{"type": FILTER, "column": f"{PENGUIN_SIZE}:upload_id", "selected": [1],}],
         )[f"{PENGUIN_SIZE}:{ISLAND}"]
@@ -186,11 +146,12 @@ def test_get_available_data_sources(rebuild_test_database):
     assert "penguin_size_small" in file_names
     assert "penguin_size" in file_names
     assert "mean_penguin_stat" in file_names
-    assert len(file_names) == 3
+    assert "penguin_lter_small" in file_names
+    assert len(file_names) == 4
 
 
-def test_get_schema_for_data_source(get_sql_handler_fixture):
-    column_names = get_sql_handler_fixture.get_schema_for_data_source()
+def get_column_names_for_data_source(get_sql_handler_fixture):
+    column_names = get_sql_handler_fixture.get_column_names_for_data_source()
     expected_column_names = {
         "mean_penguin_stat:body_mass",
         "mean_penguin_stat:culmen_depth",
@@ -217,6 +178,50 @@ def test_get_schema_for_data_source(get_sql_handler_fixture):
     }
 
     assert set(column_names) == expected_column_names
+
+
+def test_get_schema_for_data_source(sql_handler_fixture):
+    column_types_dict = sql_handler_fixture.get_schema_for_data_source()
+    expected_column_types = {
+        "mean_penguin_stat:body_mass": Float,
+        "mean_penguin_stat:culmen_depth": Float,
+        "mean_penguin_stat:culmen_length": Float,
+        "mean_penguin_stat:delta_13_c": Float,
+        "mean_penguin_stat:delta_15_n": Float,
+        "mean_penguin_stat:flipper_length": Float,
+        "mean_penguin_stat:row_index": Integer,
+        "mean_penguin_stat:sex": Text,
+        "mean_penguin_stat:species": Text,
+        "mean_penguin_stat:study_name": Text,
+        "mean_penguin_stat:upload_id": Integer,
+        "penguin_size:body_mass_g": Integer,
+        "penguin_size:culmen_depth_mm": Float,
+        "penguin_size:culmen_length_mm": Float,
+        "penguin_size:flipper_length_mm": Integer,
+        "penguin_size:island": Text,
+        "penguin_size:region": Text,
+        "penguin_size:row_index": Integer,
+        "penguin_size:sex": Text,
+        "penguin_size:species": Text,
+        "penguin_size:study_name": Text,
+        "penguin_size:upload_id": Integer,
+    }
+    for k, v in expected_column_types.items():
+        print(v)
+        assert isinstance(column_types_dict[k], v), k
+
+
+def test_get_schema_for_lter_data_source(get_sql_handler_fixture_lter_table):
+    column_types_dict = get_sql_handler_fixture_lter_table.get_schema_for_data_source()
+    expected_column_types = {
+        "penguin_lter_small:date_egg": DateTime,
+        "penguin_lter_small:island": Text,
+        "penguin_lter_small:study_name": Text,
+        "penguin_lter_small:region_culmen_list": ARRAY,
+        "penguin_lter_small:clutch_completion": Boolean,
+    }
+    for k, v in expected_column_types.items():
+        assert isinstance(column_types_dict[k], v), k
 
 
 def test_write_data_upload_to_backend():

@@ -1,5 +1,5 @@
 # coding: utf-8
-from sqlalchemy import Boolean, Column, DateTime, Float, Integer, Text
+from sqlalchemy import Boolean, Column, DateTime, Float, Integer, Text, ARRAY, String
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -61,3 +61,15 @@ class PenguinSizeSmall(Base):
     flipper_length_mm = Column(Integer)
     body_mass_g = Column(Integer)
     sex = Column(Text)
+
+
+class PenguinLterSmall(Base):
+    __tablename__ = "penguin_lter_small"
+
+    upload_id = Column(Integer, primary_key=True, nullable=False)
+    row_index = Column(Integer, primary_key=True, nullable=False)
+    study_name = Column(Text)
+    island = Column(Text)
+    date_egg = Column(DateTime)
+    region_culmen_list = Column(ARRAY(String))
+    clutch_completion = Column(Boolean)

@@ -190,17 +190,25 @@ def create_data_subselect_info_for_plot(
 
     numerical_filter_list = selectable_data_dict.get(NUMERICAL_FILTER, [])
     for index, numerical_filter_dict in enumerate(numerical_filter_list):
-        selector_entries = OPERATIONS_FOR_NUMERICAL_FILTERS.keys()
         select_info.append(
-            make_filter_dict(
-                NUMERICAL_FILTER, numerical_filter_dict, index, selector_entries
-            )
+            make_filter_dict(NUMERICAL_FILTER, numerical_filter_dict, index)
         )
 
     return select_info
 
 
-def make_filter_dict(selector_type, select_dict, index, selector_entries):
+def make_filter_dict(selector_type, select_dict, index, selector_entries=None):
+    """
+    Reformats convenient Python data structures into a dict easily parsed in Jinja
+
+    See tests/test_controller test cases for example formats of the inputs and outputs of this function
+
+    :param selector_type: one of AXIS, FILTER, GROUPBY, NUMERICAL_FILTER (see the explicit iteration in create_data_subselect_info_for_plot)
+    :param select_dict:
+    :param index: form index corresponds to  ordering of selectors on the web interface
+    :param selector_entries: A list of options to include in UI dropdown
+    :return: dict structured for read by Jinja
+    """
     html_filter_dict = {SELECTOR_TYPE: selector_type}
     selector_attributes = AVAILABLE_SELECTORS[selector_type]
     column = select_dict.get(OPTION_COL, "")
@@ -236,10 +244,12 @@ def make_pages_dict(available_pages_list, config_file_folder) -> dict:
     return available_pages_dict
 
 
-def get_metadata():
+def get_datasource_metadata_formatted_for_admin_panel():
     """
-    gets meta data for admin and download page
-    :return:
+    Gets meta data for admin and download page.
+    Formats a dictionary keyed with datasource, valued with a dict defining upload ids
+    and their corresponding upload metadata.
+    This dict is formatted to be read by bootstrap-table
     """
     data_inventory = current_app.config.data_backend_writer
     existing_data_sources = data_inventory.get_available_data_sources()
