@@ -9,7 +9,6 @@ def build_config_json(data_backend, data_file_directory):
         SITE_TITLE: "Escalation Test",
         "brief_desc": "This is a test/demo for the Escalation OS",
         DATA_BACKEND: data_backend,
-        DATA_FILE_DIRECTORY: data_file_directory,
         DATA_SOURCES: ["penguin_size", "mean_penguin_stat", "penguin_size_small"],
         AVAILABLE_PAGES: [
             {
@@ -162,7 +161,7 @@ if __name__ == "__main__":
     PATH_TO_GRAPHIC_CONFIG_FILES = "path_to_graphic_config_files"
     path_to_test_files = os.path.join("test_app_deploy_data")
     config_file_definitions = {
-        "test_app_sql_config.json": {DATA_BACKEND: POSTGRES},
+        "main_config.json": {DATA_BACKEND: POSTGRES},
     }
 
     for config_file_name, config in config_file_definitions.items():

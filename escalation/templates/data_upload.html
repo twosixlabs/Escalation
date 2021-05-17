@@ -13,9 +13,10 @@
 <div class="jumbotron">
     <h1 class="display-4">Upload CSV</h1>
     <hr class="my-4">
-    <p class="lead">Upload data csvs to existing data tables. To add new data tables, you'll have to run the app in development mode using the setup wizard.</p>
+    <p class="lead">Upload data CSVs to existing data tables. To add new data tables, you'll have to run the app in development mode using the setup wizard.</p>
 </div>
 <div class="container-fluid pl-5 pr-5">
+
 {% if success_text %}
 <div class="row mb">
 <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -26,6 +27,18 @@
 </div>
 </div>
 {% endif %}
+
+{% if failure_text %}
+<div class="row mb">
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <strong>Failure!</strong> File(s) were not uploaded. {{ failure_text }}
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+</div>
+{% endif %}
+
 {% if config.ENV == "development" %}
 <div class="row mb-3">
     <div class="btn-group" role="group">
@@ -47,9 +60,9 @@
     </div>
 
     <div class="form-group">
-        <label id="csvfile" for="csvfile">CSV file</label>
+        <label id="csvfile" for="csvfile">CSV file(s)</label>
 
-        <input type="file" class="form-control-file"  name="csvfile" accept="csv" required>
+        <input type="file" class="form-control-file"  name="csvfile" accept="csv" multiple required>
 
     </div>
 

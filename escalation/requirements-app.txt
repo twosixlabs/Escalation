@@ -17,9 +17,12 @@ pyyaml
 requests
 setuptools
 six
+seaborn
 sqlacodegen
-sqlalchemy
+# 1.4.0 seems to break several of the ways we're accessing tables and classes in sqlalchemy
+sqlalchemy<1.4.0
 tableschema
 werkzeug[watchdog]
 wheel
 Flask-HTTPAuth
+numpydoc

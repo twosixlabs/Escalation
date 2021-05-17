@@ -16,7 +16,6 @@ from utility.constants import (
     SELECTED,
     ACTIVE,
 )
-from utility.wizard_utils import get_possible_column_names_and_values
 
 DOWNLOAD_HTML = "view_uploaded_data.html"
 
@@ -44,7 +43,7 @@ def download_data():
             OPTION_TYPE: FILTER,
             OPTION_COL: f"{data_source_name}:{UPLOAD_ID}",
             SELECTED: [
-                upload_id
+                upload_id.split("_")[1]  # upload_id are of form f"id_{upload_id}"
                 for upload_id, selected in download_data_dict.items()
                 if selected == ACTIVE
                 # reusing the active logic from the admin page,

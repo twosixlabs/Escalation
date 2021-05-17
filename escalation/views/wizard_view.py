@@ -1,67 +1,45 @@
 # Copyright [2020] [Two Six Labs, LLC]
 # Licensed under the Apache License, Version 2.0
-import itertools
 from io import open as io_open
 import json
 import os
+import re
 
 from flask import current_app, render_template, Blueprint, request
+import pandas as pd
 from sqlacodegen.codegen import CodeGenerator
 
+from controller import get_data_for_page
 from database.sql_handler import CreateTablesFromCSVs, REPLACE, SqlDataInventory
-from utility.build_plotly_schema import SELECTOR_DICT
-from utility.constants import (
-    DATA_BACKEND,
-    AVAILABLE_PAGES,
-    PAGE_ID,
-    GRAPHIC,
-    CONFIG_FILE_FOLDER,
-    CONFIG_DICT,
-    GRAPHIC_STATUS,
-    GRAPHIC_CONFIG_FILES,
-    WEBPAGE_LABEL,
-    URL_ENDPOINT,
-    SCATTER,
-    POSTGRES,
-    DATA,
-    TYPE,
-    PLOT_SPECIFIC_INFO,
-    COPY,
-    OLD,
-    NEW,
-    GRAPHIC_PATH,
-    GRAPHIC_TITLE,
-    APP_DEPLOY_DATA,
-    SQLALCHEMY_DATABASE_URI,
-    USERNAME,
-    NOTES,
-    APP_CONFIG_JSON,
-    DATA_SOURCE,
-    DATA_SOURCES,
-    COLLAPSE_DICT,
+from graphics.graphic_schema import GraphicsConfigInterfaceBuilder
+from graphics.utils.available_graphics import (
+    PLOT_DELIMITER,
+    get_all_available_graphics,
+    AVAILABLE_GRAPHICS,
 )
-from utility.schemas_for_ui import build_graphic_schemas_for_ui
+from utility.constants import *
+from utility.exceptions import ValidationError
 from utility.wizard_utils import (
     load_graphic_config_dict,
     save_main_config_dict,
     load_main_config_dict_if_exists,
     sanitize_string,
-    invert_dict_lists,
-    make_empty_component_dict,
     graphic_dict_to_graphic_component_dict,
     graphic_component_dict_to_graphic_dict,
     get_layout_for_dashboard,
-    get_data_source_info,
     extract_data_sources_from_config,
     copy_data_from_form_to_config,
     make_page_dict_for_main_config,
     generate_collapse_dict_from_graphic_component_dict,
     get_default_collapse_dict,
 )
+from views.file_upload import upload_page
+
 
 GRAPHIC_CONFIG_EDITOR_HTML = "wizard_graphic_config_editor.html"
 CONFIG_FILES_HTML = "wizard_configurer.html"
 CSV_TO_DATABASE_UPLOAD_HTML = "wizard_data_upload.html"
+GRAPHIC_CONFIG_LANDING_PAGE = "wizard_config_landing_page.html"
 wizard_blueprint = Blueprint("wizard", __name__)
 
 
@@ -127,57 +105,60 @@ def modify_layout():
     return file_tree()
 
 
-@wizard_blueprint.route("/wizard/graphic", methods=("POST",))
+@wizard_blueprint.route("/wizard/graphic/landing", methods=("POST",))
+def graphic_landing_setup():
+    return render_template(
+        GRAPHIC_CONFIG_LANDING_PAGE,
+        page_id=request.form[PAGE_ID],
+        graphic_status=request.form[GRAPHIC_STATUS],
+        graphic_path=request.form[GRAPHIC],
+        plot_dict=get_all_available_graphics(),
+        data_source_schema=json.dumps(
+            GraphicsConfigInterfaceBuilder.get_wizard_data_source_schema()
+        ),
+    )
+
+
+@wizard_blueprint.route("/wizard/graphic/config", methods=("POST",))
 def graphic_config_setup():
     graphic_status = request.form[GRAPHIC_STATUS]
+    graphic_dict = {}
 
-    active_data_source_names = None
     collapse_dict = get_default_collapse_dict()
     if graphic_status in [COPY, OLD]:
         graphic_dict = json.loads(load_graphic_config_dict(request.form[GRAPHIC]))
-        active_data_source_names = extract_data_sources_from_config(graphic_dict)
+        plot_manager = graphic_dict[PLOT_MANAGER]
+        plot_type = graphic_dict[PLOT_TYPE]
         collapse_dict = generate_collapse_dict_from_graphic_component_dict(graphic_dict)
+    else:
+        plot_manager, plot_type = request.form[PLOT_TYPE].split(PLOT_DELIMITER)
+        graphic_dict[PLOT_MANAGER] = plot_manager
+        graphic_dict[PLOT_TYPE] = plot_type
+        graphic_dict[DATA_SOURCES] = json.loads(request.form[DATA_SOURCES])
+    active_data_source_names = extract_data_sources_from_config(graphic_dict)
+    kwargs = {
+        "active_data_source_names": active_data_source_names,
+        "collapse_dict": collapse_dict,
+    }
+    plot_info = AVAILABLE_GRAPHICS[plot_manager]
+    if plot_manager in PLOT_MANAGERS:
+        graphic_config = plot_info[SCHEMA_CLASS](**kwargs)
+    else:
+        raise ValueError(f"plot_manager {plot_manager} not recognized")
 
-    (
-        data_source_names,
-        all_column_names,
-        filter_column_names,
-        numerical_filter_column_names,
-        unique_entries_dict,
-    ) = get_data_source_info(active_data_source_names)
-
-    # concatenating into one large list with no duplicates
-    unique_entries_list = list(
-        set(itertools.chain.from_iterable(unique_entries_dict.values()))
-    )
-    graphic_schemas, schema_to_type = build_graphic_schemas_for_ui(
-        data_source_names,
-        all_column_names,
-        filter_column_names,
-        numerical_filter_column_names,
-        unique_entries_list,
-        collapse_dict,
-    )
-    component_graphic_dict = make_empty_component_dict()
-    current_schema = SCATTER
-
-    if graphic_status in [COPY, OLD]:
-        type_to_schema = invert_dict_lists(schema_to_type)
-        current_schema = type_to_schema[
-            graphic_dict[PLOT_SPECIFIC_INFO][DATA][0].get(TYPE, SCATTER)
-        ]
-        component_graphic_dict = graphic_dict_to_graphic_component_dict(graphic_dict)
-
+    ui_formatted_schema = graphic_config.build_graphic_schemas_for_ui(plot_type)
+    component_graphic_dict = graphic_dict_to_graphic_component_dict(graphic_dict)
     return render_template(
         GRAPHIC_CONFIG_EDITOR_HTML,
-        schema=json.dumps(graphic_schemas, indent=4,),
+        # todo: rename 'schema'
+        schema=json.dumps(ui_formatted_schema, indent=4,),
         page_id=request.form[PAGE_ID],
         current_config=json.dumps(component_graphic_dict),
         graphic_status=graphic_status,
-        schema_selector_dict=json.dumps(SELECTOR_DICT),
-        current_schema=current_schema,
+        schema_selector_dict=json.dumps(graphic_config.plot_selector_dict),
         graphic_path=request.form[GRAPHIC],
-        default_entries_dict=json.dumps(unique_entries_dict),
+        default_entries_dict=json.dumps(graphic_config.unique_entries_dict),
+        graph_html_template=plot_info[OBJECT].get_graph_html_template(),
     )
 
 
@@ -240,88 +221,124 @@ def update_graphic_json_config_with_ui_changes():
     )
 
 
-@wizard_blueprint.route("/wizard/graphic/update_schemas", methods=("POST",))
-def get_updated_schemas():
-
-    ui_editor_info_dict = request.get_json()
-    (
-        data_source_names,
-        all_column_names,
-        filter_column_names,
-        numerical_filter_column_names,
-        unique_entries_dict,
-    ) = get_data_source_info(ui_editor_info_dict[DATA_SOURCES])
-
-    # concatenating into one large list with no duplicates
-    unique_entries_list = list(
-        set(itertools.chain.from_iterable(unique_entries_dict.values()))
+@wizard_blueprint.route("/wizard/graphic/preview", methods=("POST",))
+def preview_graphic_json_config():
+    config_information_dict = request.get_json()
+    graphic_dict = graphic_component_dict_to_graphic_dict(
+        config_information_dict[CONFIG_DICT]
     )
-    graphic_schemas, schema_to_type = build_graphic_schemas_for_ui(
-        data_source_names,
-        all_column_names,
-        filter_column_names,
-        numerical_filter_column_names,
-        unique_entries_list,
-        ui_editor_info_dict[COLLAPSE_DICT],
-    )
+    # get_data_for_page needs a graphic label
+    plot_specs = get_data_for_page({PREVIEW: graphic_dict})
+    # plot_specs is more nested than we want for the preveiw so get the plot_dict and pass that to the html
     return (
-        json.dumps({"new_schemas": graphic_schemas, "new_default_entries_dict": unique_entries_dict}, indent=4,),
+        json.dumps({"success": True, PREVIEW: plot_specs[0][JINJA_PLOT_INFO]}),
         200,
         {"ContentType": "application/json"},
     )
 
 
-def data_upload_page(success_text=None):
-    data_inventory_class = current_app.config.data_backend_writer
-    data_source_names = data_inventory_class.get_available_data_sources()
-    data_sources = sorted(data_source_names)
-    return render_template(
-        CSV_TO_DATABASE_UPLOAD_HTML,
-        data_sources=data_sources,
-        success_text=success_text,
-    )
-
-
 @wizard_blueprint.route("/wizard/upload", methods=("GET",))
 def data_upload_page_view():
-    return data_upload_page()
+    return upload_page(template=CSV_TO_DATABASE_UPLOAD_HTML)
 
 
-def validate_table_name():
-    # todo: form validate table name, but in js for pre-submit warning?
-    # POSTGRES_TABLE_NAME_FORMAT_REGEX = r"^[a-zA-Z_]\w+$"
-    # if not re.match(POSTGRES_TABLE_NAME_FORMAT_REGEX, table_name):
-    #     print(
-    #         "Table names name must start with a letter or an underscore;"
-    #         " the rest of the string can contain letters, digits, and underscores."
-    #     )
-    #     exit(1)
-    # if len(table_name) > 31:
-    #     print(
-    #         "Postgres SQL only supports table names with length <= 31-"
-    #         " additional characters will be ignored"
-    #     )
-    #     exit(1)
-    # if re.match("[A-Z]", table_name):
-    #     print(
-    #         "Postgres SQL table names are case insensitive- "
-    #         "tablename will be converted to lowercase letters"
-    #     )
-    #
-    pass
+def validate_table_name(table_name: str):
+    """
+    ensures that a user-entered table name is supported by Postgres
+    """
+    # todo: check there is any name at all?
+    if not re.match(POSTGRES_TABLE_NAME_FORMAT_REGEX, table_name):
+        message = (
+            f"Check formatting of {table_name}"
+            "Table names name must start with a letter or an underscore; "
+            "the rest of the string can contain letters, digits, and underscores."
+        )
+    elif len(table_name) > 31:
+        message = f"Table name {table_name} too long. Postgres SQL only supports table names with length <= 31"
+    elif re.match("[A-Z]", table_name):
+        # sanitize_string now silently lowercases in background-
+        # this is currently not reachable
+        message = (
+            "Postgres SQL table names are case insensitive- "
+            "please use only lowercase letters"
+        )
+    else:
+        # there are no validation issues
+        return
+    raise ValidationError(message)
 
 
-def sql_backend_file_upload(upload_form, csvfile):
+def validate_wizard_upload_submission(
+    table_name: str, csvfiles, csv_sql_creator: CreateTablesFromCSVs
+):
+    """
+    Checks that the name of the uploaded table is valid,
+    and in the case of multiple uploaded files, that the schemas agree.
+    Raises ValidationError on any problems
+    :param table_name: sanitized flask form string
+    :param csvfiles: flask request files list
+    :param csv_sql_creator: CreateTablesFromCSVs instance
+    :return: combined dataframe from multiple files.
+    """
+    validate_table_name(table_name)
+    data_file_schemas = None
+    # for each file in the uploaded list of files,
+    #  assert that the columns contained are the same name and datatype
+    dfs = []
+    mismatches = []
+
+    for csvfile in csvfiles:
+        data = csv_sql_creator.get_data_from_csv(csvfile)
+        df, schema = csv_sql_creator.get_schema_from_df(data)
+        if not data_file_schemas:
+            data_file_schemas = schema
+            base_schema_file = csvfile.filename
+        else:
+            # raise error if column names don't match
+            if set(schema) - set(data_file_schemas):
+                mismatch_columns = f"columns in {csvfile.filename} not in {base_schema_file}: {set(schema) - set(data_file_schemas)}"
+                mismatches.append(mismatch_columns)
+            if set(data_file_schemas) - set(schema):
+                mismatch_columns = f"columns in {base_schema_file} not in {csvfile.filename}: {set(data_file_schemas) - set(schema)}"
+                mismatches.append(mismatch_columns)
+            # raise error if column types don't match
+            for column_name, column_type in schema.items():
+                if (
+                    column_name in data_file_schemas
+                    and data_file_schemas[column_name] != column_type
+                ):
+                    mismatches.append(
+                        f"Data type mismatch: {column_name}: {base_schema_file}:{data_file_schemas[column_name].__name__} and {csvfile.filename}:{column_type.__name__}"
+                    )
+        if len(mismatches) > 0:
+            raise ValidationError(
+                f"The following columns are inconsistent- upload failed: {mismatches}"
+            )
+        dfs.append(df)
+    return pd.concat(dfs).reset_index(drop=True)
+
+
+# todo: move to file_upload.py
+def sql_backend_file_to_table_upload(upload_form, csvfiles):
+    """
+
+    :param upload_form: flask request form
+    :param csvfiles: flask request files list
+    :return: None. Raises a validation error if there are problems with the formatting
+    """
     table_name = sanitize_string(upload_form.get(DATA_SOURCE))
     username = upload_form.get(USERNAME)
     notes = upload_form.get(NOTES)
-    csv_sql_writer = CreateTablesFromCSVs(current_app.config[SQLALCHEMY_DATABASE_URI])
-    data = csv_sql_writer.get_data_from_csv(csvfile)
+
+    csv_sql_creator = CreateTablesFromCSVs(current_app.config[SQLALCHEMY_DATABASE_URI])
+    data = validate_wizard_upload_submission(
+        table_name=table_name, csvfiles=csvfiles, csv_sql_creator=csv_sql_creator
+    )
     (
         upload_id,
         upload_time,
         table_name,
-    ) = csv_sql_writer.create_and_fill_new_sql_table_from_df(table_name, data, REPLACE)
+    ) = csv_sql_creator.create_and_fill_new_sql_table_from_df(table_name, data, REPLACE)
 
     # remove any existing metadata for this table name and write a new row
     SqlDataInventory.remove_metadata_rows_for_table_name(table_name)
@@ -335,9 +352,9 @@ def sql_backend_file_upload(upload_form, csvfile):
     )
     # Generate a new models.py
     # update the metadata to include all tables in the db
-    csv_sql_writer.meta.reflect()
+    csv_sql_creator.meta.reflect()
     # write the database schema to models.py
-    generator = CodeGenerator(csv_sql_writer.meta, noinflect=True)
+    generator = CodeGenerator(csv_sql_creator.meta, noinflect=True)
     # Write the generated model code to the specified file or standard output
     models_filepath = os.path.join(APP_DEPLOY_DATA, "models.py")
     # remove and write new file to trigger file watcher and refresh flask app
@@ -350,10 +367,27 @@ def sql_backend_file_upload(upload_form, csvfile):
 @wizard_blueprint.route("/wizard/upload", methods=("POST",))
 def upload_csv_to_database():
     upload_form = request.form
-    csvfile = request.files.get("csvfile")
+    csvfiles = request.files.getlist(CSVFILE)
     data_backend = current_app.config[APP_CONFIG_JSON].get(DATA_BACKEND)
     if data_backend in [POSTGRES]:
-        sql_backend_file_upload(upload_form, csvfile)
+        try:
+            sql_backend_file_to_table_upload(upload_form, csvfiles)
+        except ValidationError as e:
+            current_app.logger.info(e, exc_info=True)
+            return (
+                upload_page(
+                    template=CSV_TO_DATABASE_UPLOAD_HTML,
+                    validation_error_message=str(e),
+                ),
+                400,
+            )
+
     else:
-        return data_upload_page("Failure- data backend not recognized")
-    return data_upload_page("success")
+        return (
+            upload_page(
+                template=CSV_TO_DATABASE_UPLOAD_HTML,
+                validation_error_message="Failure- data backend not recognized",
+            ),
+            400,
+        )
+    return upload_page(template=CSV_TO_DATABASE_UPLOAD_HTML, success_text="success")

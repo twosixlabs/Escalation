@@ -89,14 +89,12 @@ def configure_app(app, config_dict, config_file_folder):
     return app
 
 
-def configure_backend(app, models_path="app_deploy_data.models"):
+def configure_backend(app):
     # setup steps unique to SQL-backended apps
     from database.sql_handler import SqlHandler, SqlDataInventory
 
     app.db = SQLAlchemy()
-    engine = create_engine(
-        app.config[SQLALCHEMY_DATABASE_URI], convert_unicode=True
-    )
+    engine = create_engine(app.config[SQLALCHEMY_DATABASE_URI], convert_unicode=True)
     app.db_session = scoped_session(
         sessionmaker(autocommit=False, autoflush=False, bind=engine)
     )
@@ -104,7 +102,8 @@ def configure_backend(app, models_path="app_deploy_data.models"):
 
     data_backend_class = SqlHandler
     data_backend_writer = SqlDataInventory
-    models_imports = importlib.import_module(models_path)
+    models_file_path = ".".join([app.config[CONFIG_FILE_FOLDER], "models"])
+    models_imports = importlib.import_module(models_file_path)
     app.Base = getattr(models_imports, "Base")
 
     @app.teardown_appcontext

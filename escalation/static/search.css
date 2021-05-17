@@ -1,0 +1,17 @@
+.list-group-item {
+    font-size: 12px;
+    padding: 1px 1px;
+    word-break: break-all;
+}
+
+.list-group {
+    height: 120px;
+    overflow: auto;
+
+}
+.search_info{
+    font-size: 12px;
+    height: 120px;
+    overflow: auto;
+    word-break: normal;
+}

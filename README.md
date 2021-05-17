@@ -31,15 +31,12 @@ Yes. Escalation has a few advantages:
 ## What do you need for the app to work?
 
 Note, because of Docker issues with Windows, there may be substantial hiccups running on that operating system.
-The instructions below have been tested on Mac and Linux.
+The instructions below have been tested on Mac and Linux. Linux users will need sudo permissions to run the following setup commands. 
 
 - [Configure the app](#2.-Configuring-the-app)
     - Escalation uses configuration files (json) to build the dashboard organizational structure, link the data in visualizations, and construct the visualizations themselves.
     - These configuration files can be built by hand, using the Configuration Wizard, or any combination of the two
 - [Data](#2.2-Load-your-data) 
-    - When setting up Escalation, you choose to use either a CSV or SQL backend.
-    - Depending on the backend, you'll either link the app to a database (new or existing) or a file system path containing your data files. 
-     A file backend may be easier for those unfamiliar with SQL, but SQL is more performant, and storing data in a database offers advantages beyond the database's use in Escalation
     - Escalation includes tooling to ingest CSV files into SQL, automatically building the necessary SQL data tables and the code necessary to integrate them with Escalation.
     - ToDo: Data Migration helpers- what happens when the format of your data changes over time?
 - [Python environment to run the app](#3.-Running-the-configured-app)
@@ -57,8 +54,12 @@ From the root level of the code repository, run:
 
 We recognize that Docker is less common in academic settings, but highly recommend using it. 
 Here are [instructions](https://docs.docker.com/get-started/) on getting started using Docker.
+Additionally, we use Docker Compose for running our multi-container application, which does depend on the Docker Engine. 
+Once you have Docker successfully installed, your next step is to install Docker Compose. 
+Here are [instructions](https://docs.docker.com/compose/) for the installation process. 
 We use the Docker containers to run our configuration wizard, as well as the scripts to ingest csv data into a SQL database.
 Once we set up a configuration and your data, we'll also use these containers to run the web app.
+
 
 ## 2. Configuring the app
 
@@ -75,24 +76,8 @@ Refresh your browser to update the contents to match your saved configuration.
      
 Some notes on [creating your first config files with the UI wizard](documentation/wizard_guide/creating_first_graphic_with_wizard.md).  
 
-This includes a gallery of various chart types and how they're configured.
-
-![config_gallery_thumbnail](documentation/gallery/images/gallery_thumbnail.png)
-
-
-#### Build a config from scratch (advanced, optional)
-Run `python build_app_config_json_template.py` to build a base config file. 
-Everything blank or in `<>` should be changed.
-
-#### Debugging config files manually (advanced, optional)
-
-An example of a [main config file](documentation/main_config_example/main_config_example.md).  
-Examples of [different plots and graphic config files](documentation/plotly_examples/plotly_config_info.md).  
-Examples of [different selectors](documentation/selector_examples/selector_config_info.md). 
-
 ### 2.2 Load your data
-
-#### SQL database backend (recommended)
+#### SQL database backend
     
 Escalation provides functionality to parse csv data files, determine the relevant sql schema,
  create tables in the SQL database from your file, and create the necessary `models.py` file for the app to interact with the database. 
@@ -104,7 +89,7 @@ Use this web form to upload each file you'd like to use for your visualizations 
 Note, it may take a little while to run.
 
 If you'd like to add more than one csv to the same table, you have two options: 
-combine them before uploading, or submit the additional CSVs using the  "Append to existing table" option.
+Load them at the same time (by holding shift and selecting multiple files), or submit the additional CSVs using the  "Append to existing table" option.
 
 Todo: If you have an existing SQL database, how do you copy it into Escalation?
  We require each table to have an `upload_id` column, and a key that is unique within an `upload_id` value
@@ -195,22 +180,30 @@ ToDo: More detailed instructions on virtual env setup, requirements install,  an
 
 ### Developing for Escalation
 
+- optional, but recommended: run in a virtual environment of your choice. If you use conda and not pyenv or similar, use the appropriate package installer in the next step
 - `pip install -r requirements-dev.txt`
 - `pre-commit install` sets up the pre-commit hooks to auto-format the code. This is optional, the repo is formatted with Flake and Black. 
-
+- From the `escalation/` directory (at the same level as `app,py`, run `export FLASK_ENV=development && python -m flask run`
 
 ### How to add a new type of plot
-Development for Escalation has focused on Plotly, but the codebase should be compatible with other libraries or custom graphics. If you want to use something other than Plotly, your code should:
-* Needs to inherit from graphic_class.py
+Development for Escalation has focused on Plotly, Cytoscape, and Seaborn, but the codebase should be compatible with other libraries or custom graphics. If you want to use something other than the provided libraries, your code should:
+* Inherit from graphic_class.py
 * Be added to available_graphics.py
 * Include an html file with javascript code required to plot
-
+* In addition, if you would like to use the wizard with the new graphic, you should define a schema with a class that inherits from graphic_schema.py. The schema should follow [JSON Schema](https://json-schema.org/). 
 ### How to add a new option feature
 * add it to available_selectors.py
 * create a html document input elements need name "\<id>|\<type>|<column_name>"
-* add to create_data_subselect_info and reformat_filter_form_dict in controller.py
-* build in functionality graphics_class or data_storer class
+* add to `create_data_subselect_info`, `modify_graphic_dict_based_on_addendum_dict`, and `add_operations_to_the_data_from_addendum` as appropriate in graphic_class.py or one of its inheritors.
+* build in functionality in graphic_class or data_storer inheritor
  
+# Using and citing Escalation
+
+
+Code submitted to [Zenodo](https://zenodo.org/) for DOI registration and version tracking.
+Bibtex and similar citation formatting available here:
+
+[![DOI](https://zenodo.org/badge/267139951.svg)](https://zenodo.org/badge/latestdoi/267139951)
 
 # License
 

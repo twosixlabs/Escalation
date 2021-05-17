@@ -1,0 +1,20 @@
+<!--# Copyright [2020] [Two Six Labs, LLC]-->
+<!--# Licensed under the Apache License, Version 2.0-->
+
+var img = document.querySelector("#{{ plot_id_str }} img");
+if (img === null) {
+    img = document.createElement("img");
+    img.src = "data:image/png;base64, ".concat(graph['seaborn_plot_bytes']);
+    const base_height = Math.min(width/graph['aspect_ratio'],height);
+    img.width = base_height*graph['aspect_ratio'];
+    img.height = base_height;
+    let chart_div = document.getElementById("{{ plot_id_str }}");
+    chart_div.appendChild(img);
+}
+else{
+    img.src = "data:image/png;base64, ".concat(graph['seaborn_plot_bytes']);
+    const base_height = Math.min(width/graph['aspect_ratio'],height);
+    img.width = base_height*graph['aspect_ratio'];
+    img.height = base_height;
+}
+

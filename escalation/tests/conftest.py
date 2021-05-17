@@ -13,9 +13,11 @@ import pytest
 from flask import current_app
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import URL
+from werkzeug.datastructures import FileStorage
 
 from database.sql_handler import SqlDataInventory, SqlHandler
 from graphics.plotly_plot import LAYOUT, TITLE
+from tests.test_file_uploads import TEST_FILENAME
 from utility.constants import *
 from app_setup import configure_backend, create_app
 from utility.constants import (
@@ -40,6 +42,19 @@ TESTING_DB_URI = URL(**TESTING_DB_CONFIG)
 
 # define a fixed time for test uploads
 PEARL_HARBOR = datetime(1941, 12, 7, 7, 55, 0)
+
+
+@pytest.fixture()
+def addendum_dict():
+    addendum_dict = {
+        "graphic_0": {
+            "filter_0": ["MALE"],
+            "filter_1": ["Torgersen", "Dream"],
+            "numerical_filter_0_max_value": ["4"],
+            "numerical_filter_0_min_value": [""],
+        }
+    }
+    return addendum_dict
 
 
 @pytest.fixture()
@@ -71,10 +86,11 @@ def rebuild_test_database(test_app_client_sql_backed, mocker):
 
 @pytest.fixture()
 def test_app_client_sql_backed(main_json_sql_backend_fixture):
-    flask_app = create_app(db_uri=TESTING_DB_URI)
+    # set an env other than DEVELOPMENT, which is used as a gate for some features
+    flask_app = create_app(db_uri=TESTING_DB_URI, env="testing")
     flask_app.config[APP_CONFIG_JSON] = MappingProxyType(main_json_sql_backend_fixture)
     flask_app.config[CONFIG_FILE_FOLDER] = TEST_APP_DEPLOY_DATA
-    configure_backend(flask_app, models_path="test_app_deploy_data.models")
+    configure_backend(flask_app)
     # Flask provides a way to test your application by exposing the Werkzeug test Client
     # and handling the context locals for you.
     testing_client = flask_app
@@ -93,7 +109,7 @@ def test_app_client_sql_backed_development_env(main_json_sql_backend_fixture):
     flask_app = create_app(db_uri=TESTING_DB_URI, env=DEVELOPMENT)
     flask_app.config[APP_CONFIG_JSON] = MappingProxyType(main_json_sql_backend_fixture)
     flask_app.config[CONFIG_FILE_FOLDER] = TEST_APP_DEPLOY_DATA
-    configure_backend(flask_app, models_path="test_app_deploy_data.models")
+    configure_backend(flask_app)
     # Flask provides a way to test your application by exposing the Werkzeug test Client
     # and handling the context locals for you.
     testing_client = flask_app
@@ -151,21 +167,26 @@ def make_graphic_config_for_testing():
                         "type": "scatter",
                         "x": "penguin_size:body_mass_g",
                         "y": "penguin_size:flipper_length_mm",
+                        HOVERTEXT: [
+                            "penguin_size:sex",
+                            "penguin_size:culmen_length_mm",
+                        ],
+                        TRANSFORMS: {
+                            GROUPBY: {
+                                GROUPS: ["penguin_size:island", "penguin_size:sex",],
+                            }
+                        },
                     }
                 ]
-            },
-            VISUALIZATION_OPTIONS: {
-                HOVER_DATA: {
-                    COLUMN_NAME: ["penguin_size:sex", "penguin_size:culmen_length_mm",],
-                },
-                GROUPBY: {COLUMN_NAME: ["penguin_size:island", "penguin_size:sex",],},
             },
             SELECTABLE_DATA_DICT: {
                 FILTER: [
                     {COLUMN_NAME: "penguin_size:sex", MULTIPLE: False,},
                     {COLUMN_NAME: "penguin_size:island", MULTIPLE: True,},
                 ],
-                NUMERICAL_FILTER: [{COLUMN_NAME: "penguin_size:culmen_length_mm",}],
+                NUMERICAL_FILTER: [
+                    {COLUMN_NAME: "penguin_size:culmen_length_mm", TYPE: "number"}
+                ],
             },
         },
         "graphic_1": {
@@ -181,21 +202,10 @@ def make_graphic_config_for_testing():
                 },
             },
             SELECTABLE_DATA_DICT: {
-                AXIS: [
-                    {
-                        OPTION_TYPE: "axis",
-                        COLUMN_NAME: "x",
-                        ENTRIES: [
-                            "penguin_size:culmen_length_mm",
-                            "penguin_size:flipper_length_mm",
-                            "penguin_size:body_mass_g",
-                            "penguin_size:culmen_depth_mm",
-                        ],
-                    }
-                ],
                 GROUPBY: {
                     ENTRIES: ["penguin_size:sex", "penguin_size:island"],
                     MULTIPLE: True,
+                    DEFAULT_SELECTED: ["penguin_size:sex"],
                 },
             },
         },
@@ -219,3 +229,19 @@ def sql_handler_fixture(rebuild_test_database):
         ],
     }
     return SqlHandler(data_sources)
+
+
+@pytest.fixture()
+def sql_data_inventory_fixture(rebuild_test_database):
+    data_sources = {
+        MAIN_DATA_SOURCE: {DATA_SOURCE_TYPE: "penguin_size"},
+    }
+    return SqlDataInventory(data_sources)
+
+
+@pytest.fixture
+def penguin_size_csv_file():
+    request_file = FileStorage(
+        stream=open(TEST_FILENAME, "rb"), filename=TEST_FILENAME,
+    )
+    return request_file

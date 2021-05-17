@@ -1,20 +1,30 @@
-<div class="sticky-top">
-<h2>Buttons:</h2>
-<button type="button" class="btn btn-primary btn-block m-2" data-toggle="tooltip"
-        data-placement="right" title="Saves the changes and goes to the dashboard layout" onclick=save_json_editor_to_file(true)>Submit
+<button type="button" class="btn btn-primary btn-sm m-1" data-toggle="tooltip"
+        data-placement="auto" title="Saves the changes and goes to the dashboard layout" onclick=save_json_editor_to_file()>Submit
 </button>
-<button type="button" class="btn btn-primary btn-block m-2" data-toggle="tooltip"
+
+<a class="btn btn-danger btn-sm m-1" data-toggle="tooltip"
+        data-placement="auto" title="Goes to the dashboard layout without saving" href={{ url_for('.file_tree') }} role="button">Cancel
+</a>
+<!--<button type="button" class="btn btn-primary btn-block btn-sm m-1" data-toggle="tooltip"
         data-placement="right" title="Saves the changes" onclick=save_json_editor_to_file(false)>Apply
+</button>-->
+<form method="post" action='{{ url_for('.graphic_landing_setup') }}' id="form_setup">
+                <input type="hidden" name="page_id" value={{ page_id }}>
+                <input type="hidden" name="graphic" value={{ graphic }}>
+                <input type="hidden" name="graphic_status" value={{ graphic_status }}>
+<button type="submit" class="btn btn-secondary btn-sm m-1" data-toggle="tooltip"
+        data-placement="auto" title="Goes back to the graph setup without saving" onclick=submit()>Graph Setup
 </button>
+</form>
+
+
+<button type="button" class="btn btn-secondary btn-sm m-1" data-toggle="tooltip"
+        data-placement="auto" title="Erases all the values in the form" onclick=reset_json_editor()>Reset Form
+</button>
+
 <div id="feedback_message">
 </div>
-<button type="button" class="btn btn-secondary btn-block m-2" data-toggle="tooltip"
-        data-placement="right" title="Erases all the values in the form" onclick=reset_json_editor()>Reset Form
-</button>
-<button type="button" class="btn btn-secondary btn-block m-2" data-toggle="tooltip"
+<!--<button type="button" class="btn btn-secondary btn-sm btn-block m-1" data-toggle="tooltip"
         data-placement="right" title="Resets the values in the form to the last time it was saved" onclick=reload_last_save()>Reload Last Save
-</button>
-<a class="btn btn-success btn-block m-2" data-toggle="tooltip"
-        data-placement="right" title="Goes to the dashboard layout" href={{ url_for('.file_tree') }} role="button">Back to Dashboard Layout
-</a>
-</div>
+</button>-->
+

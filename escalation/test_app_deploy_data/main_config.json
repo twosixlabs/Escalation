@@ -17,6 +17,15 @@
                 "hist_penguins.json"
             ]
         },
+       {
+            "webpage_label": "seaborn penguins!",
+            "url_endpoint": "seaborn_penguin",
+            "graphic_config_files": [
+                "big_penguins_seaborn_scatter.json",
+                "big_penguins_seaborn_multi_axis.json"
+
+            ]
+        },
         {
             "webpage_label": "Radio Penguins",
             "url_endpoint": "radio_penguins",

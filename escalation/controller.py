@@ -9,9 +9,6 @@ from flask import current_app
 
 from database.data_handler import DataHandler
 from graphics.utils.available_graphics import AVAILABLE_GRAPHICS
-from utility.available_selectors import AVAILABLE_SELECTORS
-from utility.reformatting_functions import add_instructions_to_config_dict
-from database.utils import OPERATIONS_FOR_NUMERICAL_FILTERS
 from utility.constants import *
 
 
@@ -24,15 +21,39 @@ def get_data_for_page(single_page_config_dict: dict, addendum_dict=None) -> list
     """
 
     single_page_config_dict = copy.deepcopy(single_page_config_dict)
-    single_page_config_dict = add_instructions_to_config_dict(
+    graphic_object_dict = make_dict_of_graphic_objects(
         single_page_config_dict, addendum_dict
     )
-    plot_specs = assemble_html_with_graphs_from_page_config(single_page_config_dict)
+    plot_specs = assemble_html_with_graphs_from_page_config(graphic_object_dict)
 
     return plot_specs
 
 
-def assemble_html_with_graphs_from_page_config(single_page_config_dict: dict) -> list:
+def make_dict_of_graphic_objects(
+    single_page_graphic_config_dict: dict, addendum_dict: dict = None
+) -> dict:
+    """
+    We build a page based on 2 dictonaries, what is in the config and what is submitted in the HTML form.
+    :param single_page_graphic_config_dict: Copy of part of the original config dict.
+    :param addendum_dict: e.g ImmutableMultiDict([('graphic_name', 'graphic_0'), ('selection_0', 'SHOW_ALL_ROW'),
+     ('selection_2_upper_operation', '<='), ('selection_2_upper_value', '4'))])
+    Should not pass an empty ImmutableMultiDict
+    :return: dictionary of Graphic classes
+    """
+    if addendum_dict is None:
+        addendum_dict = {}
+    graphic_object_dict = {}
+    for graphic_name, graphic_dict in single_page_graphic_config_dict.items():
+        graphic_class = AVAILABLE_GRAPHICS[graphic_dict[PLOT_MANAGER]][OBJECT]
+        graphic_object = graphic_class(
+            graphic_dict, addendum_dict.get(graphic_name, {})
+        )
+        graphic_object.add_instructions_to_config_dict()
+        graphic_object_dict[graphic_name] = graphic_object
+    return graphic_object_dict
+
+
+def assemble_html_with_graphs_from_page_config(graphic_object_dict: dict) -> list:
     """
     creates dictionary to be read in by the html file to plot the graphics and selectors
     :param plot_list:
@@ -42,95 +63,42 @@ def assemble_html_with_graphs_from_page_config(single_page_config_dict: dict) ->
     """
     plot_specs = []
 
-    for plot_key, plot_specification in single_page_config_dict.items():
+    for plot_key, graphic_object in graphic_object_dict.items():
         plot_data_handler = current_app.config.data_handler(
-            plot_specification[DATA_SOURCES]
+            graphic_object.graphic_dict[DATA_SOURCES]
         )
 
-        (plot_directions_dict, graph_html_template) = assemble_plot_from_instructions(
-            plot_specification, plot_data_handler
+        data_filters = graphic_object.graphic_dict.get(DATA_FILTERS, [])
+        plot_data = plot_data_handler.get_column_data(
+            graphic_object.get_data_columns(), data_filters,
         )
+        # makes a json file as required by js plotting documentation
+        graphic_object.data = plot_data
+        graphic_object.make_dict_for_html_plot()
 
-        select_info = []
-        # checks to see if this plot has selectors
-        if SELECTABLE_DATA_DICT in plot_specification:
-            select_info = create_data_subselect_info_for_plot(
-                plot_specification, plot_data_handler
-            )
+        unique_entry_dict = plot_data_handler.get_column_unique_entries(
+            graphic_object.get_columns_that_need_unique_entries(), filters=data_filters
+        )
+        graphic_object.unique_entry_dict = unique_entry_dict
+        graphic_object.create_data_subselect_info_for_plot()
 
         html_dict = {
-            JINJA_GRAPH_HTML_FILE: graph_html_template,
-            JINJA_SELECT_INFO: select_info,
-            GRAPHIC_TITLE: plot_specification[GRAPHIC_TITLE],
-            GRAPHIC_DESC: plot_specification[GRAPHIC_DESC],
-            JINJA_PLOT_INFO: plot_directions_dict,
+            JINJA_GRAPH_HTML_FILE: graphic_object.get_graph_html_template(),
+            JINJA_SELECT_INFO: graphic_object.select_info,
+            GRAPHIC_TITLE: graphic_object.graphic_dict.get(GRAPHIC_TITLE, plot_key),
+            GRAPHIC_DESC: graphic_object.graphic_dict.get(GRAPHIC_DESC, ""),
+            JINJA_PLOT_INFO: graphic_object.graph_json_str,
             PLOT_ID: plot_key,
         }
         plot_specs.append(html_dict)
     return plot_specs
 
 
-def assemble_plot_from_instructions(plot_specification, plot_data_handler):
-    """
-    assembles the dictionary needed to render the graphic
-    a string with the html file that use the aforementioned dictionary
-    The dashboard options
-    :param plot_specification:
-    :param plot_data_handler:
-    :return:
-    """
-
-    visualization_options = plot_specification.get(VISUALIZATION_OPTIONS, {})
-    data_filters = []
-    if DATA_FILTERS in plot_specification:
-        data_filters = plot_specification[DATA_FILTERS]
-
-    # Checks to see if it is a valid graphic
-    # TO DO what if it is not a valid graphic
-    graphic_data = AVAILABLE_GRAPHICS[plot_specification[PLOT_MANAGER]]
-    graphic_to_plot = graphic_data[OBJECT]
-    plot_data = plot_data_handler.get_column_data(
-        get_unique_set_of_columns_needed(
-            graphic_to_plot.get_data_columns(plot_specification[PLOT_SPECIFIC_INFO]),
-            visualization_options,
-        ),
-        data_filters,
-    )
-
-    # makes a json file as required by js plotting documentation
-    plot_directions_dict = graphic_to_plot.make_dict_for_html_plot(
-        plot_data, plot_specification[PLOT_SPECIFIC_INFO], visualization_options,
-    )
-
-    return plot_directions_dict, graphic_data[GRAPH_HTML_TEMPLATE]
-
-
-def get_unique_set_of_columns_needed(
-    set_of_column_names: set, dict_of_plot_metadata: dict = None
-) -> list:
-    """
-    Returns the unique columns of the data we need to get
-    TO DO throw an error if contains column names not in data
-
-    :param data_dict_to_be_plotted:
-    :param list_of_plot_metadata:
-    :return:
-    """
-    if dict_of_plot_metadata is not None:
-        set_of_column_names.update(
-            {
-                col_name
-                for visualization in dict_of_plot_metadata.values()
-                for col_name in visualization[OPTION_COL]
-            }
-        )
-    return list(set_of_column_names)
-
-
 def create_labels_for_available_pages(available_pages_list: list) -> list:
     """
-    :param available_pages_dict:
-    :return:
+    Reformats a list of dashboard pages from the main app config json for template
+    :param available_pages_list:
+    :return: list of dicts defining hyperlink text and url for navbar
     """
     labels = []
     for available_page in available_pages_list:
@@ -141,84 +109,6 @@ def create_labels_for_available_pages(available_pages_list: list) -> list:
             }
         )
     return labels
-
-
-def create_data_subselect_info_for_plot(
-    plot_specification, data_handler: DataHandler,
-) -> list:
-    """
-    puts selector data in form to be read by html file
-    Broken into two major parts read in info from selection_option_dict_for_plot and then populate
-     select_info elements
-    :param plot_specification:
-    :param data_handler:
-    :return:
-    """
-
-    select_info = []
-    selectable_data_dict = plot_specification[SELECTABLE_DATA_DICT]
-
-    axis_list = selectable_data_dict.get(AXIS, [])
-    for index, axis_dict in enumerate(axis_list):
-        selector_entries = axis_dict[ENTRIES]
-        selector_entries.sort()
-        select_info.append(make_filter_dict(AXIS, axis_dict, index, selector_entries))
-
-    if GROUPBY in selectable_data_dict:
-        group_by_dict = selectable_data_dict[GROUPBY]
-        selector_entries = group_by_dict[ENTRIES]
-        selector_entries.sort()
-        # append no_group_by to the front of the list
-        selector_entries.insert(0, NO_GROUP_BY)
-        select_info.append(
-            make_filter_dict(GROUPBY, group_by_dict, "", selector_entries)
-        )
-
-    filter_list = selectable_data_dict.get(FILTER, [])
-    for index, filter_dict in enumerate(filter_list):
-        column = filter_dict[OPTION_COL]
-        selector_entries = data_handler.get_column_unique_entries(
-            [column], filters=plot_specification.get(DATA_FILTERS)
-        )
-        selector_entries = selector_entries[column]
-        selector_entries.sort()
-        # append show_all_rows to the front of the list
-        selector_entries.insert(0, SHOW_ALL_ROW)
-        select_info.append(
-            make_filter_dict(FILTER, filter_dict, index, selector_entries)
-        )
-
-    numerical_filter_list = selectable_data_dict.get(NUMERICAL_FILTER, [])
-    for index, numerical_filter_dict in enumerate(numerical_filter_list):
-        select_info.append(
-            make_filter_dict(NUMERICAL_FILTER, numerical_filter_dict, index)
-        )
-
-    return select_info
-
-
-def make_filter_dict(selector_type, select_dict, index, selector_entries=None):
-    """
-    Reformats convenient Python data structures into a dict easily parsed in Jinja
-
-    See tests/test_controller test cases for example formats of the inputs and outputs of this function
-
-    :param selector_type: one of AXIS, FILTER, GROUPBY, NUMERICAL_FILTER (see the explicit iteration in create_data_subselect_info_for_plot)
-    :param select_dict:
-    :param index: form index corresponds to  ordering of selectors on the web interface
-    :param selector_entries: A list of options to include in UI dropdown
-    :return: dict structured for read by Jinja
-    """
-    html_filter_dict = {SELECTOR_TYPE: selector_type}
-    selector_attributes = AVAILABLE_SELECTORS[selector_type]
-    column = select_dict.get(OPTION_COL, "")
-    html_filter_dict[JINJA_SELECT_HTML_FILE] = selector_attributes[SELECT_HTML_TEMPLATE]
-    html_filter_dict[SELECTOR_NAME] = selector_attributes[SELECTOR_NAME].format(index)
-    html_filter_dict[TEXT] = selector_attributes[TEXT].format(column)
-    html_filter_dict[ACTIVE_SELECTORS] = select_dict[ACTIVE_SELECTORS]
-    html_filter_dict[MULTIPLE] = select_dict.get(MULTIPLE, False)
-    html_filter_dict[ENTRIES] = selector_entries
-    return html_filter_dict
 
 
 def make_pages_dict(available_pages_list, config_file_folder) -> dict:

@@ -11,23 +11,21 @@
                 "type": "scatter",
                 "x": "penguin_size:body_mass_g",
                 "y": "penguin_size:flipper_length_mm",
-                "mode": "markers"
-            }
-        ]
-    },
-    "visualization_options": {
-        "hover_data": {
-            "column": [
-                "penguin_size:species",
-                "penguin_size:culmen_length_mm"
-            ]
-        },
-        "groupby": {
-            "column": [
+                "mode": "markers",
+                "hovertext": [
+                    "penguin_size:species",
+                    "penguin_size:culmen_length_mm"
+                ],
+                "transforms": {
+                    "groupby": {
+                        "groups": [
                 "penguin_size:sex",
                 "penguin_size:island"
             ]
-        }
+                    }
+                }
+            }
+        ]
     },
     "selectable_data_dict": {
         "filter": [

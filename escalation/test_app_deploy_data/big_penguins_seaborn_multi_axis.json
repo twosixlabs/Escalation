@@ -1,0 +1,63 @@
+{
+    "plot_manager": "seaborn",
+    "data_sources": {
+        "main_data_source": {"data_source_type": "penguin_size"}
+    },
+    "title": "Many views of flippers flippers?",
+    "brief_desc": "This plot looks at the relationship between...",
+    "plot_specific_info": {
+        "data": [
+            {
+                "type": "scatterplot",
+                "x": "penguin_size:body_mass_g",
+                "y": "penguin_size:flipper_length_mm",
+                "size": "penguin_size:culmen_length_mm",
+                "hue": "penguin_size:sex",
+                "alpha": 0.6,
+                "linewidth": 0,
+                "legend": null
+            },
+            {
+                "type": "barplot",
+                "x": "penguin_size:sex",
+                "y": "penguin_size:culmen_length_mm",
+                "hue": "penguin_size:island"
+            },
+            {
+                "type": "boxplot",
+                "x": "penguin_size:island",
+                "y": "penguin_size:culmen_length_mm",
+                "hue": "penguin_size:sex"
+            }
+        ],
+        "layout": {
+            "nrows": 2,
+            "ncols": 2,
+            "figsize": [
+                10,
+                10
+            ]
+        }
+    },
+    "visualization_options": {},
+    "selectable_data_dict": {
+        "filter": [
+            {
+                "column": "penguin_size:sex",
+                "multiple": false
+            },
+            {
+                "column": "penguin_size:island",
+                "multiple": true,
+                "default_selected": [
+                    "Dream"
+                ]
+            }
+        ],
+        "numerical_filter": [
+            {
+                "column": "penguin_size:culmen_length_mm"
+            }
+        ]
+    }
+}

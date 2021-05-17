@@ -17,6 +17,7 @@
     <p class="lead">Create new tables from data sources not already uploaded</p>
 </div>
 <div class="container-fluid pl-5 pr-5">
+
 {% if success_text %}
 <div class="row mb">
     <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -27,6 +28,18 @@
     </div>
 </div>
 {% endif %}
+
+{% if failure_text %}
+<div class="row mb">
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <strong>Failure!</strong> File(s) were not uploaded. {{ failure_text }}
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+</div>
+{% endif %}
+
 <div class="row mb-3">
     <div class="btn-group" role="group">
         <button type="button" class="btn btn-secondary">Create/Replace a Table</button> <a class="btn btn-outline-secondary" href={{ url_for('upload.submission_view') }} role="button">Append to a Existing Table</a>
@@ -49,7 +62,7 @@
     <div class="form-group">
         <label id="csvfile" for="csvfile">CSV file</label>
 
-        <input type="file" class="form-control-file"  name="csvfile" accept="csv" required>
+        <input type="file" class="form-control-file"  name="csvfile" accept="csv" multiple required>
 
     </div>
 

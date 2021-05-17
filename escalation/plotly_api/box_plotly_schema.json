@@ -1,0 +1,550 @@
+{
+    "attributes": {
+        "visible": {
+            "type": "string",
+            "description": "Determines whether or not this trace is visible. If *legendonly*, the trace is not drawn, but can appear as a legend item (provided that the legend itself is visible).",
+            "default": true,
+            "enum": [
+                true,
+                false,
+                "legendonly"
+            ]
+        },
+        "showlegend": {
+            "type": "boolean",
+            "description": "Determines whether or not an item corresponding to this trace is shown in the legend.",
+            "default": true
+        },
+        "legendgroup": {
+            "type": "string",
+            "description": "Sets the legend group for this trace. Traces part of the same legend group hide/show at the same time when toggling legend items.",
+            "default": ""
+        },
+        "opacity": {
+            "type": "number",
+            "description": "Sets the opacity of the trace.",
+            "default": 1,
+            "minimum": 0,
+            "maximum": 1
+        },
+        "customdata": {
+            "type": "string",
+            "description": "Assigns extra data each datum. This may be useful when listening to hover, click and selection events. Note that, *scatter* traces also appends customdata items in the markers DOM elements"
+        },
+        "meta": {
+            "type": "string",
+            "description": "Assigns extra meta information associated with this trace that can be used in various text attributes. Attributes such as trace `name`, graph, axis and colorbar `title.text`, annotation `text` `rangeselector`, `updatemenues` and `sliders` `label` text all support `meta`. To access the trace `meta` values in an attribute in the same trace, simply use `%{meta[i]}` where `i` is the index or key of the `meta` item in question. To access trace `meta` in layout attributes, use `%{data[n[.meta[i]}` where `i` is the index or key of the `meta` and `n` is the trace index."
+        },
+        "selectedpoints": {
+            "type": "string",
+            "description": "Array containing integer indices of selected points. Has an effect only for traces that support selections. Note that an empty array means an empty selection where the `unselected` are turned on for all points, whereas, any other non-array values means no selection all where the `selected` and `unselected` styles have no effect."
+        },
+        "hoverinfo": {
+            "type": "string",
+            "description": "Determines which trace information appear on hover. If `none` or `skip` are set, no information is displayed upon hovering. But, if `none` is set, click and hover events are still fired.",
+            "default": "all",
+            "enum": [
+                "name",
+                "text",
+                "text+name",
+                "z",
+                "z+name",
+                "z+text",
+                "z+text+name",
+                "y",
+                "y+name",
+                "y+text",
+                "y+text+name",
+                "y+z",
+                "y+z+name",
+                "y+z+text",
+                "y+z+text+name",
+                "x",
+                "x+name",
+                "x+text",
+                "x+text+name",
+                "x+z",
+                "x+z+name",
+                "x+z+text",
+                "x+z+text+name",
+                "x+y",
+                "x+y+name",
+                "x+y+text",
+                "x+y+text+name",
+                "x+y+z",
+                "x+y+z+name",
+                "x+y+z+text",
+                "x+y+z+text+name",
+                "all",
+                "none",
+                "skip"
+            ]
+        },
+        "hoverlabel": {
+            "type": "object",
+            "properties": {
+                "bgcolor": {
+                    "type": "string",
+                    "description": "Sets the background color of the hover labels for this trace"
+                },
+                "bordercolor": {
+                    "type": "string",
+                    "description": "Sets the border color of the hover labels for this trace."
+                },
+                "font": {
+                    "type": "object",
+                    "properties": {
+                        "family": {
+                            "type": "string",
+                            "description": "HTML font family - the typeface that will be applied by the web browser. The web browser will only be able to apply a font if it is available on the system which it operates. Provide multiple font families, separated by commas, to indicate the preference in which to apply fonts if they aren't available on the system. The Chart Studio Cloud (at https://chart-studio.plotly.com or on-premise) generates images on a server, where only a select number of fonts are installed and supported. These include *Arial*, *Balto*, *Courier New*, *Droid Sans*,, *Droid Serif*, *Droid Sans Mono*, *Gravitas One*, *Old Standard TT*, *Open Sans*, *Overpass*, *PT Sans Narrow*, *Raleway*, *Times New Roman*."
+                        },
+                        "size": {
+                            "type": "number",
+                            "minimum": 1
+                        },
+                        "color": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "align": {
+                    "type": "string",
+                    "description": "Sets the horizontal alignment of the text content within hover label box. Has an effect only if the hover label text spans more two or more lines",
+                    "default": "auto",
+                    "enum": [
+                        "left",
+                        "right",
+                        "auto"
+                    ]
+                },
+                "namelength": {
+                    "type": "integer",
+                    "description": "Sets the default length (in number of characters) of the trace name in the hover labels for all traces. -1 shows the whole name regardless of length. 0-3 shows the first 0-3 characters, and an integer >3 will show the whole name if it is less than that many characters, but if it is longer, will truncate to `namelength - 3` characters and add an ellipsis.",
+                    "default": 15,
+                    "minimum": -1
+                }
+            }
+        },
+        "uirevision": {
+            "type": "string",
+            "description": "Controls persistence of some user-driven changes to the trace: `constraintrange` in `parcoords` traces, as well as some `editable: true` modifications such as `name` and `colorbar.title`. Defaults to `layout.uirevision`. Note that other user-driven trace attribute changes are controlled by `layout` attributes: `trace.visible` is controlled by `layout.legend.uirevision`, `selectedpoints` is controlled by `layout.selectionrevision`, and `colorbar.(x|y)` (accessible with `config: {editable: true}`) is controlled by `layout.editrevision`. Trace changes are tracked by `uid`, which only falls back on trace index if no `uid` is provided. So if your app can add/remove traces before the end of the `data` array, such that the same trace has a different index, you can still preserve user-driven changes if you give each trace a `uid` that stays with it as it moves."
+        },
+        "y": {
+            "type": "string",
+            "description": "Sets the y sample data or coordinates. See overview for more info."
+        },
+        "x": {
+            "type": "string",
+            "description": "Sets the x sample data or coordinates. See overview for more info."
+        },
+        "x0": {
+            "type": "string",
+            "description": "Sets the x coordinate for single-box traces or the starting coordinate for multi-box traces set using q1/median/q3. See overview for more info."
+        },
+        "y0": {
+            "type": "string",
+            "description": "Sets the y coordinate for single-box traces or the starting coordinate for multi-box traces set using q1/median/q3. See overview for more info."
+        },
+        "dx": {
+            "type": "number",
+            "description": "Sets the x coordinate step for multi-box traces set using q1/median/q3."
+        },
+        "dy": {
+            "type": "number",
+            "description": "Sets the y coordinate step for multi-box traces set using q1/median/q3."
+        },
+        "xperiod": {
+            "type": "string",
+            "description": "Only relevant when the axis `type` is *date*. Sets the period positioning in milliseconds or *M<n>* on the x axis. Special values in the form of *M<n>* could be used to declare the number of months. In this case `n` must be a positive integer.",
+            "default": 0
+        },
+        "yperiod": {
+            "type": "string",
+            "description": "Only relevant when the axis `type` is *date*. Sets the period positioning in milliseconds or *M<n>* on the y axis. Special values in the form of *M<n>* could be used to declare the number of months. In this case `n` must be a positive integer.",
+            "default": 0
+        },
+        "xperiod0": {
+            "type": "string",
+            "description": "Only relevant when the axis `type` is *date*. Sets the base for period positioning in milliseconds or date string on the x0 axis. When `x0period` is round number of weeks, the `x0period0` by default would be on a Sunday i.e. 2000-01-02, otherwise it would be at 2000-01-01."
+        },
+        "yperiod0": {
+            "type": "string",
+            "description": "Only relevant when the axis `type` is *date*. Sets the base for period positioning in milliseconds or date string on the y0 axis. When `y0period` is round number of weeks, the `y0period0` by default would be on a Sunday i.e. 2000-01-02, otherwise it would be at 2000-01-01."
+        },
+        "xperiodalignment": {
+            "type": "string",
+            "description": "Only relevant when the axis `type` is *date*. Sets the alignment of data points on the x axis.",
+            "default": "middle",
+            "enum": [
+                "start",
+                "middle",
+                "end"
+            ]
+        },
+        "yperiodalignment": {
+            "type": "string",
+            "description": "Only relevant when the axis `type` is *date*. Sets the alignment of data points on the y axis.",
+            "default": "middle",
+            "enum": [
+                "start",
+                "middle",
+                "end"
+            ]
+        },
+        "name": {
+            "type": "string",
+            "description": "Sets the trace name. The trace name appear as the legend item and on hover. For box traces, the name will also be used for the position coordinate, if `x` and `x0` (`y` and `y0` if horizontal) are missing and the position axis is categorical"
+        },
+        "q1": {
+            "type": "string",
+            "description": "Sets the Quartile 1 values. There should be as many items as the number of boxes desired."
+        },
+        "median": {
+            "type": "string",
+            "description": "Sets the median values. There should be as many items as the number of boxes desired."
+        },
+        "q3": {
+            "type": "string",
+            "description": "Sets the Quartile 3 values. There should be as many items as the number of boxes desired."
+        },
+        "lowerfence": {
+            "type": "string",
+            "description": "Sets the lower fence values. There should be as many items as the number of boxes desired. This attribute has effect only under the q1/median/q3 signature. If `lowerfence` is not provided but a sample (in `y` or `x`) is set, we compute the lower as the last sample point below 1.5 times the IQR."
+        },
+        "upperfence": {
+            "type": "string",
+            "description": "Sets the upper fence values. There should be as many items as the number of boxes desired. This attribute has effect only under the q1/median/q3 signature. If `upperfence` is not provided but a sample (in `y` or `x`) is set, we compute the lower as the last sample point above 1.5 times the IQR."
+        },
+        "notched": {
+            "type": "boolean",
+            "description": "Determines whether or not notches are drawn. Notches displays a confidence interval around the median. We compute the confidence interval as median +/- 1.57 * IQR / sqrt(N), where IQR is the interquartile range and N is the sample size. If two boxes' notches do not overlap there is 95% confidence their medians differ. See https://sites.google.com/site/davidsstatistics/home/notched-box-plots for more info. Defaults to *false* unless `notchwidth` or `notchspan` is set."
+        },
+        "notchwidth": {
+            "type": "number",
+            "description": "Sets the width of the notches relative to the box' width. For example, with 0, the notches are as wide as the box(es).",
+            "default": 0.25,
+            "minimum": 0,
+            "maximum": 0.5
+        },
+        "notchspan": {
+            "type": "string",
+            "description": "Sets the notch span from the boxes' `median` values. There should be as many items as the number of boxes desired. This attribute has effect only under the q1/median/q3 signature. If `notchspan` is not provided but a sample (in `y` or `x`) is set, we compute it as 1.57 * IQR / sqrt(N), where N is the sample size."
+        },
+        "boxpoints": {
+            "type": "string",
+            "description": "If *outliers*, only the sample points lying outside the whiskers are shown If *suspectedoutliers*, the outlier points are shown and points either less than 4*Q1-3*Q3 or greater than 4*Q3-3*Q1 are highlighted (see `outliercolor`) If *all*, all sample points are shown If *false*, only the box(es) are shown with no sample points Defaults to *suspectedoutliers* when `marker.outliercolor` or `marker.line.outliercolor` is set. Defaults to *all* under the q1/median/q3 signature. Otherwise defaults to *outliers*.",
+            "enum": [
+                "all",
+                "outliers",
+                "suspectedoutliers",
+                false
+            ]
+        },
+        "jitter": {
+            "type": "number",
+            "description": "Sets the amount of jitter in the sample points drawn. If *0*, the sample points align along the distribution axis. If *1*, the sample points are drawn in a random jitter of width equal to the width of the box(es).",
+            "minimum": 0,
+            "maximum": 1
+        },
+        "pointpos": {
+            "type": "number",
+            "description": "Sets the position of the sample points in relation to the box(es). If *0*, the sample points are places over the center of the box(es). Positive (negative) values correspond to positions to the right (left) for vertical boxes and above (below) for horizontal boxes",
+            "minimum": -2,
+            "maximum": 2
+        },
+        "boxmean": {
+            "type": "string",
+            "description": "If *true*, the mean of the box(es)' underlying distribution is drawn as a dashed line inside the box(es). If *sd* the standard deviation is also drawn. Defaults to *true* when `mean` is set. Defaults to *sd* when `sd` is set Otherwise defaults to *false*.",
+            "enum": [
+                true,
+                "sd",
+                false
+            ]
+        },
+        "mean": {
+            "type": "string",
+            "description": "Sets the mean values. There should be as many items as the number of boxes desired. This attribute has effect only under the q1/median/q3 signature. If `mean` is not provided but a sample (in `y` or `x`) is set, we compute the mean for each box using the sample values."
+        },
+        "sd": {
+            "type": "string",
+            "description": "Sets the standard deviation values. There should be as many items as the number of boxes desired. This attribute has effect only under the q1/median/q3 signature. If `sd` is not provided but a sample (in `y` or `x`) is set, we compute the standard deviation for each box using the sample values."
+        },
+        "orientation": {
+            "type": "string",
+            "description": "Sets the orientation of the box(es). If *v* (*h*), the distribution is visualized along the vertical (horizontal).",
+            "enum": [
+                "v",
+                "h"
+            ]
+        },
+        "quartilemethod": {
+            "type": "string",
+            "description": "Sets the method used to compute the sample's Q1 and Q3 quartiles. The *linear* method uses the 25th percentile for Q1 and 75th percentile for Q3 as computed using method #10 (listed on http://www.amstat.org/publications/jse/v14n3/langford.html). The *exclusive* method uses the median to divide the ordered dataset into two halves if the sample is odd, it does not include the median in either half - Q1 is then the median of the lower half and Q3 the median of the upper half. The *inclusive* method also uses the median to divide the ordered dataset into two halves but if the sample is odd, it includes the median in both halves - Q1 is then the median of the lower half and Q3 the median of the upper half.",
+            "default": "linear",
+            "enum": [
+                "linear",
+                "exclusive",
+                "inclusive"
+            ]
+        },
+        "width": {
+            "type": "number",
+            "description": "Sets the width of the box in data coordinate If *0* (default value) the width is automatically selected based on the positions of other box traces in the same subplot.",
+            "default": 0,
+            "minimum": 0
+        },
+        "marker": {
+            "type": "object",
+            "properties": {
+                "outliercolor": {
+                    "type": "string",
+                    "description": "Sets the color of the outlier sample points.",
+                    "default": "rgba(0, 0, 0, 0)"
+                },
+                "symbol": {
+                    "type": "string",
+                    "description": "Sets the marker symbol type. Adding 100 is equivalent to appending *-open* to a symbol name. Adding 200 is equivalent to appending *-dot* to a symbol name. Adding 300 is equivalent to appending *-open-dot* or *dot-open* to a symbol name.",
+                    "default": "circle",
+                    "enum": [
+                        "circle",
+                        "square",
+                        "diamond",
+                        "cross",
+                        "x",
+                        "triangle-up",
+                        "triangle-down",
+                        "pentagon",
+                        "hexagon",
+                        "octagon",
+                        "star"
+                    ]
+                },
+                "opacity": {
+                    "type": "number",
+                    "description": "Sets the marker opacity.",
+                    "default": 1,
+                    "minimum": 0,
+                    "maximum": 1
+                },
+                "size": {
+                    "type": "number",
+                    "description": "Sets the marker size (in px).",
+                    "default": 6,
+                    "minimum": 0
+                },
+                "color": {
+                    "type": "string",
+                    "description": "Sets themarkercolor. It accepts either a specific color or an array of numbers that are mapped to the colorscale relative to the max and min values of the array or relative to `marker.cmin` and `marker.cmax` if set."
+                },
+                "line": {
+                    "type": "object",
+                    "properties": {
+                        "color": {
+                            "type": "string",
+                            "description": "Sets themarker.linecolor. It accepts either a specific color or an array of numbers that are mapped to the colorscale relative to the max and min values of the array or relative to `marker.line.cmin` and `marker.line.cmax` if set.",
+                            "default": "#444"
+                        },
+                        "width": {
+                            "type": "number",
+                            "description": "Sets the width (in px) of the lines bounding the marker points.",
+                            "default": 0,
+                            "minimum": 0
+                        },
+                        "outliercolor": {
+                            "type": "string",
+                            "description": "Sets the border line color of the outlier sample points. Defaults to marker.color"
+                        },
+                        "outlierwidth": {
+                            "type": "number",
+                            "description": "Sets the border line width (in px) of the outlier sample points.",
+                            "default": 1,
+                            "minimum": 0
+                        }
+                    }
+                }
+            }
+        },
+        "line": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "type": "string",
+                    "description": "Sets the color of line bounding the box(es)."
+                },
+                "width": {
+                    "type": "number",
+                    "description": "Sets the width (in px) of line bounding the box(es).",
+                    "default": 2,
+                    "minimum": 0
+                }
+            }
+        },
+        "fillcolor": {
+            "type": "string",
+            "description": "Sets the fill color. Defaults to a half-transparent variant of the line color, marker color, or marker line color, whichever is available."
+        },
+        "whiskerwidth": {
+            "type": "number",
+            "description": "Sets the width of the whiskers relative to the box' width. For example, with 1, the whiskers are as wide as the box(es).",
+            "default": 0.5,
+            "minimum": 0,
+            "maximum": 1
+        },
+        "offsetgroup": {
+            "type": "string",
+            "description": "Set several traces linked to the same position axis or matching axes to the same offsetgroup where bars of the same position coordinate will line up.",
+            "default": ""
+        },
+        "alignmentgroup": {
+            "type": "string",
+            "description": "Set several traces linked to the same position axis or matching axes to the same alignmentgroup. This controls whether bars compute their positional range dependently or independently.",
+            "default": ""
+        },
+        "selected": {
+            "type": "object",
+            "properties": {
+                "marker": {
+                    "type": "object",
+                    "properties": {
+                        "opacity": {
+                            "type": "number",
+                            "description": "Sets the marker opacity of selected points.",
+                            "minimum": 0,
+                            "maximum": 1
+                        },
+                        "color": {
+                            "type": "string",
+                            "description": "Sets the marker color of selected points."
+                        },
+                        "size": {
+                            "type": "number",
+                            "description": "Sets the marker size of selected points.",
+                            "minimum": 0
+                        }
+                    }
+                }
+            }
+        },
+        "unselected": {
+            "type": "object",
+            "properties": {
+                "marker": {
+                    "type": "object",
+                    "properties": {
+                        "opacity": {
+                            "type": "number",
+                            "description": "Sets the marker opacity of unselected points, applied only when a selection exists.",
+                            "minimum": 0,
+                            "maximum": 1
+                        },
+                        "color": {
+                            "type": "string",
+                            "description": "Sets the marker color of unselected points, applied only when a selection exists."
+                        },
+                        "size": {
+                            "type": "number",
+                            "description": "Sets the marker size of unselected points, applied only when a selection exists.",
+                            "minimum": 0
+                        }
+                    }
+                }
+            }
+        },
+        "text": {
+            "type": "string",
+            "description": "Sets the text elements associated with each sample value. If a single string, the same string appears over all the data points. If an array of string, the items are mapped in order to the this trace's (x,y) coordinates. To be seen, trace `hoverinfo` must contain a *text* flag.",
+            "default": ""
+        },
+        "hoveron": {
+            "type": "string",
+            "description": "Do the hover effects highlight individual boxes  or sample points or both?",
+            "default": "boxes+points",
+            "enum": [
+                "points",
+                "boxes",
+                "boxes+points"
+            ]
+        },
+        "xcalendar": {
+            "type": "string",
+            "description": "Sets the calendar system to use with `x` date data.",
+            "default": "gregorian",
+            "enum": [
+                "gregorian",
+                "chinese",
+                "coptic",
+                "discworld",
+                "ethiopian",
+                "hebrew",
+                "islamic",
+                "julian",
+                "mayan",
+                "nanakshahi",
+                "nepali",
+                "persian",
+                "jalali",
+                "taiwan",
+                "thai",
+                "ummalqura"
+            ]
+        },
+        "ycalendar": {
+            "type": "string",
+            "description": "Sets the calendar system to use with `y` date data.",
+            "default": "gregorian",
+            "enum": [
+                "gregorian",
+                "chinese",
+                "coptic",
+                "discworld",
+                "ethiopian",
+                "hebrew",
+                "islamic",
+                "julian",
+                "mayan",
+                "nanakshahi",
+                "nepali",
+                "persian",
+                "jalali",
+                "taiwan",
+                "thai",
+                "ummalqura"
+            ]
+        },
+        "xaxis": {
+            "type": "string",
+            "description": "Sets a reference between this trace's x coordinates and a 2D cartesian x axis. If *x* (the default value), the x coordinates refer to `layout.xaxis`. If *x2*, the x coordinates refer to `layout.xaxis2`, and so on.",
+            "default": "x"
+        },
+        "yaxis": {
+            "type": "string",
+            "description": "Sets a reference between this trace's y coordinates and a 2D cartesian y axis. If *y* (the default value), the y coordinates refer to `layout.yaxis`. If *y2*, the y coordinates refer to `layout.yaxis2`, and so on.",
+            "default": "y"
+        }
+    },
+    "layoutAttributes": {
+        "boxmode": {
+            "type": "string",
+            "description": "Determines how boxes at the same location coordinate are displayed on the graph. If *group*, the boxes are plotted next to one another centered around the shared location. If *overlay*, the boxes are plotted over one another, you might need to set *opacity* to see them multiple boxes. Has no effect on traces that have *width* set.",
+            "default": "overlay",
+            "enum": [
+                "group",
+                "overlay"
+            ]
+        },
+        "boxgap": {
+            "type": "number",
+            "description": "Sets the gap (in plot fraction) between boxes of adjacent location coordinates. Has no effect on traces that have *width* set.",
+            "default": 0.3,
+            "minimum": 0,
+            "maximum": 1
+        },
+        "boxgroupgap": {
+            "type": "number",
+            "description": "Sets the gap (in plot fraction) between boxes of the same location coordinate. Has no effect on traces that have *width* set.",
+            "default": 0.3,
+            "minimum": 0,
+            "maximum": 1
+        }
+    }
+}

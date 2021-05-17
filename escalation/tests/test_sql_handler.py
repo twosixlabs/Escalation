@@ -3,10 +3,12 @@
 
 import pandas as pd
 import pytest
+import datetime
 from sqlalchemy.types import Integer, Text, Float, DateTime, ARRAY, Boolean
 
 from database.sql_handler import SqlDataInventory, SqlHandler
 from utility.constants import *
+from test_app_deploy_data.models import PenguinSize, DataUploadMetadata
 
 PENGUIN_SIZE = "penguin_size"
 PENGUIN_SIZE_SMALL = "penguin_size_small"
@@ -32,6 +34,11 @@ def get_sql_handler_fixture_small(rebuild_test_database):
     return SqlHandler({MAIN_DATA_SOURCE: {DATA_SOURCE_TYPE: "penguin_size_small"}})
 
 
+@pytest.fixture()
+def get_sql_handler_fixture_temperature(rebuild_test_database):
+    return SqlHandler({MAIN_DATA_SOURCE: {DATA_SOURCE_TYPE: "temperature"}})
+
+
 def test_sql_handler_init(sql_handler_fixture):
     data_sources = sql_handler_fixture.flat_data_sources
     assert "penguin_size" == data_sources[0][DATA_SOURCE_TYPE]
@@ -40,10 +47,10 @@ def test_sql_handler_init(sql_handler_fixture):
 
 def test_get_column_data_no_filter(get_sql_handler_fixture_small):
     # also test apply filters to data
-    data_dict = [
+    data_dict = {
         "penguin_size_small:body_mass_g",
         "penguin_size_small:flipper_length_mm",
-    ]
+    }
     test_dict = get_sql_handler_fixture_small.get_column_data(data_dict)
     assert (test_dict["penguin_size_small:body_mass_g"] == [3750, 3800, 3250]).all()
     assert (test_dict["penguin_size_small:flipper_length_mm"] == [181, 186, 195]).all()
@@ -51,10 +58,10 @@ def test_get_column_data_no_filter(get_sql_handler_fixture_small):
 
 def test_get_column_data_filter(get_sql_handler_fixture_small):
     # also test apply filters to data
-    data_dict = [
+    data_dict = {
         "penguin_size_small:body_mass_g",
         "penguin_size_small:flipper_length_mm",
-    ]
+    }
     test_dict = get_sql_handler_fixture_small.get_column_data(
         data_dict,
         [{"type": "filter", "column": "penguin_size_small:sex", "selected": ["MALE"]}],
@@ -64,10 +71,10 @@ def test_get_column_data_filter(get_sql_handler_fixture_small):
 
 
 def test_get_column_data_numerical_filter(get_sql_handler_fixture_small):
-    data_dict = [
+    data_dict = {
         "penguin_size_small:body_mass_g",
         "penguin_size_small:flipper_length_mm",
-    ]
+    }
     test_dict = get_sql_handler_fixture_small.get_column_data(
         data_dict,
         [
@@ -82,6 +89,29 @@ def test_get_column_data_numerical_filter(get_sql_handler_fixture_small):
 
     assert list(test_dict["penguin_size_small:body_mass_g"]) == [3750, 3800]
     assert list(test_dict["penguin_size_small:flipper_length_mm"]) == [181, 186]
+
+
+def test_get_column_data_numerical_filter_datetime(get_sql_handler_fixture_temperature):
+    data_dict = {
+        "temperature:Date",
+        "temperature:Temp",
+    }
+    test_dict = get_sql_handler_fixture_temperature.get_column_data(
+        data_dict,
+        [
+            {
+                "type": "numerical_filter",
+                "column": "temperature:Date",
+                "operation": "<=",
+                "value": datetime.datetime(1981, 1, 2),
+            }
+        ],
+    )
+
+    assert list(test_dict["temperature:Date"]) == [
+        datetime.datetime(1981, 1, 1),
+        datetime.datetime(1981, 1, 2),
+    ]
 
 
 def test_get_column_unique_entries(sql_handler_fixture):
@@ -110,7 +140,7 @@ def test_build_combined_data_table(sql_handler_fixture):
         penguin_size, penguin_mean, how="inner", on=["study_name", "sex", "species"]
     )
     num_rows_in_inner_table = inner_join_table.shape[0]
-    rows = sql_handler_fixture.get_column_data([f"{PENGUIN_SIZE}:{CULMEN_DEPTH}"])[
+    rows = sql_handler_fixture.get_column_data({f"{PENGUIN_SIZE}:{CULMEN_DEPTH}"})[
         f"{PENGUIN_SIZE}:{CULMEN_DEPTH}"
     ]
     num_rows_in_combined_table = len(rows)
@@ -130,11 +160,11 @@ def test_build_combined_data_table_with_filtered_data_source(sql_handler_fixture
     )
     num_rows_in_inner_table = inner_join_table.shape[0]
     SqlDataInventory.update_data_upload_metadata_active(
-        PENGUIN_SIZE, {1: "ACTIVE", 2: "INACTIVE"}
+        PENGUIN_SIZE, {"id_1": "ACTIVE", "id_2": "INACTIVE"}
     )
     num_rows_in_combined_table = len(
         sql_handler_fixture.get_column_data(
-            [f"{PENGUIN_SIZE}:{ISLAND}"],
+            {f"{PENGUIN_SIZE}:{ISLAND}"},
             [{"type": FILTER, "column": f"{PENGUIN_SIZE}:upload_id", "selected": [1],}],
         )[f"{PENGUIN_SIZE}:{ISLAND}"]
     )
@@ -147,7 +177,8 @@ def test_get_available_data_sources(rebuild_test_database):
     assert "penguin_size" in file_names
     assert "mean_penguin_stat" in file_names
     assert "penguin_lter_small" in file_names
-    assert len(file_names) == 4
+    assert "temperature" in file_names
+    assert len(file_names) == 7
 
 
 def get_column_names_for_data_source(get_sql_handler_fixture):
@@ -221,11 +252,51 @@ def test_get_schema_for_lter_data_source(get_sql_handler_fixture_lter_table):
         "penguin_lter_small:clutch_completion": Boolean,
     }
     for k, v in expected_column_types.items():
-        assert isinstance(column_types_dict[k], v), k
+        assert isinstance(column_types_dict[k], v)
 
 
-def test_write_data_upload_to_backend():
-    assert False
+def test_write_data_upload_to_backend(
+    rebuild_test_database,
+    penguin_size_csv_file,
+    sql_data_inventory_fixture,
+    test_app_client_sql_backed_development_env,
+):
+    penguin_size_df = pd.read_csv(penguin_size_csv_file)
+    session = test_app_client_sql_backed_development_env.db_session
+    db_response = session.query(PenguinSize.upload_id).distinct()
+    upload_ids_in_db = sorted([x.upload_id for x in db_response])
+    expected_upload_ids = [1, 2]
+    # check that the state of the db is as expected after setup
+    assert upload_ids_in_db == expected_upload_ids
+
+    # write the upload and look for a new upload id
+    ignored_columns = sql_data_inventory_fixture.write_data_upload_to_backend(
+        penguin_size_df, "test_user", "test_write_data_upload_to_backend_notes"
+    )
+    # check that no columns in the dataset were omitted from the db table write
+    assert ignored_columns == set()
+    db_response = session.query(PenguinSize.upload_id).distinct()
+    upload_ids_in_db = sorted([x.upload_id for x in db_response])
+    expected_upload_ids = [1, 2, 3]
+    assert upload_ids_in_db == expected_upload_ids
+
+    # check that extra columns in the csv not defined in table are ignored
+    penguin_size_df["column_in_upload_not_db_schema"] = -99
+    # write the upload and look for a new upload id
+    ignored_columns = sql_data_inventory_fixture.write_data_upload_to_backend(
+        penguin_size_df, "test_user", "test_write_data_upload_to_backend_notes"
+    )
+    assert ignored_columns == {"column_in_upload_not_db_schema"}
+
+    # check that the metadata table has been updated
+    db_response = (
+        session.query(DataUploadMetadata.upload_id)
+        .filter(DataUploadMetadata.table_name == "penguin_size")
+        .distinct()
+    )
+    upload_ids_in_db = sorted([x.upload_id for x in db_response])
+    expected_upload_ids = [1, 2, 3, 4]
+    assert upload_ids_in_db == expected_upload_ids
 
 
 def test_get_table_data(get_sql_handler_fixture_small):

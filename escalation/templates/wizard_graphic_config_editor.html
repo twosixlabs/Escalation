@@ -8,6 +8,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@json-editor/json-editor@latest/dist/jsoneditor.min.js"></script>
     <link rel="stylesheet" href="/static/lighter_buttons.css">
     <link rel="stylesheet" href="/static/loading.css">
+    <link rel="stylesheet" href="/static/search.css">
 {% endblock %}
 
 {% block content %}
@@ -20,26 +21,14 @@
     </div>
 </div>
 
-<div class="jumbotron">
-    <h1 class="display-4"> Create or edit a dashboard graphic</h1>
-    <!--<hr class="my-4">-->
-    <!--<p class="lead">Create or Edit dashboard graphic</p>-->
-</div>
-    <div class="container-fluid pl-5 pr-5">
+    <div class="container-fluid pl-5 pr-5 pt-3">
     <div class="row">
-        <div class="col-8">
+        <div class="col-7">
+            <div class="row">
+                <div class="w-100" id="editor_holder_header"></div>
+            </div>
             <div class="row">
                 <div class="w-100" id="editor_holder_graphic"></div>
-            </div>
-            <div class="row">
-                <div class="w-100" id="editor_holder_plot_selector"></div>
-            </div>
-
-            <div class="row">
-                <div class="w-100" id="editor_holder_plotly"></div>
-            </div>
-            <div class="row">
-                <div class="w-100" id="editor_holder_visualization"></div>
             </div>
             <div class="row">
                 <div class="w-100" id="editor_holder_selector"></div>
@@ -48,8 +37,38 @@
                 <hr>
             </div>
         </div>
-        <div class="col-2 text-center">
-            {% include "config_buttons.html" %}
+        <div class="col-5">
+            <div class="sticky-top">
+                    <div class="row ml-1">
+                        <div class="input-group input-group-sm">
+                            <input class="form-control m-1" id="search_bar"
+                                   placeholder="search in config editor" oninput="search_and_post_results()">
+                        </div>
+                    </div>
+                    <div class="row ml-1">
+                        <div class="col-8 p-0">
+                        <ul class="list-group list-group-flush border rounded m-1" id="schema_path">
+                        </ul>
+                        </div>
+                        <div class="col-4 p-0">
+                            <div class="border rounded search_info m-1" id="path_info">
+                            </div>
+                        </div>
+                    </div>
+                 <div class="row ml-1 mt-3">
+                        {% include "config_buttons.html" %}
+                    </div>
+                <div class="row">
+                    <span class="border rounded m-3 p-1">
+                        <button type="button" class="btn btn-primary btn-sm m-1" data-toggle="tooltip"
+                                data-placement="right" title="Creates a preview of the graph" onclick=get_preview()>Preview Graph
+                        </button>
+                        Selectors not shown
+                        <div class="preview" id="preview">
+                        </div>
+                    </span>
+                </div>
+            </div>
         </div>
     </div>
     </div>
@@ -60,36 +79,42 @@
     let graphic_status = '{{ graphic_status }}';
     let graphic_path = '{{ graphic_path }}'
     let current_state = {{ current_config | safe }};
-    let dict_of_schemas={{ schema | safe }};
-    let dict_of_plotly_schemas = dict_of_schemas['plotly_schema'];
+    let dict_of_schemas = {{ schema | safe }};
     let editors= new Object();
-    let current_plot_type = "{{ current_schema }}";
-    let saved_plot_type = current_plot_type;
-    let selector_editor=new_editor('plot_selector',true,{{ schema_selector_dict | safe }});
 
+    make_json_editor();
     // The only values shown in default filter are the ones corresponding to the column
-    let default_entries_dict ={{ default_entries_dict | safe }}
+    let default_entries_dict ={{ default_entries_dict | safe }};
     window.JSONEditor.defaults.callbacks.template = {
-        "default_selected_filter": (jseditor, e) => {
+        "column_value_filter": (jseditor, e) => {
             if (default_entries_dict[e.watched.column].includes(e.item)) return e.item;
             return "";
           },
         "identity_callback": (jseditor, e) => e.item,
     };
+    // Has to come after setting the callbacks
+    set_json_editor_value(current_state);
 
-    make_json_editor();
-    {% if graphic_status in ['old', 'copy'] %}
-        set_json_editor_value(current_state);
-        selector_editor.setValue({"plot_type":current_plot_type});
-    {% endif %}
-    let current_data_sources = get_main_data_sources(editors['graphic_meta_info'].getEditor('root.data_sources').getValue());
-    add_watcher_to_data_sources();
-    function new_editor(type,display_required_only,schema) {
-        return new JSONEditor(document.getElementById('editor_holder_'.concat(type)),
-            options={theme: 'bootstrap4',display_required_only: display_required_only, disable_edit_json:true,
-                disable_array_delete_last_row:true, iconlib: 'fontawesome5', show_errors:'always' ,schema: schema });
+
+    function save_json_editor_to_file(){
+        const valid=validate_schema();
+
+        if(valid){
+
+            const webpage = "{{ url_for('.file_tree') }}";
+            const url = "{{ url_for('.update_graphic_json_config_with_ui_changes') }}";
+
+            current_state=get_json_editor_value();
+            // The form contains nested dictionaries so it is easier to send a json than a form
+            let data = JSON.stringify({"config_dict" : current_state,
+                "page_id":{{ page_id }},
+                "graphic_path": graphic_path,
+                "graphic_status":graphic_status});
+            send_json_in_post_request(url, data, webpage);
+        }
+
     }
-    function save_json_editor_to_file(redirect){
+    function validate_schema(){
         const errors=get_json_editor_errors();
         const duplicate_data_source = check_duplicate_data_sources(editors['graphic_meta_info'].getEditor('root.data_sources').getValue());
         if (errors.length || duplicate_data_source){
@@ -104,23 +129,56 @@
             setTimeout(function() {
               success_text.innerHTML="";
             }, 5000);
+            return false
         }
-        else{
-            const url = "{{ url_for('.update_graphic_json_config_with_ui_changes') }}";
+        else {
+            return true
+        }
+    }
 
-            let webpage = '';
-            if (redirect) {webpage = "{{ url_for('.file_tree') }}"}
+    function get_preview(){
+        const valid=validate_schema();
+        if (valid){
+
+            const url = "{{ url_for('.preview_graphic_json_config') }}";
             current_state=get_json_editor_value();
-            saved_plot_type = current_plot_type;
             // The form contains nested dictionaries so it is easier to send a json than a form
-            let data = JSON.stringify({"config_dict" : current_state,
-                "page_id":{{ page_id }},
-                "graphic_path": graphic_path,
-                "graphic_status":graphic_status});
-            send_json_in_post_request(url, data, webpage);// The form contains nested dictionaries so it is easier to send a json than a form
+            let data = JSON.stringify({"config_dict" : current_state});
+
+            let xhr = new XMLHttpRequest();
+            xhr.open("POST", url);
+            xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+            xhr.onreadystatechange = function () {
+                let success_text = document.querySelector('#feedback_message');
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    //success_text.innerHTML = "Applied";
+                    const jsonResponse = JSON.parse(xhr.response);
+                    let graph = JSON.parse(jsonResponse['preview']);
+                    const preview=document.getElementById('preview')
+                    const width = (window.innerWidth - preview.getBoundingClientRect().left)*.95;
+                    let height = (window.innerHeight - preview.getBoundingClientRect().top)*.95;
+                    if (width<height){
+                        height=width;
+                    }
+                    preview.style.width = width.toString().concat("px");
+                    preview.style.height = height.toString().concat("px");
+                    {% set plot_id_str = "preview"  %}
+                    {% include graph_html_template %}
+
+                } else if (xhr.status !== 200) {
+                    success_text.innerHTML = "Failed";
+                    // Message disappears after 5 secs
+                    setTimeout(function() {
+                          success_text.innerHTML="";
+                        }, 5000);
+                }
+
+                };
+            xhr.send(data);
         }
 
     }
+
     function send_json_in_post_request(url, data, webpage){
         let xhr = new XMLHttpRequest();
         xhr.open("POST", url);
@@ -129,20 +187,24 @@
             let success_text = document.querySelector('#feedback_message');
             if (xhr.readyState === 4 && xhr.status === 200) {
                 if (webpage) {window.location.href = webpage}
-                success_text.innerHTML = "Applied";
+                //success_text.innerHTML = "Applied";
                 const jsonResponse = JSON.parse(xhr.response);
                 graphic_status = "old";
                 graphic_path = jsonResponse['graphic_path'];
             } else {
                 success_text.innerHTML = "Failed";
+                // Message disappears after 5 secs
+                setTimeout(function() {
+                      success_text.innerHTML="";
+                    }, 5000);
             }
-            // Message disappears after 5 secs
-            setTimeout(function() {
-                  success_text.innerHTML="";
-                }, 5000);
+
             };
         xhr.send(data);
     }
+
+
+
     function reset_json_editor(){
         for(let editor_name in editors){
             editors[editor_name].setValue();
@@ -154,9 +216,8 @@
         }
     }
     function make_json_editor(){
-        editors['graphic_meta_info'] = new_editor('graphic', false, dict_of_schemas['graphic_schema']);
-        editors['plotly'] = new_editor('plotly', true, dict_of_plotly_schemas[current_plot_type]);
-        editors['visualization'] = new_editor('visualization', false, dict_of_schemas["visualization_schema"]);
+        editors['graphic_meta_info'] = new_editor('header', false, dict_of_schemas['graphic_schema']);
+        editors['graphic'] = new_editor('graphic', true, dict_of_schemas['plot_manager_schema']);
         editors['selector'] = new_editor('selector', false, dict_of_schemas["selector_schema"]);
     }
     function get_json_editor_value(){
@@ -174,12 +235,6 @@
         return errors
     }
     function reload_last_save(){
-        if (current_plot_type != saved_plot_type){
-            current_plot_type=saved_plot_type;
-            selector_editor.setValue({"plot_type":current_plot_type});
-            editors['plotly'].destroy();
-            editors['plotly'] = new_editor('plotly',true, dict_of_plotly_schemas[current_plot_type])
-        }
         set_json_editor_value(current_state);
     }
     function set_json_editor_value(values_to_set) {
@@ -187,53 +242,44 @@
             editors[editor_name].setValue(values_to_set[editor_name]);
         }
     }
-    selector_editor.watch('root.plot_type', () => {
-        current_plot_type = selector_editor.getEditor('root.plot_type').getValue();
-        editors['plotly'].destroy();
-        editors['plotly'] = new_editor('plotly',true, dict_of_plotly_schemas[current_plot_type]);
 
-    });
-    function add_watcher_to_data_sources() {
-        editors['graphic_meta_info'].watch('root.data_sources', () => {
-            let new_data_sources = get_main_data_sources(editors['graphic_meta_info'].getEditor('root.data_sources').getValue());
-            // check if sets are not equal
-            if (!(new_data_sources.size === current_data_sources.size && [...new_data_sources].every(value => current_data_sources.has(value)))) {
-                current_data_sources = new_data_sources;
-                const collapse_dict=get_collapse_dict(editors)
 
-                var loading_div = document.getElementById("loading")
-                loading_div.style.display = "block";
-
-                let xhr = new XMLHttpRequest();
-                xhr.open("POST", "{{ url_for('.get_updated_schemas') }}");
-                xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-                xhr.onreadystatechange = function () {
-                    if (xhr.readyState === 4 && xhr.status === 200) {
-                        const jsonResponse = JSON.parse(xhr.response);
-                        dict_of_schemas = jsonResponse["new_schemas"];
-                        default_entries_dict = jsonResponse["new_default_entries_dict"];
-                        dict_of_plotly_schemas = dict_of_schemas['plotly_schema'];
-                        current_data_sources = new_data_sources;
-                        let save_state = get_json_editor_value();
-                        destroy_json_editor();
-                        make_json_editor();
-                        set_json_editor_value(save_state);
-                        add_watcher_to_data_sources();
-                        loading_div.style.display = "none";
-                    } else if (xhr.readyState === 4) {
-                        console.log("Failed")
-                        loading_div.style.display = "none";
-
-                    }
-
-                };
-                xhr.send(JSON.stringify({
-                      "data_sources": Array.from(new_data_sources),
-                      "collapse_dict": collapse_dict
-                    }));
-
+    function search_and_post_results() {
+        const search_word = document.getElementById("search_bar").value
+        const path_info = document.getElementById("path_info");
+        path_info.innerHTML = "";
+        if (search_word.length >2) {
+            const word_list = search_word.trim().split(" ");
+            let bool_word_array = [];
+            for (let i = 0; i < word_list.length; i++) {
+              bool_word_array.push(false);
             }
-        });
+            const schema_path = document.getElementById("schema_path");
+            while (schema_path.firstChild) {
+                schema_path.removeChild(schema_path.firstChild);
+            }
+            const dict_names=[dict_of_schemas['plot_manager_schema']['title'], "Data Selector Options"];
+            [dict_of_schemas['plot_manager_schema'], dict_of_schemas["selector_schema"]].forEach(function(dict,index){
+                const path_list = find_word_in_dict(word_list,bool_word_array, dict, dict_names[index]);
+                for (let i = 0; i < path_list.length; ++i) {
+                    // create an item for each one
+                    let listItem = document.createElement('button');
+                    // Add the item properties
+                    listItem.setAttribute("type", "button");
+                    listItem.classList.add("list-group-item","list-group-item-action");
+                    listItem.onclick = function(){post_description(path_list[i],dict)};
+                    listItem.innerHTML = json_editor_path(path_list[i],dict);
+                    // Add listItem
+                    schema_path.appendChild(listItem);
+                }
+            });
+        }
     }
+
+    function post_description(path,dict) {
+        const path_info = document.getElementById("path_info");
+        path_info.innerHTML = get_description(path,dict);
+    }
+
 </script>
 {% endblock %}

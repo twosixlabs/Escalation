@@ -21,35 +21,15 @@
                 "type": "scatter",
                 "x": "penguin_size:culmen_length_mm",
                 "y": "mean_penguin_stat:delta_15_n",
-                "mode": "markers"
-            }
-        ]
-    },
-    "visualization_options": {
-        "hover_data": {"column": ["penguin_size:sex", "penguin_size:culmen_length_mm"]},
-        "groupby": {"column": ["penguin_size:sex"]},
-        "aggregate": {
-            "column": ["mean_penguin_stat:delta_15_n"],
-            "aggregations": {"y": "avg"}
-        }
-    },
-    "selectable_data_dict": {
-        "axis": [
-            {
-                "column": "x",
-                "entries": [
-                    "penguin_size:culmen_length_mm",
-                    "penguin_size:flipper_length_mm",
-                    "penguin_size:body_mass_g",
-                    "penguin_size:culmen_depth_mm"
-                ]
-            },
-            {
-                "column": "y",
-                "entries": [
-                    "mean_penguin_stat:delta_15_n",
-                    "mean_penguin_stat:delta_13_c"
-                ]
+                "mode": "markers",
+                "hovertext": ["penguin_size:sex", "penguin_size:culmen_length_mm"],
+                "transforms": {
+                    "groupby": {"groups": ["penguin_size:sex"]},
+                    "aggregate": [{
+                        "groups": ["mean_penguin_stat:delta_15_n"],
+                        "aggregations": {"y": "avg"}
+                    }]
+                }
             }
         ]
     }

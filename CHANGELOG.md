@@ -1,3 +1,14 @@
+# 2.0.0
+
+- Various bug fixes and performance improvements, including major backend refactor. This breaks some graphic config jsom layout rules, so bumping major version
+- Includes documentation in-line in wizard
+- Allows upload of multiple files simultaneously
+- Added search box to wizard to better find graph config options, and hid more options in dropdowns by default
+- Added datetime parsing functionality to numerical filters
+- Includes Seaborn graphics plotting functionality, for static figures that use Python API rules. Selectors still work for filtering, but no JS tooltips and such. This does not include all Seaborn plots- some catplot-type multi figure plots not yet supported
+- Added Cytoscape graphics plotting for network graph visualization
+
+
 # 1.0.0
 
 - Removes local csv handler option, tests, and documentation
