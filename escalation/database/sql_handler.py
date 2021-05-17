@@ -37,7 +37,7 @@ from utility.constants import (
     OPTION_TYPE,
     FILTER,
     SELECTED,
-    UNFILTERED_SELECTOR,
+    FILTERED_SELECTOR,
     COLUMN_NAME,
     MAIN_DATA_SOURCE,
     ADDITIONAL_DATA_SOURCES,
@@ -250,16 +250,18 @@ class SqlHandler(DataHandler):
             for c in column_object.columns
         }
 
-    def get_column_data(self, columns: list, filters: [] = None) -> dict:
+    def get_column_data(self, columns: set, filters: [] = None) -> dict:
         """
-        :param columns: A complete list of the columns to be returned
+        :param columns: A complete set of the columns to be returned
         :param filters: Optional list specifying how to filter the requested columns based on the row values
         :return: a dict keyed by column name and valued with lists of row datapoints for the column
         """
         if filters is None:
             filters = []
-        cols_for_filters = [filter_dict[OPTION_COL] for filter_dict in filters]
-        all_to_include_cols = list(set(columns + list(cols_for_filters)))
+        all_to_include_cols = columns.union(
+            [filter_dict[OPTION_COL] for filter_dict in filters]
+        )
+
         all_column_rename_dict = {
             self.sanitize_column_name(c): c for c in all_to_include_cols
         }
@@ -339,11 +341,14 @@ class SqlHandler(DataHandler):
             if filter_active_data:
                 active_data_filters = self.build_filters_from_active_data_source()
                 query = self.apply_filters_to_query(query, active_data_filters)
-            # if the current column matches one in the filter list marked as unfiltered,
-            # skip this and don't apply the filters before looking for unique values
-            if not any(
+            # if the current column matches one in the filter list marked as filtered,
+            # apply the filters before looking for unique values
+            if any(
                 [
-                    (filter_[COLUMN_NAME] == col and filter_.get(UNFILTERED_SELECTOR))
+                    (
+                        filter_[COLUMN_NAME] == col
+                        and filter_.get(FILTERED_SELECTOR, False)
+                    )
                     for filter_ in filters
                 ]
             ):
@@ -473,9 +478,10 @@ class SqlDataInventory(SqlHandler, DataFrameConverter):
         """
         data_upload_metadata = cls.get_sqlalchemy_model_class_for_data_upload_metadata()
         for upload_id, active_status in active_data_dict.items():
+            # upload_id are of form f"id_{upload_id}"
             row = (
                 current_app.db_session.query(data_upload_metadata)
-                .filter_by(table_name=data_source_name, upload_id=upload_id)
+                .filter_by(table_name=data_source_name, upload_id=upload_id[3:])
                 .first()
             )
             active_boolean = active_status == ACTIVE
@@ -609,7 +615,15 @@ class CreateTablesFromCSVs(DataFrameConverter):
         :param csv_data_file_path:
         :return: pandas dataframe
         """
-        return pd.read_csv(csv_data_file_path, encoding="utf-8", comment="#")
+        df = pd.read_csv(csv_data_file_path, encoding="utf-8", comment="#")
+        # convert datetime columns from the strings loaded in csv to datetime
+        for col in df.columns:
+            if df[col].dtype == "object":
+                try:
+                    df[col] = pd.to_datetime(df[col])
+                except ValueError:
+                    pass
+        return df
 
     def create_new_table(
         self, table_name, schema, key_columns, if_exists,

@@ -23,17 +23,6 @@
         }
     },
     "selectable_data_dict": {
-        "axis": [
-            {
-                "column": "x",
-                "entries": [
-                    "penguin_size:culmen_length_mm",
-                    "penguin_size:flipper_length_mm",
-                    "penguin_size:body_mass_g",
-                    "penguin_size:culmen_depth_mm"
-                ]
-            }
-        ],
         "groupby": {
             "entries": [
                 "penguin_size:sex",

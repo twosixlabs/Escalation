@@ -26,7 +26,6 @@ else:
         "database": url.database,
     }
 
-
 # password required for endpoints that use the @auth.login_required decorator
 # NB: real versions of these passwords should be passed in as environment variables to the app
 # Don't check in secrets to version control!

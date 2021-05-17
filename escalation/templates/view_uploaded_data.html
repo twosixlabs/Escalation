@@ -27,7 +27,7 @@
         <form method="post" id={{"form_" ~ data_source }}>
             <input type="hidden" name="data_sources" value={{ data_source }}>
             {% for id in identifiers_metadata_dict_list['ids'] %}
-                <input type="hidden" name="{{ id }}" value="true">
+                <input type="hidden" name="{{ "id_" ~id }}" value="true">
             {% endfor %}
         </form>
 

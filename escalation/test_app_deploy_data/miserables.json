@@ -1,0 +1,21 @@
+{
+    "plot_manager": "cytoscape",
+    "data_sources": {
+        "main_data_source": {"data_source_type": "miserables_edges"}
+    },
+    "title": "What is the co-occurrence of charaters in Les Miserables (by chapter)?",
+    "brief_desc": "Just asking the question we were all thinking.",
+    "plot_specific_info": {
+        "source": "miserables_edges:start",
+        "target": "miserables_edges:end",
+        "edge_id": "miserables_edges:edge_id",
+        "layout": {"name": "cose"},
+        "style": [{
+            "selector": "node", "style": {"label": "data(id)"}}],
+        "element_style": [{
+            "style_name": "width",
+            "group": "edges",
+            "column": "miserables_edges:count"
+        }]
+    }
+}

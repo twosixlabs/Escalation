@@ -1,0 +1,96 @@
+<!--# Copyright [2020] [Two Six Labs, LLC]-->
+<!--# Licensed under the Apache License, Version 2.0-->
+{% extends 'base.html' %}
+
+{% block header %}
+
+<script src="https://cdn.jsdelivr.net/npm/@json-editor/json-editor@latest/dist/jsoneditor.min.js"></script>
+    <link rel="stylesheet" href="/static/lighter_buttons.css">
+
+{% endblock %}
+
+{% block content %}
+{% include 'navbar.html' %}
+    <div class="jumbotron">
+    <h1 class="display-4">Graph Setup Page</h1>
+    </div>
+    <div class="container-fluid pl-5 pr-5 pt-3">
+        <div class="row">
+            <form method="post" action={{ url_for('.graphic_config_setup') }} id="form_setup">
+                <input type="hidden" name="page_id" value={{ page_id }}>
+                <input type="hidden" name="graphic" value={{ graphic }}>
+                <input type="hidden" name="graphic_status" value={{ graphic_status }}>
+                <input type="hidden" name="data_sources" value="">
+
+                <div class="col-12 rounded p-5" style="background-color:#f5f5f5" >
+                    <div class="row">
+                        <div class="w-100" id="editor_holder_data_sources"></div>
+
+                    </div>
+                    <div class="row">
+                        <h2>Type of Plot</h2>
+                    </div>
+                    <div class="row">
+                    <select class="selectpicker m-4 border border rounded" data-live-search="true" id="plot_type" name="plot_type">
+                        {% for plot_manager, plot_types in plot_dict.items() %}
+                            <optgroup label="{{ plot_manager }}">
+                            {% for plot_type in plot_types %}
+                                <option value="{{ plot_manager ~ ";" ~ plot_type["value"] }}">{{ plot_type["graphic_name"] }}</option>
+                            {% endfor %}
+                            </optgroup>
+                        {% endfor %}
+                    </select>
+                    </div>
+
+
+
+                    <button onclick="submit_form()" class="btn btn-primary m-1" data-toggle="tooltip"
+                            data-placement="right" title="Go to the graph configuration page">Make Graph
+                    </button>
+                    <a class="btn btn-danger m-1" data-toggle="tooltip"
+                            data-placement="right" title="Goes back the dashboard layout without saving" href={{ url_for('.file_tree') }} role="button">Cancel
+                    </a>
+            </div>
+            </form>
+        </div>
+    </div>
+<script>
+    // Enables all the tooltips
+    $(function () {$('[data-toggle="tooltip"]').tooltip({trigger : 'hover'})});
+
+    let editor = new_editor('data_sources', false, {{ data_source_schema | safe }});
+    let data_sources = get_main_data_sources(editor.getValue());
+    window.JSONEditor.defaults.callbacks.template = {
+
+        "key_filter": (jseditor, e) => {
+            //Only get the data sources once
+            const path = jseditor.path.split(".");
+            const source_cutoff = parseInt(path[2])+1;
+            if (e.i === 0) {
+                data_sources = get_main_data_sources(editor.getValue());
+                data_sources[source_cutoff] = jseditor["watched_values"]["additional_data_sources"];
+                data_sources[0] = jseditor["watched_values"]["main_data_source"];
+            }
+
+            // The following code displays options for the first key from the data
+            // sources left of the current data source (or previous data sources)
+            // and options for the second key from the current data source
+            if (path[5] === "0") {
+                if (data_sources.slice(0,source_cutoff).includes(e.item.split(":")[0])) return e.item;
+                return "";
+            } else {
+                if (data_sources[source_cutoff]===e.item.split(":")[0]) return e.item;
+            return "";
+            }
+
+        },
+        "identity_callback": (jseditor, e) => e.item,
+    };
+
+    function submit_form(){
+        let form_setup = $('#form_setup');
+        form_setup[0].data_sources.value = JSON.stringify(editor.getValue());
+        form_setup.submit();
+    }
+</script>
+{% endblock %}

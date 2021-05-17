@@ -2,18 +2,13 @@
 # Licensed under the Apache License, Version 2.0
 
 # selectors are dropdowns, checkboxes etc.
-from utility.constants import SELECT_HTML_TEMPLATE, SELECTOR_TYPE, TEXT, SELECTOR_NAME
+from utility.constants import SELECT_HTML_TEMPLATE, TEXT, SELECTOR_NAME
 
 AVAILABLE_SELECTORS = {
     "filter": {
         SELECT_HTML_TEMPLATE: "selector.html",
         TEXT: "Filter by {}",
         SELECTOR_NAME: "filter_{}",
-    },
-    "axis": {
-        SELECT_HTML_TEMPLATE: "selector.html",
-        TEXT: "{} axis",
-        SELECTOR_NAME: "axis_{}",
     },
     "groupby": {
         SELECT_HTML_TEMPLATE: "selector.html",

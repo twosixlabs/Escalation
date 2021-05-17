@@ -37,10 +37,9 @@ HEIGHT = "height"
 AGGREGATE = "aggregate"
 HOVER_DATA = "hover_data"
 AGGREGATIONS = "aggregations"
-
-
-# path to the file folder for LocalHandler or table name for SqlHandler
-DATA_FILE_DIRECTORY = "data_file_directory"
+TRANSFORMS = "transforms"
+GROUPS = "groups"
+PLOT_TYPE = "plot_type"
 DATA_SOURCES = "data_sources"
 DATA_UPLOAD_METADATA = "data_upload_metadata"
 NEW_DATA_SOURCE = "new_data_source"
@@ -53,7 +52,6 @@ CURRENT_PAGE = "current_page"
 DATA = "data"
 DATA_FILTERS = "data_filters"
 PLOT_MANAGER = "plot_manager"
-VISUALIZATION_OPTIONS = "visualization_options"
 DATA_TO_PLOT_PATH = "data_to_plot_path"
 PLOT_SPECIFIC_INFO = "plot_specific_info"
 FILTERS = "filters"
@@ -61,12 +59,35 @@ DATABASE = "database"
 SELECTABLE_DATA_DICT = "selectable_data_dict"
 OPTION_TYPE = "type"
 OPTION_COL = "column"
-
+HOVERTEXT = "hovertext"
 PAGE_NAME = "name"
+X = "x"
+Y = "y"
+Z = "z"
+ERROR_X = "error_x"
+ERROR_Y = "error_y"
+ERROR_Z = "error_z"
+
+SCATTER = "scatter"
+SCATTERGL = "scattergl"
+BAR = "bar"
+HEATMAP = "heatmap"
+HEATMAPGL = "heatmapgl"
+CONTOUR = "contour"
+BOX = "box"
+VIOLIN = "violin"
+HISTOGRAM = "histogram"
+HISTOGRAM2D = "histogram2d"
+HISTOGRAM2DCONTOUR = "histogram2dcontour"
+SCATTER3D = "scatter3d"
+SURFACE = "surface"
+MESH3D = "mesh3d"
+
 
 # Available graphics keys
 GRAPH_HTML_TEMPLATE = "graph_html_template"
 OBJECT = "object"
+SCHEMA_CLASS = "schema_class"
 
 # Available selector keys
 SELECT_HTML_TEMPLATE = "select_html_template"
@@ -79,7 +100,7 @@ GROUPBY = "groupby"
 GROUPBY_SELECTOR = "groupby_selector"
 SELECTOR_TYPE = "type"
 FILTER = "filter"
-UNFILTERED_SELECTOR = "unfiltered_selector"
+FILTERED_SELECTOR = "filtered_selector"
 NUMERICAL_FILTER = "numerical_filter"
 INEQUALITIES = "inequalities"
 OPERATION = "operation"
@@ -94,7 +115,8 @@ LIST_OF_VALUES = "list_of_values"
 MULTIPLE = "multiple"
 NO_GROUP_BY = "No Group By"
 SELECTOR_NAME = "name"
-
+VISIBLE = "visible"
+DATETIME = "datetime"
 # ALL of row
 SHOW_ALL_ROW = "Show All Rows"
 
@@ -112,6 +134,7 @@ ACTIVE_SELECTORS = "active_selector"
 INDEX_COLUMN = "row_index"
 UPLOAD_ID = "upload_id"
 UPLOAD_TIME = "upload_time"
+UPLOAD_FILENAME = "upload_filename"
 USERNAME = "username"
 NOTES = "notes"
 INACTIVE = "inactive"
@@ -148,10 +171,19 @@ ITEMS = "items"
 PATTERN = "pattern"
 REQUIRED = "required"
 MIN_ITEMS = "minItems"
+MAX_ITEMS = "maxItems"
 OPTIONS = "options"
 DEPENDENCIES = "dependencies"
+DEFAULT = "default"
 ENUM = "enum"
+MINIMUM = "minimum"
+MAXIMUM = "maximum"
+ARRAY_STRING = "array"  # ARRAY collides with sqlalchemy class name
 ONEOF = "oneOf"
+STRING = "string"
+NUMBER = "number"
+INTEGER = "integer"
+BOOLEAN = "boolean"
 
 # schema constants, these come from https://github.com/json-editor/json-editor
 HIDDEN = "hidden"
@@ -159,22 +191,71 @@ DISABLE_COLLAPSE = "disable_collapse"
 COLLAPSED = "collapsed"
 DISABLE_PROPERTIES = "disable_properties"
 REMOVE_EMPTY_PROPERTIES = "remove_empty_properties"
-
-# plotly constants
-
-SCATTER = "scatter"
-SCATTERGL = "scattergl"
+DEFAULTPROPERTIES = "defaultProperties"
 
 # schema constants
 GRAPHIC_SCHEMA = "graphic_schema"
-PLOTLY_SCHEMA = "plotly_schema"
+PLOT_MANAGER_SCHEMA = "plot_manager_schema"
 VISUALIZATION_SCHEMA = "visualization_schema"
 SELECTOR_SCHEMA = "selector_schema"
-
+COLUMN_NAMES = "column_names"
 VISUALIZATION = "visualization"
 SELECTOR = "selector"
 PLOTLY = "plotly"
+SEABORN = "seaborn"
+CYTOSCAPE = "cytoscape"
+PLOT_MANAGERS = [PLOTLY, SEABORN, CYTOSCAPE]
 GRAPHIC_META_INFO = "graphic_meta_info"
 GRAPHIC_PATH = "graphic_path"
 
 MAX_ENTRIES_FOR_FILTER_SELECTOR = 200
+
+# JS schema constants
+# need to match functions names in default_entries_dict in wizard_graphic_config_editor.html
+COLUMN_VALUE_FILTER = "column_value_filter"
+CALLBACK = "identity_callback"
+
+# preview functionality
+PREVIEW = "preview"
+
+# Plotly API
+ATTRIBUTES = "attributes"
+LAYOUT_ATTRIBUTES = "layoutAttributes"
+
+# Network constants
+START = "start"
+END = "end"
+WEIGHTS = "weights"
+DIRECTED = "directed"
+LINE_PROPERTIES = "line propeties"
+MARKER_PROPERTIES = "marker propeties"
+
+
+# cytoscape
+NODE_ID = "node_id"
+GROUP = "group"
+NODES = "nodes"
+ID = "id"
+EDGE_ID = "edge_id"
+SOURCE = "source"
+TARGET = "target"
+EDGES = "edges"
+ELEMENTS = "elements"
+STYLE = "style"
+
+ELEMENT_STYLE = "element_style"
+ELEMENT_PROPERTIES = "element_properties"
+PROPERTY_NAME = "property_name"
+STYLE_NAME = "style_name"
+
+# regex patterns
+NO_DOTS = r"^[^\\.]*$"
+ALPHA_NUMERIC_NO_SPACES = r"^[a-zA-Z0-9_]+$"
+ONE_LETTER = r"^[a-zA-Z]$"
+NON_EMPTY_STRING = r"[\s\S]+"
+POSTGRES_TABLE_NAME_FORMAT_REGEX = r"^[a-zA-Z_]\w+$"
+
+# seaborn
+SEABORN_PLOT_BYTES = "seaborn_plot_bytes"
+ASPECT_RATIO = "aspect_ratio"
+FIGSIZE = "figsize"

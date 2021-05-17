@@ -4,14 +4,12 @@ import os
 import re
 
 from flask import current_app
-from sqlalchemy import Integer, Float, DateTime
 
 from utility.constants import *
 
 UI_SCHEMA_PAIRS = {
-    VISUALIZATION: VISUALIZATION_OPTIONS,
     SELECTOR: SELECTABLE_DATA_DICT,
-    PLOTLY: PLOT_SPECIFIC_INFO,
+    GRAPHIC: PLOT_SPECIFIC_INFO,
 }
 
 
@@ -67,18 +65,13 @@ def graphic_dict_to_graphic_component_dict(graphic_dict):
         component_dict[ui_name] = graphic_dict_copy.pop(schema_name, {})
     component_dict[GRAPHIC_META_INFO] = graphic_dict_copy
 
-    visualization_components = {HOVER_DATA: {}, GROUPBY: {}, AGGREGATE: {}}
-    selector_components = {FILTER: [], NUMERICAL_FILTER: [], AXIS: [], GROUPBY: []}
+    selector_components = {FILTER: [], NUMERICAL_FILTER: [], GROUPBY: []}
 
     # add in missing elements so the options show up in the json editor
     component_dict[GRAPHIC_META_INFO][DATA_SOURCES][
         ADDITIONAL_DATA_SOURCES
     ] = component_dict[GRAPHIC_META_INFO][DATA_SOURCES].get(ADDITIONAL_DATA_SOURCES, [])
 
-    for component, empty_element in visualization_components.items():
-        component_dict[VISUALIZATION][component] = component_dict[VISUALIZATION].get(
-            component, empty_element
-        )
     for component, empty_element in selector_components.items():
         component_dict[SELECTOR][component] = component_dict[SELECTOR].get(
             component, empty_element
@@ -100,11 +93,7 @@ def graphic_component_dict_to_graphic_dict(graphic_component_dict):
     ):
         del graphic_dict[DATA_SOURCES][ADDITIONAL_DATA_SOURCES]
 
-    graphic_dict[PLOT_SPECIFIC_INFO] = graphic_component_dict[PLOTLY]
-
-    visualization_dict = prune_visualization_dict(graphic_component_dict[VISUALIZATION])
-    if visualization_dict:
-        graphic_dict[VISUALIZATION_OPTIONS] = visualization_dict
+    graphic_dict[PLOT_SPECIFIC_INFO] = graphic_component_dict[GRAPHIC]
 
     selector_dict = prune_selector_dict(graphic_component_dict[SELECTOR])
     if selector_dict:
@@ -121,17 +110,12 @@ def generate_collapse_dict_from_graphic_component_dict(graphic_dict):
     """
     HIGH_LEVEL_COLLAPSE = {
         ADDITIONAL_DATA_SOURCES: [DATA_SOURCES, ADDITIONAL_DATA_SOURCES],
-        HOVER_DATA: [VISUALIZATION_OPTIONS, HOVER_DATA],
-        GROUPBY: [VISUALIZATION_OPTIONS, GROUPBY],
-        AGGREGATE: [VISUALIZATION_OPTIONS, AGGREGATE],
         FILTER: [SELECTABLE_DATA_DICT, FILTER],
         NUMERICAL_FILTER: [SELECTABLE_DATA_DICT, NUMERICAL_FILTER],
-        AXIS: [SELECTABLE_DATA_DICT, AXIS],
         GROUPBY_SELECTOR: [SELECTABLE_DATA_DICT, GROUPBY],
     }
     FIRST_LEVEL_COLLAPSE = {
-        VISUALIZATION_OPTIONS: [HOVER_DATA, GROUPBY, AGGREGATE],
-        SELECTABLE_DATA_DICT: [FILTER, NUMERICAL_FILTER, AXIS, GROUPBY],
+        SELECTABLE_DATA_DICT: [FILTER, NUMERICAL_FILTER, GROUPBY_SELECTOR],
     }
 
     collapse_dict = {}
@@ -153,32 +137,12 @@ def get_default_collapse_dict():
     """
     keys = [
         SELECTABLE_DATA_DICT,
-        VISUALIZATION_OPTIONS,
         ADDITIONAL_DATA_SOURCES,
-        HOVER_DATA,
-        GROUPBY,
-        AGGREGATE,
         FILTER,
         NUMERICAL_FILTER,
-        AXIS,
         GROUPBY_SELECTOR,
     ]
     return dict.fromkeys(keys, True)
-
-
-def prune_visualization_dict(visualization_dict):
-    """
-    Get rid of empty entries in visualization dict
-    :param visualization_dict:
-    :return:
-    """
-    new_visualization_dict = {}
-    # when the form is left blank the entries of visualization_dict have
-    # COLUMN_NAME key that points to an empty list
-    for vis_key, vis_dict in visualization_dict.items():
-        if vis_dict.get(COLUMN_NAME):
-            new_visualization_dict[vis_key] = vis_dict
-    return new_visualization_dict
 
 
 def prune_selector_dict(selector_dict):
@@ -190,8 +154,6 @@ def prune_selector_dict(selector_dict):
     new_selector_dict = {}
     for sel_key, sel_info in selector_dict.items():
         if sel_key == GROUPBY and sel_info.get(ENTRIES):
-            new_selector_dict[sel_key] = sel_info
-        if sel_key == AXIS and sel_info:
             new_selector_dict[sel_key] = sel_info
         if sel_key == FILTER and sel_info:
 
@@ -246,106 +208,6 @@ def get_layout_for_dashboard(available_pages_list):
     return available_pages_list_copy
 
 
-def get_possible_column_names_and_values(
-    data_source_names, data_handler_class, get_unique_values=True
-):
-    """
-    Used to populate a dropdown in the config wizard with any column from the data
-    sources included in a figure, unique_entries used to populate default selected.
-    :param data_source_names: list of data source name strings
-    :param data_handler_class: backend-specific data inventory class
-    :return: possible_column_names list, unique_entries dict.
-    :param get_unique_values: if true calculates unique values for each column
-    """
-    possible_column_names = []
-    unique_entries = {}
-    column_types_dict = {}
-    for data_source_name in data_source_names:
-        data_inventory = data_handler_class(
-            data_sources={MAIN_DATA_SOURCE: {DATA_SOURCE_TYPE: data_source_name}}
-        )
-        column_names_for_data_source = data_inventory.get_column_names_for_data_source()
-        column_types_dict_for_data_source = data_inventory.get_schema_for_data_source()
-
-        possible_column_names.extend(column_names_for_data_source)
-        column_types_dict.update(column_types_dict_for_data_source)
-        if get_unique_values:
-            unique_entries_for_data_source = data_inventory.get_column_unique_entries(
-                column_names_for_data_source
-            )
-            unique_entries.update(unique_entries_for_data_source)
-    return possible_column_names, column_types_dict, unique_entries
-
-
-def get_data_source_info(active_data_source_names=None):
-    """
-    gets the available data sources and the possible column names based on the data source in the config
-    :param active_data_source_names: list of data source name strings
-    :return:
-    """
-
-    if active_data_source_names is None:
-        active_data_source_names = []
-    data_inventory_class = current_app.config.data_backend_writer
-    data_source_names = data_inventory_class.get_available_data_sources()
-    active_data_source_names = [
-        data_source_name
-        for data_source_name in active_data_source_names
-        if data_source_name in data_source_names
-    ]
-    if data_source_names and not active_data_source_names:
-        # default to the first in alphabetical order
-        active_data_source_names = [min(data_source_names)]
-    (
-        possible_column_names,
-        column_types_dict,
-        unique_entries,
-    ) = get_possible_column_names_and_values(
-        active_data_source_names, current_app.config.data_handler
-    )
-
-    (
-        filter_column_names,
-        numerical_filter_column_names,
-        unique_entries_dict,
-    ) = divide_columns_into_type_of_filters(unique_entries, column_types_dict)
-    return (
-        data_source_names,
-        possible_column_names,
-        filter_column_names,
-        numerical_filter_column_names,
-        unique_entries_dict,
-    )
-
-
-def divide_columns_into_type_of_filters(unique_entries, column_types_dict):
-    """
-    We only allow numerical data types to be filtered with a numerical inequality filter,
-    and any data column with fewer than MAX_ENTRIES_FOR_FILTER_SELECTOR unique entries
-    to be filtered by identity matching
-    :param unique_entries:
-    :param column_types_dict:
-    :return:
-    """
-    numerical_types = [Integer, Float, DateTime]
-    filter_column_names = []
-    numerical_filter_column_names = []
-    unique_entries_dict = {}
-    for col_name, list_of_entries in unique_entries.items():
-        if any(
-            [
-                isinstance(column_types_dict[col_name], num_type)
-                for num_type in numerical_types
-            ]
-        ):
-            numerical_filter_column_names.append(col_name)
-        if len(list_of_entries) <= MAX_ENTRIES_FOR_FILTER_SELECTOR:
-            filter_column_names.append(col_name)
-            unique_entries_dict[col_name] = list_of_entries
-
-    return filter_column_names, numerical_filter_column_names, unique_entries_dict
-
-
 def extract_data_sources_from_config(graphic_config):
     """
     parses out the data source names from the graph definition
@@ -354,7 +216,7 @@ def extract_data_sources_from_config(graphic_config):
     """
     if DATA_SOURCES in graphic_config:
         data_source_dict = graphic_config[DATA_SOURCES]
-        data_sources = set([data_source_dict[MAIN_DATA_SOURCE].get(DATA_SOURCE_TYPE)])
+        data_sources = {data_source_dict[MAIN_DATA_SOURCE].get(DATA_SOURCE_TYPE)}
         additional_data_source_list = data_source_dict.get(ADDITIONAL_DATA_SOURCES, [])
         for additional_data_source_dict in additional_data_source_list:
             data_sources.add(additional_data_source_dict.get(DATA_SOURCE_TYPE))

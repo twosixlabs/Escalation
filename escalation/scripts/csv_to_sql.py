@@ -6,17 +6,16 @@ Create a table in your SQL db defined by a csv file. This is paired with sqlalch
 codegen to create entries in the model file for the table.
 
 This script assumes you are running locally, and have a Docker container running the database as per readme
+
+In order to create new tables, the app must be running in setup wizard mode
 """
 
-from io import open as io_open
-import os
 import sys
 import re
 
 import requests
 
-from utility.constants import DATA_SOURCE, CSVFILE
-
+from utility.constants import DATA_SOURCE, CSVFILE, POSTGRES_TABLE_NAME_FORMAT_REGEX
 
 REPLACE = "replace"
 APPEND = "append"
@@ -26,7 +25,7 @@ EXISTS_OPTIONS = [REPLACE, APPEND]
 if __name__ == "__main__":
     """
     example usage:
-    python database/csv_to_sql.py penguin_size escalation/test_app_deploy_data/data/penguin_size/penguin_size.csv my_user "this is from the experiment 2020-09-10"
+    python scripts/csv_to_sql.py penguin_size test_app_deploy_data/data/penguin_size/penguin_size.csv append my_user "this is from the experiment 2020-09-10"
     """
     # todo - better arg handling with argparse or something
 
@@ -43,7 +42,6 @@ if __name__ == "__main__":
     else:
         FLASK_UPLOAD_URL = "http://localhost:8000/upload"
 
-    POSTGRES_TABLE_NAME_FORMAT_REGEX = r"^[a-zA-Z_]\w+$"
     if not re.match(POSTGRES_TABLE_NAME_FORMAT_REGEX, table_name):
         print(
             "Table names name must start with a letter or an underscore;"
@@ -61,12 +59,22 @@ if __name__ == "__main__":
             "Postgres SQL table names are case insensitive- "
             "tablename will be converted to lowercase letters"
         )
-
-    response = requests.post(
-        FLASK_UPLOAD_URL,
-        data={DATA_SOURCE: table_name, "username": username, "notes": notes,},
-        files={CSVFILE: open(filepath, "rb")},
-    )
+    try:
+        response = requests.post(
+            FLASK_UPLOAD_URL,
+            data={DATA_SOURCE: table_name, "username": username, "notes": notes,},
+            files=[(CSVFILE, open(filepath, "rb")),],
+            # to upload more than one file at a time, need to provide a list like this
+            # files=[
+            #     (CSVFILE, open("file1.csv", "rb")),
+            #     (CSVFILE, open("file_2.csv", "rb")),
+            # ],
+        )
+    except Exception:
+        raise (
+            Exception,
+            "Is escalation running in debug mode?",
+        )
 
     if response.status_code != 200:
         raise (

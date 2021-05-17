@@ -11,7 +11,7 @@
 </div>
     <div class="container-fluid pl-5 pr-5">
         <div class="row">
-            <form method="post" action={{ url_for('.graphic_config_setup') }} id="form_button_click">
+            <form method="post" id="form_button_click">
                 <div class="form-group">
                     <label for="title">Site Title</label>
                     <input type="text" class="form-control" name="title" id="title" {% if current_config['title'] %} value="{{ current_config['title'] }}" {% endif %}>
@@ -80,15 +80,15 @@
                 {% for graphic in page["graphic_config_files"] %}
                     <div class="row">
                     <div class="btn-group  mb-1 mt-1 ml-5">
-                        <button class="btn btn-outline-secondary pr-3 pl-3" type="button" onclick=edit_graphic({{ page_id }},'{{ graphic['graphic_path'] }}','old')>{{ graphic['title'] }} <i class="far fa-edit"></i> </button>
-                        <button class="btn btn-outline-secondary" type="button" onclick=edit_graphic({{ page_id }},'{{ graphic['graphic_path'] }}','copy')>Duplicate Graphic</button>
+                        <button class="btn btn-outline-secondary pr-3 pl-3" type="button" onclick=edit_graphic({{ page_id }},'{{ graphic['graphic_path'] }}','old','{{ url_for('.graphic_config_setup') }}')>{{ graphic['title'] }} <i class="far fa-edit"></i> </button>
+                        <button class="btn btn-outline-secondary" type="button" onclick=edit_graphic({{ page_id }},'{{ graphic['graphic_path'] }}','copy','{{ url_for('.graphic_config_setup') }}')>Duplicate Graphic</button>
                         <button class="btn btn-outline-danger" type="button" onclick=modify_config('delete_graphic',{{ page_id }},'{{ graphic['graphic_path'] }}')><i class="far fa-trash-alt"></i></button>
                     </div>
                     </div>
                 {% endfor %}
                 <div class="row">
                     <div class="form-group mb-1 mt-1 ml-5">
-                        <button type="button" class="btn btn-outline-primary" onclick=edit_graphic({{ page_id }},'','new')>Add a Graphic
+                        <button type="button" class="btn btn-outline-primary" onclick=edit_graphic({{ page_id }},'','new','{{ url_for('.graphic_landing_setup') }}')>Add a Graphic
                         </button>
                     </div>
                 </div>

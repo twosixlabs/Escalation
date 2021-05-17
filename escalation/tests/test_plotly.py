@@ -8,22 +8,29 @@ from graphics.plotly_plot import (
     TITLE,
     PLOT_AXIS,
     VISUALIZATION_TYPE,
-    AGGREGATIONS,
-    OPTIONS,
-    AGGREGATE,
     TRANSFORMS,
 )
 import pytest
 import json
 import pandas as pd
 
-from utility.constants import POINTS_NUM, DATA, OPTION_COL
+from utility.constants import (
+    DATA,
+    OPTION_COL,
+    AGGREGATIONS,
+    AGGREGATE,
+    HOVERTEXT,
+    TYPE,
+    GROUPS,
+    TARGET,
+    PLOT_SPECIFIC_INFO,
+)
 
 TITLE1 = "random_num"
 TITLE2 = "another_rand"
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def make_data():
     data = {
         TITLE1: [3, 6, 7],
@@ -34,13 +41,16 @@ def make_data():
 
 
 def test_plotly_draw_scatter(make_data):
-    plot_options = {
-        DATA: [{"type": "scatter", "x": TITLE1, "y": TITLE2, "mode": "markers"}]
+    graphic_dict = {
+        PLOT_SPECIFIC_INFO: {
+            DATA: [{"type": "scatter", "x": TITLE1, "y": TITLE2, "mode": "markers"}]
+        }
     }
 
-    ploty_test = PlotlyPlot()
-    graph_json = ploty_test.make_dict_for_html_plot(make_data, plot_options)
-    graph_dict = json.loads(graph_json)
+    ploty_test = PlotlyPlot(graphic_dict)
+    ploty_test.data = make_data
+    ploty_test.make_dict_for_html_plot()
+    graph_dict = json.loads(ploty_test.graph_json_str)
 
     assert (graph_dict[DATA][0]["x"] == make_data[TITLE1]).all()
     assert (graph_dict[DATA][0]["y"] == make_data[TITLE2]).all()
@@ -48,23 +58,38 @@ def test_plotly_draw_scatter(make_data):
     assert graph_dict[LAYOUT][PLOT_AXIS.format("y")][TITLE] == TITLE2
     # assert graph_dict[LAYOUT][PLOT_AXIS.format("x")][AUTOMARGIN]
     # assert graph_dict[LAYOUT][PLOT_AXIS.format("y")][AUTOMARGIN]
-    assert len(graph_dict[DATA][0][TRANSFORMS]) == 0
+    assert TRANSFORMS not in graph_dict[DATA][0]
 
 
 def test_plotly_visualization_options(make_data, test_app_client_sql_backed):
-    plot_options = {
-        DATA: [{"type": "scatter", "x": TITLE1, "y": TITLE2, "mode": "markers"}]
+    graphic_dict = {
+        PLOT_SPECIFIC_INFO: {
+            DATA: [
+                {
+                    "type": "scatter",
+                    "x": TITLE1,
+                    "y": TITLE2,
+                    "mode": "markers",
+                    HOVERTEXT: [TITLE1],
+                    TRANSFORMS: {
+                        AGGREGATE: [
+                            {
+                                GROUPS: [TITLE2],
+                                AGGREGATIONS: [
+                                    {TARGET: "x", "func": "avg"},
+                                    {TARGET: "y", "func": "avg"},
+                                ],
+                            }
+                        ]
+                    },
+                }
+            ]
+        }
     }
-    ploty_test = PlotlyPlot()
-    visualization_options = {
-        "hover_data": {OPTION_COL: [TITLE1],},  # need a flask app to run
-        AGGREGATE: {OPTION_COL: [TITLE2], AGGREGATIONS: {"x": "avg", "y": "avg"},},
-    }
-
-    graph_json = ploty_test.make_dict_for_html_plot(
-        make_data, plot_options, visualization_options
-    )
-    graph_dict = json.loads(graph_json)
+    ploty_test = PlotlyPlot(graphic_dict)
+    ploty_test.data = make_data
+    ploty_test.make_dict_for_html_plot()
+    graph_dict = json.loads(ploty_test.graph_json_str)
     transform_dict = graph_dict[DATA][0][TRANSFORMS]
     assert len(transform_dict) == 1
 

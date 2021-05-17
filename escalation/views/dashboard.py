@@ -3,6 +3,7 @@
 import json
 
 from flask import current_app, render_template, Blueprint, request, make_response
+from werkzeug.datastructures import ImmutableMultiDict
 from werkzeug.exceptions import BadRequest
 
 from utility.constants import (
@@ -15,9 +16,9 @@ from utility.constants import (
     CURRENT_PAGE,
     ADDENDUM_DICT,
     DEVELOPMENT,
+    GRAPHIC_NAME,
 )
 from controller import get_data_for_page
-from utility.reformatting_functions import add_form_to_addendum_dict
 
 DATA_LAYOUT = "data_layout.html"
 
@@ -86,3 +87,19 @@ def create_jumbotron_info():
         SITE_DESC: config_dict.get(SITE_DESC, ""),
     }
     return jumbotron_info
+
+
+def add_form_to_addendum_dict(form: ImmutableMultiDict, addendum_dict: dict):
+    """
+    Used to update the addendum_dict that contains the previous graphic
+     selection elements with a new set of selections from a posted form
+    :param form:
+    :param addendum_dict:
+    :return:
+    """
+    graphic_dict = {}
+    for key, value in form.lists():
+        if key in [GRAPHIC_NAME, PROCESS]:
+            continue
+        graphic_dict[key] = value
+    addendum_dict[form.get(GRAPHIC_NAME)] = graphic_dict

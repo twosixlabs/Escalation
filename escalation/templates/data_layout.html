@@ -2,6 +2,11 @@
 <!--# Licensed under the Apache License, Version 2.0-->
 
 {% extends 'base.html' %}
+{% block header %}
+
+    <link rel="stylesheet" href="/static/chart.css">
+
+{% endblock %}
 
 {% block content %}
 {% include 'navbar.html' %}
@@ -36,17 +41,27 @@
     </div>
     <div class="row">
         <div class="col-10">
-            {% include plot['graph_html_file']%}
+            {% set plot_id_str = "plot_{}".format(plot_id)  %}
+            <div class="chart" id="{{ plot_id_str }}">
+                <script>
+                    var graph = {{plot['plot_info'] | safe}};
+                    var height = 400 //
+                    var width = $("{{ "#"~plot_id_str }}").width()
+                    {% include plot['graph_html_file']%}
+                </script>
+            </div>
         </div>
         <div class="col-2 text-center">
-            {% for selector in plot['select_info'] %}
-            {% set selector_index = loop.index0 %}
-            {% include selector['select_html_file'] ignore missing %}
-            {% endfor %}
-            <button type="button" class="btn btn-primary btn-block m-2" onclick=post_to_server('{{ plot_id }}')>Update
-            </button>
-            <button type="button" class="btn btn-secondary btn-block m-2" onclick=reset_form('{{ plot_id }}')>Reset
-            </button>
+            {% if plot['select_info'] %}
+                {% for selector in plot['select_info'] %}
+                    {% set selector_index = loop.index0 %}
+                    {% include selector['select_html_file'] ignore missing %}
+                {% endfor %}
+                 <button type="button" class="btn btn-primary btn-block m-2" onclick=post_to_server('{{ plot_id }}')>Update
+                </button>
+                <button type="button" class="btn btn-secondary btn-block m-2" onclick=reset_form('{{ plot_id }}')>Reset
+                </button>
+            {% endif %}
         </div>
     </div>
 

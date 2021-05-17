@@ -1,7 +1,7 @@
 # Copyright [2020] [Two Six Labs, LLC]
 # Licensed under the Apache License, Version 2.0
 from base64 import b64encode
-from io import BufferedReader, StringIO
+from io import StringIO
 import os
 
 import pandas as pd
@@ -35,28 +35,20 @@ def request_form():
     }
 
 
-@pytest.fixture
-def request_file():
-    request_file = FileStorage(
-        stream=open(TEST_FILENAME, "rb"), filename=TEST_FILENAME,
-    )
-    return request_file
-
-
-def test_validate_submission_content(request_file, test_app_client_sql_backed):
+def test_validate_submission_content(penguin_size_csv_file, test_app_client_sql_backed):
     data_handler_class = test_app_client_sql_backed.config.data_handler(
         data_sources={MAIN_DATA_SOURCE: {DATA_SOURCE_TYPE: DATA_SOURCE_NAME}}
     )
 
     data_source_schema = data_handler_class.get_schema_for_data_source()
     try:
-        _ = validate_submission_content(request_file, data_source_schema)
+        _ = validate_submission_content(penguin_size_csv_file, data_source_schema)
     except ValidationError:
         pytest.fail("validate_submission_content should run without error on good file")
 
     df = pd.read_csv(TEST_FILENAME)
     df["extra column not in schema"] = -99
-    extra_column_file = StringIO(df.to_csv(index=False))
+    extra_column_file = FileStorage(StringIO(df.to_csv(index=False)), filename=CSVFILE)
     try:
         validate_submission_content(extra_column_file, data_source_schema)
     except ValidationError:
@@ -66,17 +58,21 @@ def test_validate_submission_content(request_file, test_app_client_sql_backed):
 
     df = pd.read_csv(TEST_FILENAME)
     df.drop("island", axis=1, inplace=True)
-    missing_column_file = StringIO(df.to_csv(index=False))
+    missing_column_file = FileStorage(
+        StringIO(df.to_csv(index=False)), filename=CSVFILE
+    )
     with pytest.raises(ValidationError):
         validate_submission_content(missing_column_file, data_source_schema)
 
 
-def test_validate_data_form(test_app_client_sql_backed, request_file, request_form):
+def test_validate_data_form(
+    test_app_client_sql_backed, penguin_size_csv_file, request_form
+):
     for required_field in [USERNAME, DATA_SOURCE, NOTES]:
         missing_field_form = request_form.copy()
         _ = missing_field_form.pop(required_field)
         with pytest.raises(ValidationError):
-            validate_data_form(missing_field_form, request_file)
+            validate_data_form(missing_field_form, penguin_size_csv_file)
     # todo: validate file is a real file
     # for broken_files in [{}, {CSVFILE: None}]:
     #     # require csvfile
@@ -85,15 +81,16 @@ def test_validate_data_form(test_app_client_sql_backed, request_file, request_fo
 
 
 def test_submission_auth_prd_mode_failures(
-    test_app_client_sql_backed, request_form, request_file
+    test_app_client_sql_backed, request_form, penguin_size_csv_file
 ):
     # test authentication
     client = test_app_client_sql_backed.test_client()
     get_response = client.get("/upload")
     assert get_response.status_code == 200
-    request_form[CSVFILE] = request_file
+
+    request_form[CSVFILE] = penguin_size_csv_file
     post_response = client.post("/upload", data=request_form,)
-    # test responses in prd- auth required
+    # test responses in environment other than DEVELOPMENT- auth required
     assert post_response.status_code == 401
 
     # todo: test client setup should include test-specific users
@@ -106,11 +103,11 @@ def test_submission_auth_prd_mode_failures(
 
 
 def test_submission_auth_prd_mode(
-    test_app_client_sql_backed, request_form, request_file
+    test_app_client_sql_backed, request_form, penguin_size_csv_file
 ):
     client = test_app_client_sql_backed.test_client()
     credentials = b64encode(b"admin:escalation").decode("utf-8")
-    request_form[CSVFILE] = request_file
+    request_form[CSVFILE] = penguin_size_csv_file
     post_response = client.post(
         "/upload",
         headers={"Authorization": f"Basic {credentials}",},
@@ -123,13 +120,13 @@ def test_submission_auth_dev_mode(
     rebuild_test_database,
     test_app_client_sql_backed_development_env,
     request_form,
-    request_file,
+    penguin_size_csv_file,
 ):
     # test the file upload when the app is running in wizard/development mode- no auth required
     client = test_app_client_sql_backed_development_env.test_client()
     get_response = client.get("/upload")
     assert get_response.status_code == 200
-    request_form[CSVFILE] = request_file
+    request_form[CSVFILE] = penguin_size_csv_file
 
     post_response = client.post(
         "/upload", data=request_form, content_type="multipart/form-data"
@@ -142,9 +139,9 @@ def test_submission_validates_and_writes_to_db(
     rebuild_test_database,
     test_app_client_sql_backed_development_env,
     request_form,
-    request_file,
+    penguin_size_csv_file,
 ):
-    request_form[CSVFILE] = request_file
+    request_form[CSVFILE] = penguin_size_csv_file
     # upload_ids = PenguinSize.upload_id.all_()
     session = test_app_client_sql_backed_development_env.db_session
     client = test_app_client_sql_backed_development_env.test_client()
