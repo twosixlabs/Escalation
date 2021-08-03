@@ -1,5 +1,6 @@
 {
     "plot_manager": "plotly",
+    "plot_type": "scatter",
     "data_sources": {
         "main_data_source": {"data_source_type": "penguin_size"},
         "additional_data_sources": [

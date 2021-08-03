@@ -12,7 +12,7 @@
 {% include 'navbar.html' %}
 
 <div class="jumbotron">
-    <p class="lead">{{ brief_desc }}</p>
+    <p class="lead">{% autoescape off %}{{ brief_desc }}{% endautoescape %}</p>
     <hr class="my-4">
     <p class="lead">
         {% for dashboard_page in dashboard_pages %}
@@ -34,7 +34,7 @@
     plot_id }}>
     <div class="col-10">
             <h1> {{ plot['title'] }} </h1>
-            <p>{{ plot['brief_desc'] }}</p>
+            <p>{% autoescape off %}{{ plot['brief_desc'] }}{% endautoescape %}</p>
     </div>
     <div class="col-2">
     </div>
@@ -45,8 +45,10 @@
             <div class="chart" id="{{ plot_id_str }}">
                 <script>
                     var graph = {{plot['plot_info'] | safe}};
-                    var height = 400 //
-                    var width = $("{{ "#"~plot_id_str }}").width()
+                    var height = {{ plot['visualization_options']['height'] }}
+                    var chart_div = $("{{ "#"~plot_id_str }}")
+                    var width = chart_div.width()
+                    chart_div.height(height)
                     {% include plot['graph_html_file']%}
                 </script>
             </div>

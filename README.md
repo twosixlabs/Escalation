@@ -183,14 +183,23 @@ ToDo: More detailed instructions on virtual env setup, requirements install,  an
 - optional, but recommended: run in a virtual environment of your choice. If you use conda and not pyenv or similar, use the appropriate package installer in the next step
 - `pip install -r requirements-dev.txt`
 - `pre-commit install` sets up the pre-commit hooks to auto-format the code. This is optional, the repo is formatted with Flake and Black. 
+
 - From the `escalation/` directory (at the same level as `app,py`, run `export FLASK_ENV=development && python -m flask run`
 
+### Running tests
+
+This runs the tests and then outputs a summary of the code not covered by tests
+
+    coverage run -m pytest
+    coverage report -m
+    
 ### How to add a new type of plot
 Development for Escalation has focused on Plotly, Cytoscape, and Seaborn, but the codebase should be compatible with other libraries or custom graphics. If you want to use something other than the provided libraries, your code should:
 * Inherit from graphic_class.py
 * Be added to available_graphics.py
 * Include an html file with javascript code required to plot
 * In addition, if you would like to use the wizard with the new graphic, you should define a schema with a class that inherits from graphic_schema.py. The schema should follow [JSON Schema](https://json-schema.org/). 
+
 ### How to add a new option feature
 * add it to available_selectors.py
 * create a html document input elements need name "\<id>|\<type>|<column_name>"
@@ -198,7 +207,6 @@ Development for Escalation has focused on Plotly, Cytoscape, and Seaborn, but th
 * build in functionality in graphic_class or data_storer inheritor
  
 # Using and citing Escalation
-
 
 Code submitted to [Zenodo](https://zenodo.org/) for DOI registration and version tracking.
 Bibtex and similar citation formatting available here:

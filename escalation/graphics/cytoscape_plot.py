@@ -1,6 +1,6 @@
 import json
 
-from graphics.graphic_class import Graphic
+from graphics.graphic_plot import Graphic
 from utility.constants import (
     DATA,
     NODE_ID,
@@ -77,6 +77,7 @@ class Cytoscape(Graphic):
         for instruction_dict in instruction_array:
             property_name = instruction_dict[name]
             element_type = instruction_dict[GROUP]
+            element_dict = {}
             if element_type == NODES:
                 element_dict = self.node_dict  # both sides should have same reference
             elif element_type == EDGES:
@@ -123,11 +124,11 @@ class Cytoscape(Graphic):
                     )
         return elements, style_array_for_cytoscape
 
-    def make_dict_for_html_plot(self) -> str:
+    def make_dict_for_html_plot(self):
         """
         Takes in the data as well user specified json and makes a json according to the specification of Cytoscape
         """
-        plot_options = self.graphic_dict[PLOT_SPECIFIC_INFO]
+        plot_options = self.plot_specific_info
 
         cytoscape_dict = {
             key: value
@@ -191,7 +192,7 @@ class Cytoscape(Graphic):
         :param plot_options:
         :return:
         """
-        plot_options = self.graphic_dict[PLOT_SPECIFIC_INFO]
+        plot_options = self.plot_specific_info
         possible_keys = [NODE_ID, SOURCE, TARGET, EDGE_ID]
         set_of_column_names = set()
         for key_name in possible_keys:

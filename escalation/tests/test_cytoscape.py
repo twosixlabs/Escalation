@@ -1,7 +1,7 @@
 import copy
 import json
 
-from graphics.cytoscape import Cytoscape
+from graphics.cytoscape_plot import Cytoscape
 from utility.constants import (
     NODE_ID,
     SOURCE,
@@ -61,32 +61,27 @@ def make_data_cyto():
 @pytest.fixture()
 def make_graphic_dict_cyto():
     graphic_dict = {
-        PLOT_SPECIFIC_INFO: {
-            NODE_ID: "beings",
-            SOURCE: "start",
-            TARGET: "end",
-            EDGE_ID: "numbers",
-            ELEMENT_PROPERTIES: [
-                {PROPERTY_NAME: "classes", GROUP: NODES, COLUMN_NAME: "class"}
-            ],
-            LAYOUT: {"name": "cose"},
-            STYLE: [
-                {
-                    SELECTOR: "node",
-                    STYLE: {"shape": "round-pentagon", "label": "data(id)"},
-                },
-                {
-                    SELECTOR: "edge",
-                    STYLE: {
-                        "target-arrow-shape": "triangle",
-                        "curve-style": "straight",
-                    },
-                },
-            ],
-            ELEMENT_STYLE: [
-                {STYLE_NAME: "background-color", GROUP: NODES, COLUMN_NAME: "color",}
-            ],
-        }
+        NODE_ID: "beings",
+        SOURCE: "start",
+        TARGET: "end",
+        EDGE_ID: "numbers",
+        ELEMENT_PROPERTIES: [
+            {PROPERTY_NAME: "classes", GROUP: NODES, COLUMN_NAME: "class"}
+        ],
+        LAYOUT: {"name": "cose"},
+        STYLE: [
+            {
+                SELECTOR: "node",
+                STYLE: {"shape": "round-pentagon", "label": "data(id)"},
+            },
+            {
+                SELECTOR: "edge",
+                STYLE: {"target-arrow-shape": "triangle", "curve-style": "straight",},
+            },
+        ],
+        ELEMENT_STYLE: [
+            {STYLE_NAME: "background-color", GROUP: NODES, COLUMN_NAME: "color",}
+        ],
     }
 
     return graphic_dict
@@ -133,8 +128,8 @@ def test_make_dict_for_html_plot(make_data_cyto, make_graphic_dict_cyto):
 
 
 def test_make_dict_for_html_plot_simple(make_data_cyto, make_graphic_dict_cyto):
-    del make_graphic_dict_cyto[PLOT_SPECIFIC_INFO][ELEMENT_PROPERTIES]
-    del make_graphic_dict_cyto[PLOT_SPECIFIC_INFO][STYLE]
+    del make_graphic_dict_cyto[ELEMENT_PROPERTIES]
+    del make_graphic_dict_cyto[STYLE]
     expected_dict = {
         ELEMENTS: [
             {GROUP: NODES, DATA: {ID: "Zeus"}},

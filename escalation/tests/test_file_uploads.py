@@ -35,34 +35,36 @@ def request_form():
     }
 
 
-def test_validate_submission_content(penguin_size_csv_file, test_app_client_sql_backed):
+def test_validate_submission_content(penguin_size_df, test_app_client_sql_backed):
     data_handler_class = test_app_client_sql_backed.config.data_handler(
         data_sources={MAIN_DATA_SOURCE: {DATA_SOURCE_TYPE: DATA_SOURCE_NAME}}
     )
 
     data_source_schema = data_handler_class.get_schema_for_data_source()
     try:
-        _ = validate_submission_content(penguin_size_csv_file, data_source_schema)
+        _ = validate_submission_content(
+            penguin_size_df, "test_filename.csv", data_source_schema
+        )
     except ValidationError:
         pytest.fail("validate_submission_content should run without error on good file")
 
-    df = pd.read_csv(TEST_FILENAME)
-    df["extra column not in schema"] = -99
-    extra_column_file = FileStorage(StringIO(df.to_csv(index=False)), filename=CSVFILE)
+    extra_column_file = pd.read_csv(TEST_FILENAME)
+    extra_column_file["extra column not in schema"] = -99
     try:
-        validate_submission_content(extra_column_file, data_source_schema)
+        validate_submission_content(
+            extra_column_file, "test_filename.csv", data_source_schema
+        )
     except ValidationError:
         pytest.fail(
             "Extra columns in the uploaded file not in schema should be ignored"
         )
 
-    df = pd.read_csv(TEST_FILENAME)
-    df.drop("island", axis=1, inplace=True)
-    missing_column_file = FileStorage(
-        StringIO(df.to_csv(index=False)), filename=CSVFILE
-    )
+    missing_column_file = pd.read_csv(TEST_FILENAME)
+    missing_column_file.drop("island", axis=1, inplace=True)
     with pytest.raises(ValidationError):
-        validate_submission_content(missing_column_file, data_source_schema)
+        validate_submission_content(
+            missing_column_file, "test_filename.csv", data_source_schema
+        )
 
 
 def test_validate_data_form(
@@ -89,7 +91,10 @@ def test_submission_auth_prd_mode_failures(
     assert get_response.status_code == 200
 
     request_form[CSVFILE] = penguin_size_csv_file
-    post_response = client.post("/upload", data=request_form,)
+    post_response = client.post(
+        "/upload",
+        data=request_form,
+    )
     # test responses in environment other than DEVELOPMENT- auth required
     assert post_response.status_code == 401
 
@@ -97,7 +102,10 @@ def test_submission_auth_prd_mode_failures(
     # with credentials, but no form data, we authenticate but get bad request response
     credentials = b64encode(b"admin:escalation").decode("utf-8")
     post_response = client.post(
-        "/upload", headers={"Authorization": f"Basic {credentials}",},
+        "/upload",
+        headers={
+            "Authorization": f"Basic {credentials}",
+        },
     )
     assert post_response.status_code == 400
 
@@ -110,7 +118,9 @@ def test_submission_auth_prd_mode(
     request_form[CSVFILE] = penguin_size_csv_file
     post_response = client.post(
         "/upload",
-        headers={"Authorization": f"Basic {credentials}",},
+        headers={
+            "Authorization": f"Basic {credentials}",
+        },
         data=request_form,
     )
     assert post_response.status_code == 200

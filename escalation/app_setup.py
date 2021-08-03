@@ -2,7 +2,9 @@
 # Licensed under the Apache License, Version 2.0
 
 import importlib
+import os
 from types import MappingProxyType
+
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
@@ -11,6 +13,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy import create_engine
 
 from controller import create_labels_for_available_pages, make_pages_dict
+
 from utility.constants import (
     APP_CONFIG_JSON,
     AVAILABLE_PAGES,
@@ -20,6 +23,7 @@ from utility.constants import (
     POSTGRES,
     SQLALCHEMY_DATABASE_URI,
     DEVELOPMENT,
+    ELASTICSEARCH,
 )
 from app_deploy_data.app_settings import DATABASE_CONFIG
 from version import VERSION
@@ -91,24 +95,40 @@ def configure_app(app, config_dict, config_file_folder):
 
 def configure_backend(app):
     # setup steps unique to SQL-backended apps
-    from database.sql_handler import SqlHandler, SqlDataInventory
+    data_backend_class = None
+    data_backend_writer = None
+    if app.config[APP_CONFIG_JSON][DATA_BACKEND] == POSTGRES:
+        from database.sql_handler import SqlHandler, SqlDataInventory
 
-    app.db = SQLAlchemy()
-    engine = create_engine(app.config[SQLALCHEMY_DATABASE_URI], convert_unicode=True)
-    app.db_session = scoped_session(
-        sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    )
-    app.db.init_app(app)
+        app.db = SQLAlchemy()
+        engine = create_engine(
+            app.config[SQLALCHEMY_DATABASE_URI], convert_unicode=True
+        )
+        app.db_session = scoped_session(
+            sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        )
+        app.db.init_app(app)
 
-    data_backend_class = SqlHandler
-    data_backend_writer = SqlDataInventory
-    models_file_path = ".".join([app.config[CONFIG_FILE_FOLDER], "models"])
-    models_imports = importlib.import_module(models_file_path)
-    app.Base = getattr(models_imports, "Base")
+        data_backend_class = SqlHandler
+        data_backend_writer = SqlDataInventory
+        models_file_path = ".".join([app.config[CONFIG_FILE_FOLDER], "models"])
+        models_imports = importlib.import_module(models_file_path)
+        app.Base = getattr(models_imports, "Base")
 
-    @app.teardown_appcontext
-    def shutdown_session(exception=None):
-        app.db_session.remove()
+        @app.teardown_appcontext
+        def shutdown_session(exception=None):
+            app.db_session.remove()
+
+    elif app.config[APP_CONFIG_JSON][DATA_BACKEND] == ELASTICSEARCH:
+        from database.elasticsearch_handler import (
+            ElasticSearchHandler,
+            ElasticSearchDataInventory,
+        )
+        from elasticsearch import Elasticsearch
+
+        app.es = Elasticsearch([{"host": "localhost", "port": 9200}])
+        data_backend_class = ElasticSearchHandler
+        data_backend_writer = ElasticSearchDataInventory
 
     app.config.data_handler = data_backend_class
     app.config.data_backend_writer = data_backend_writer

@@ -11,7 +11,7 @@ import base64
 import io
 import json
 
-from graphics.graphic_class import Graphic
+from graphics.graphic_plot import Graphic
 
 from utility.constants import *
 
@@ -119,10 +119,10 @@ def get_canvas_for_rendering_in_html(fig):
 class SeabornPlot(Graphic):
     def make_dict_for_html_plot(self):
         fig = create_seaborn_fig_from_data_and_definition(
-            self.data, self.graphic_dict[PLOT_SPECIFIC_INFO]
+            self.data, self.plot_specific_info
         )
         seaborn_fig_bytes = get_canvas_for_rendering_in_html(fig)
-        fig_size = self.graphic_dict[PLOT_SPECIFIC_INFO][LAYOUT][FIGSIZE]
+        fig_size = self.plot_specific_info[LAYOUT][FIGSIZE]
         # ASPECT_RATIO makes sure that the image on the webpage has the same aspect ratio as the seaborn figure
         self.graph_json_str = json.dumps(
             {
@@ -141,7 +141,7 @@ class SeabornPlot(Graphic):
         :param plot_options:
         :return:
         """
-        plot_options = self.graphic_dict[PLOT_SPECIFIC_INFO]
+        plot_options = self.plot_specific_info
         set_of_column_names = set()
         for dict_of_data_for_each_plot in plot_options[DATA]:
             for axis in POSSIBLE_AXIS:

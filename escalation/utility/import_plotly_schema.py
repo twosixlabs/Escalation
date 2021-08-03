@@ -28,6 +28,10 @@ from utility.constants import (
     ATTRIBUTES,
     LAYOUT_ATTRIBUTES,
     TITLE,
+    SCATTERGEO,
+    SCATTERMAPBOX,
+    ANYOF,
+    STRING,
 )
 
 PLOTLY_TYPE = "valType"
@@ -56,6 +60,8 @@ PLOT_TYPE_LIST = [
     HISTOGRAM2D,
     SCATTER3D,
     MESH3D,
+    SCATTERGEO,
+    SCATTERMAPBOX,
 ]
 
 
@@ -215,6 +221,17 @@ def parse_plotly_api_into_schemas():
     json_schema = build_dict_from_role_object(
         plotly_full[SCHEMA][LAYOUT][LAYOUT_ATTRIBUTES]
     )
+    # this needs to be changed to handle string and array input
+    source_dict = json_schema[PROPERTIES]["mapbox"][PROPERTIES]["layers"][ITEMS][
+        PROPERTIES
+    ]["source"]
+    source_dict = {
+        DESCRIPTION: source_dict[DESCRIPTION],
+        ANYOF: [{TYPE: STRING}, {TYPE: ARRAY_STRING, ITEMS: {TYPE: STRING}}],
+    }
+    json_schema[PROPERTIES]["mapbox"][PROPERTIES]["layers"][ITEMS][PROPERTIES][
+        "source"
+    ] = source_dict
     with open("plotly_api/layout_plotly_schema.json", "w") as outfile:
         json.dump(json_schema, outfile, indent=4)
 

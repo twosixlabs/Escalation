@@ -129,6 +129,11 @@ def main_json_sql_backend_fixture():
 
 
 @pytest.fixture()
+def main_json_es_backend_fixture():
+    return make_main_config_for_testing(backend=ELASTICSEARCH)
+
+
+@pytest.fixture()
 def graphic_json_fixture():
     return make_graphic_config_for_testing()
 
@@ -173,7 +178,10 @@ def make_graphic_config_for_testing():
                         ],
                         TRANSFORMS: {
                             GROUPBY: {
-                                GROUPS: ["penguin_size:island", "penguin_size:sex",],
+                                GROUPS: [
+                                    "penguin_size:island",
+                                    "penguin_size:sex",
+                                ],
                             }
                         },
                     }
@@ -181,8 +189,14 @@ def make_graphic_config_for_testing():
             },
             SELECTABLE_DATA_DICT: {
                 FILTER: [
-                    {COLUMN_NAME: "penguin_size:sex", MULTIPLE: False,},
-                    {COLUMN_NAME: "penguin_size:island", MULTIPLE: True,},
+                    {
+                        COLUMN_NAME: "penguin_size:sex",
+                        MULTIPLE: False,
+                    },
+                    {
+                        COLUMN_NAME: "penguin_size:island",
+                        MULTIPLE: True,
+                    },
                 ],
                 NUMERICAL_FILTER: [
                     {COLUMN_NAME: "penguin_size:culmen_length_mm", TYPE: "number"}
@@ -195,17 +209,26 @@ def make_graphic_config_for_testing():
             GRAPHIC_TITLE: "How big are penguins?",
             GRAPHIC_DESC: ".",
             PLOT_SPECIFIC_INFO: {
-                DATA: [{"type": "histogram", "x": "penguin_size:body_mass_g"}],
+                DATA: [
+                    {
+                        "type": "histogram",
+                        "x": "penguin_size:body_mass_g",
+                        TRANSFORMS: {
+                            GROUPBY: {
+                                GROUPS: [
+                                    "penguin_size:sex",
+                                ],
+                                USER_SELECTABLE_OPTIONS: [
+                                    "penguin_size:sex",
+                                    "penguin_size:island",
+                                ],
+                            }
+                        },
+                    },
+                ],
                 LAYOUT: {
                     AXIS.format("x"): {TITLE, "body mass"},
                     AXIS.format("y"): {TITLE, "count"},
-                },
-            },
-            SELECTABLE_DATA_DICT: {
-                GROUPBY: {
-                    ENTRIES: ["penguin_size:sex", "penguin_size:island"],
-                    MULTIPLE: True,
-                    DEFAULT_SELECTED: ["penguin_size:sex"],
                 },
             },
         },
@@ -242,6 +265,13 @@ def sql_data_inventory_fixture(rebuild_test_database):
 @pytest.fixture
 def penguin_size_csv_file():
     request_file = FileStorage(
-        stream=open(TEST_FILENAME, "rb"), filename=TEST_FILENAME,
+        stream=open(TEST_FILENAME, "rb"),
+        filename=TEST_FILENAME,
     )
     return request_file
+
+
+@pytest.fixture
+def penguin_size_df():
+    df = pd.read_csv(TEST_FILENAME, comment="#", sep=",")
+    return df

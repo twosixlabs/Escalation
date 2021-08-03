@@ -1,4 +1,4 @@
-species,island,culmen_length_mm,culmen_depth_mm,flipper_length_mm,body_mass_g,sex
-Adelie,Torgersen,39.1,18.7,181,3750,MALE
-Adelie,Torgersen,39.5,17.4,186,3800,FEMALE
-Adelie,Torgersen,40.3,18,195,3250,FEMALE
+species,island,culmen_length_mm,culmen_depth_mm,flipper_length_mm,body_mass_g,sex,image_url,author,copyright,info_url
+Adelie,Torgersen,39.1,18.7,181,3750,MALE,https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Adelie_Penguins_on_iceberg.jpg/1280px-Adelie_Penguins_on_iceberg.jpg,By Jason Auch - originally posted to Flickr as IMG_0760,CC BY 2.0,https://commons.wikimedia.org/w/index.php?curid=9703652
+Adelie,Torgersen,39.5,17.4,186,3800,FEMALE,https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Hope_Bay-2016-Trinity_Peninsula%E2%80%93Ad%C3%A9lie_penguin_%28Pygoscelis_adeliae%29_04.jpg/800px-Hope_Bay-2016-Trinity_Peninsula%E2%80%93Ad%C3%A9lie_penguin_%28Pygoscelis_adeliae%29_04.jpg,By Andrew Shiva / Wikipedia, CC BY-SA 4.0,https://commons.wikimedia.org/w/index.php?curid=46714803
+Adelie,Torgersen,40.3,18,195,3250,FEMALE,https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Cape_adere.JPG/1280px-Cape_adere.JPG,By Brocken Inaglory - Own work,CC BY-SA 3.0,https://commons.wikimedia.org/w/index.php?curid=1985680

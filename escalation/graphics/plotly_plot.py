@@ -1,35 +1,17 @@
 # Copyright [2020] [Two Six Labs, LLC]
 # Licensed under the Apache License, Version 2.0
-
+import copy
 import json
-import plotly
+import re
+
 from flask import render_template
-from graphics.graphic_class import Graphic, get_key_for_form, make_filter_dict
-from utility.constants import (
-    GROUPBY,
-    SCATTER,
-    SCATTERGL,
-    TYPE,
-    DATA,
-    LAYOUT,
-    ARRAY_STRING,
-    TRANSFORMS,
-    GROUPS,
-    HOVERTEXT,
-    AGGREGATE,
-    NO_GROUP_BY,
-    ACTIVE_SELECTORS,
-    DEFAULT_SELECTED,
-    PLOT_SPECIFIC_INFO,
-    X,
-    Y,
-    Z,
-    ERROR_X,
-    ERROR_Y,
-    ERROR_Z,
-    SELECTABLE_DATA_DICT,
-    ENTRIES,
-)
+import pandas as pd
+import plotly
+
+from graphics.graphic_plot import Graphic
+from utility.available_selectors import get_key_for_form, make_filter_dict
+from utility.constants import *
+from utility.helper_classes import NestedDict
 
 HOVER_TEMPLATE_HTML = "hover_template.html"
 
@@ -53,8 +35,17 @@ AXIS_TO_SORT_ALONG = "x"
 AUTOMARGIN = "automargin"
 HOVERMODE = "hovermode"
 CLOSEST = "closest"
-POSSIBLE_AXIS = [X, Y, Z]
+
+POSSIBLE_AXIS = [X, Y, Z, LATITUDE, LONGITUDE]
 POSSIBLE_ERROR_AXES = [ERROR_X, ERROR_Y, ERROR_Z]
+
+POSSIBLE_ATTRIBUTES_DICT = {
+    SCATTERGEO: [[MARKER, "size"], [MARKER, "color"],],
+    SCATTERMAPBOX: [[MARKER, "size"], [MARKER, "color"],],
+}
+
+PATH_TO_GROUP_BY = [TRANSFORMS, GROUPBY]
+
 
 CONFIG = "config"
 
@@ -152,7 +143,7 @@ class PlotlyPlot(Graphic):
         :param visualization_options:
         :return:
         """
-        plot_options = self.graphic_dict[PLOT_SPECIFIC_INFO]
+        plot_options = copy.deepcopy(self.plot_specific_info)
         # todo: cut off all text data to used in group by or titles to 47 charaters
         data_sorted = False
         plot_options[CONFIG] = add_config_defaults(plot_options.get(CONFIG, {}))
@@ -166,13 +157,14 @@ class PlotlyPlot(Graphic):
                     plot_options.get(LAYOUT, {})
                 )
             if not data_sorted and does_data_need_to_be_sorted(plotly_data_dict):
-                self.data.sort_values(
-                    plotly_data_dict[AXIS_TO_SORT_ALONG], inplace=True
+                self.data = (
+                    pd.DataFrame(self.data)
+                    .sort_values(plotly_data_dict[AXIS_TO_SORT_ALONG])
+                    .to_dict(LIST)
                 )
                 data_sorted = True
             for axis in POSSIBLE_AXIS:
                 if axis in plotly_data_dict:
-
                     if index == 0:
                         # if there is no label, label the columns with the first lines/scatters column names
                         layout_dict = plot_options.get(LAYOUT, {})
@@ -189,12 +181,23 @@ class PlotlyPlot(Graphic):
                     plotly_data_dict[error_axis][ARRAY_STRING] = self.data[
                         plotly_data_dict[error_axis][ARRAY_STRING]
                     ]
+
             if TRANSFORMS in plotly_data_dict:
                 plotly_data_dict[TRANSFORMS] = self.put_data_in_transforms(
                     plotly_data_dict[TRANSFORMS]
                 )
             if HOVERTEXT in plotly_data_dict:
                 plotly_data_dict = self.get_hover_data_in_plotly_form(plotly_data_dict)
+            # allow us to access keys at arbitrary depth using list of keys
+            plotly_data_dict_nested = NestedDict(plotly_data_dict)
+            for attribute in POSSIBLE_ATTRIBUTES_DICT.get(plotly_data_dict[TYPE], []):
+                value_or_col_name = plotly_data_dict_nested[attribute]
+                if (
+                    value_or_col_name
+                    and isinstance(value_or_col_name, str)
+                    and re.match(r"\w+:\w+", value_or_col_name)
+                ):
+                    plotly_data_dict_nested[attribute] = self.data[value_or_col_name]
 
         self.graph_json_str = json.dumps(
             plot_options, cls=plotly.utils.PlotlyJSONEncoder
@@ -230,9 +233,13 @@ class PlotlyPlot(Graphic):
 
         transform_list = []
         for transform_type, transform in transform_dict.items():
-            if transform_type == GROUPBY:
+            if transform_type == GROUPBY and NO_GROUP_BY not in transform[GROUPS]:
                 transform = concatenate_columns(transform)
                 transform[TYPE] = GROUPBY
+
+                # remove USER_SELECTABLE_OPTIONS if present
+                transform.pop(USER_SELECTABLE_OPTIONS, None)
+
                 transform_list.append(transform)
             elif transform_type == AGGREGATE:
                 for aggregate_dict in transform:
@@ -248,11 +255,11 @@ class PlotlyPlot(Graphic):
 
     def get_data_columns(self) -> set:
         """
-        extracts what columns of data are needed from the self.graphic_dict[PLOT_SPECIFIC_INFO]
+        extracts what columns of data are needed from the database
         :param plot_options:
         :return:
         """
-        plot_options = self.graphic_dict[PLOT_SPECIFIC_INFO]
+        plot_options = self.plot_specific_info
         set_of_column_names = set()
         for data_dict_per_plot in plot_options[DATA]:
             for axis in POSSIBLE_AXIS:
@@ -269,9 +276,11 @@ class PlotlyPlot(Graphic):
                 TRANSFORMS, {}
             ).items():
                 if transform_type == GROUPBY:
-                    set_of_column_names.update(
-                        [column_name for column_name in transform.get(GROUPS, [])]
-                    )
+                    column_names = transform.get(GROUPS, [])
+                    if NO_GROUP_BY in column_names:
+                        continue
+                    set_of_column_names.update(column_names)
+
                 elif transform_type == AGGREGATE:
                     for transform_dict in transform:
                         set_of_column_names.update(
@@ -284,56 +293,47 @@ class PlotlyPlot(Graphic):
             set_of_column_names.update(
                 [column_name for column_name in data_dict_per_plot.get(HOVERTEXT, [])]
             )
+            # allow us to access keys at arbitrary depth using list of keys
+            data_dict_per_plot_nested = NestedDict(data_dict_per_plot)
+            for attribute in POSSIBLE_ATTRIBUTES_DICT.get(data_dict_per_plot[TYPE], []):
+                value_or_col_name = data_dict_per_plot_nested[attribute]
+                # todo: how do we reliably check that the value stored here is a column name and not an integer?
+                if (
+                    value_or_col_name
+                    and isinstance(value_or_col_name, str)
+                    and re.match(r"\w+:\w+", value_or_col_name)
+                ):
+                    set_of_column_names.add(value_or_col_name)
 
         return set_of_column_names
 
-    def add_active_selectors_to_selectable_data_list(self):
-
-        super().add_active_selectors_to_selectable_data_list()
-
-        selectable_data_dict = self.graphic_dict[SELECTABLE_DATA_DICT]
-        if GROUPBY in selectable_data_dict:
-            group_by_dict = selectable_data_dict[GROUPBY]
-            selected_group_by = self.addendum_dict.get(
-                get_key_for_form(GROUPBY, ""), []
-            )
-            if NO_GROUP_BY in selected_group_by:
-                group_by_dict[ACTIVE_SELECTORS] = [NO_GROUP_BY]
-            else:
-                group_by_dict[ACTIVE_SELECTORS] = (
-                    selected_group_by
-                    or group_by_dict.get(DEFAULT_SELECTED, [NO_GROUP_BY])
-                )
-
-    def modify_graphic_dict_based_on_addendum_dict(self):
-        selectable_data_dict = self.graphic_dict[SELECTABLE_DATA_DICT]
-        if GROUPBY in selectable_data_dict:
-            selection = self.addendum_dict.get(
-                get_key_for_form(GROUPBY, "")
-            ) or selectable_data_dict[GROUPBY].get(DEFAULT_SELECTED, [NO_GROUP_BY])
-            if NO_GROUP_BY not in selection:
-                # put selection in groups in the groupby dict without changing anythong else
-                transform_dict = self.graphic_dict[PLOT_SPECIFIC_INFO][DATA][0].get(
-                    TRANSFORMS, {}
-                )
-                groupby_dict = transform_dict.get(GROUPBY, {})
-                groupby_dict[GROUPS] = selection
-                transform_dict[GROUPBY] = groupby_dict
-                self.graphic_dict[PLOT_SPECIFIC_INFO][DATA][0][
-                    TRANSFORMS
-                ] = transform_dict
+    def add_instructions_to_config_dict(self):
+        if self.plot_specific_info and self.addendum_dict:
+            for data_dict_per_plot in self.plot_specific_info.get(DATA, []):
+                data_dict_per_plot_nested = NestedDict(data_dict_per_plot)
+                group_by_dict = data_dict_per_plot_nested[PATH_TO_GROUP_BY]
+                if group_by_dict.get(USER_SELECTABLE_OPTIONS):
+                    group_by_dict[GROUPS] = self.addendum_dict.get(
+                        get_key_for_form(GROUPBY, ""), NO_GROUP_BY
+                    )
 
     def create_data_subselect_info_for_plot(self):
-
-        selectable_data_dict = self.graphic_dict.get(SELECTABLE_DATA_DICT, {})
-        if GROUPBY in selectable_data_dict:
-            group_by_dict = selectable_data_dict[GROUPBY]
-            selector_entries = group_by_dict[ENTRIES]
-            selector_entries.sort()
-            # append no_group_by to the front of the list
-            selector_entries.insert(0, NO_GROUP_BY)
-            self.select_info.append(
-                make_filter_dict(GROUPBY, group_by_dict, "", selector_entries)
-            )
-
-        super().create_data_subselect_info_for_plot()
+        for data_dict_per_plot in self.plot_specific_info.get(DATA, []):
+            data_dict_per_plot_nested = NestedDict(data_dict_per_plot)
+            group_by_dict = data_dict_per_plot_nested[PATH_TO_GROUP_BY]
+            selector_entries = group_by_dict.get(USER_SELECTABLE_OPTIONS, [])
+            if selector_entries:
+                selector_entries.sort()
+                # append no_group_by to the front of the list
+                selector_entries.insert(0, NO_GROUP_BY)
+                self.select_info.append(
+                    make_filter_dict(
+                        GROUPBY,
+                        {
+                            ACTIVE_SELECTORS: group_by_dict.get(GROUPS, []),
+                            MULTIPLE: True,
+                        },
+                        "",
+                        selector_entries,
+                    )
+                )

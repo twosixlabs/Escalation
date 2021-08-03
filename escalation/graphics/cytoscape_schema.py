@@ -1,5 +1,6 @@
 from graphics.graphic_schema import GraphicsConfigInterfaceBuilder
 from utility.constants import *
+from utility.schema_utils import conditional_dict
 
 COLOR_INFO = (
     "Colours may be specified by name (e.g. red), hex (e.g. #ff0000 or #f00), RGB (e.g. rgb(255, 0, 0)),"
@@ -29,24 +30,28 @@ def build_cytoscape_schema(column_names):
         TYPE: OBJECT,
         REQUIRED: [SOURCE, TARGET],
         OPTIONS: {DISABLE_COLLAPSE: True, REMOVE_EMPTY_PROPERTIES: True},
-        DEFAULTPROPERTIES: [SOURCE, TARGET],
+        DEFAULT_PROPERTIES: [SOURCE, TARGET],
         PROPERTIES: {
             NODE_ID: {
                 TYPE: STRING,
-                ENUM: column_names,
+                **conditional_dict(ENUM, column_names),
                 DESCRIPTION: "Node identifiers. If empty will infer from source and target data",
             },
             SOURCE: {
                 TYPE: STRING,
-                ENUM: column_names,
+                **conditional_dict(ENUM, column_names),
                 DESCRIPTION: "Source nodes for edges.",
             },
             TARGET: {
                 TYPE: STRING,
-                ENUM: column_names,
+                **conditional_dict(ENUM, column_names),
                 DESCRIPTION: "Target nodes for edges.",
             },
-            EDGE_ID: {TYPE: STRING, ENUM: column_names, DESCRIPTION: "Edge identifies"},
+            EDGE_ID: {
+                TYPE: STRING,
+                **conditional_dict(ENUM, column_names),
+                DESCRIPTION: "Edge identifies",
+            },
             ELEMENT_PROPERTIES: {
                 TYPE: ARRAY_STRING,
                 DESCRIPTION: "specify properties for each element from column of data. Matches the id of the elements "
@@ -79,7 +84,7 @@ def build_cytoscape_schema(column_names):
                         },
                         COLUMN_NAME: {
                             TYPE: STRING,
-                            ENUM: column_names,
+                            **conditional_dict(ENUM, column_names),
                             DESCRIPTION: "Column that contain the property for each element.",
                         },
                     },
@@ -126,7 +131,7 @@ def build_cytoscape_schema(column_names):
                     },
                     "positions": {
                         TYPE: OBJECT,
-                        DESCRIPTION: "layout = preset, map of (node id) => (position obj);"
+                        DESCRIPTION: "layout = preset, map of (node id) => (position mapper_dict);"
                         " or function(node){ return somPos; }",
                     },
                     "avoidOverlap": {
@@ -769,7 +774,7 @@ def build_cytoscape_schema(column_names):
                 },
                 COLUMN_NAME: {
                     TYPE: STRING,
-                    ENUM: column_names,
+                    **conditional_dict(ENUM, column_names),
                     DESCRIPTION: "Column that contain the individual style properties",
                 },
             },
@@ -784,7 +789,7 @@ class CytoscapeGraphicSchema(GraphicsConfigInterfaceBuilder):
         super().__init__(*args, **kwargs)
 
     def build_individual_plot_type_schema(self, plot_type):
-        return build_cytoscape_schema(self.possible_column_names)
+        return build_cytoscape_schema(self.data_holder.possible_column_names)
 
     @staticmethod
     def get_available_plots():

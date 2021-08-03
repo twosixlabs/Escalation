@@ -1,0 +1,7 @@
+<!--# Copyright [2020] [Two Six Labs, LLC]-->
+<!--# Licensed under the Apache License, Version 2.0-->
+
+{% set selector_name=selector['name'] %}
+{% set selector_id=plot_id ~ "_" ~ selector_name %}
+<h6>{{ selector['text'] }}</h6>
+<input class="form-control m-2" id={{ selector_id }} name={{ selector_name }} form={{ "form_" ~ plot_id }} value="{{ selector['active_selector'] }}">

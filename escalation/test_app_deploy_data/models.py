@@ -93,6 +93,10 @@ class PenguinSizeSmall(Base):
     flipper_length_mm = Column(Integer)
     body_mass_g = Column(Integer)
     sex = Column(Text)
+    image_url = Column(Text)
+    author = Column(Text)
+    copyright = Column(Text)
+    info_url = Column(Text)
 
 
 class Temperature(Base):

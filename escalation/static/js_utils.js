@@ -255,6 +255,15 @@ function get_description(path,dict){
  function new_editor(type,display_required_only,schema) {
     return new JSONEditor(document.getElementById('editor_holder_'.concat(type)),
         options={theme: 'bootstrap4',display_required_only: display_required_only, disable_edit_json:true,
-            disable_array_delete_last_row:true, iconlib: 'fontawesome5', show_errors:'always' ,schema: schema });
+            disable_array_delete_last_row:true, iconlib: 'fontawesome5', disable_collapse: true ,show_errors:'always' ,
+            schema: schema });
 }
 
+function img_url_to_img(value) {
+    if(value) {
+        return '<img src="' + value + '" height="100"  alt="' + value + '">'
+    }
+    else{
+        return 'No Image'
+    }
+  }

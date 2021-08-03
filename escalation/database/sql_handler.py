@@ -24,34 +24,16 @@ from sqlalchemy.types import (
 )
 
 from database.data_handler import DataHandler
-from database.utils import sql_handler_filter_operation
+from operator import eq, gt, ge, le, lt
 
-from utility.constants import (
-    DATA_SOURCE_TYPE,
-    DATA_LOCATION,
-    UPLOAD_ID,
-    OPTION_COL,
-    INDEX_COLUMN,
-    JOIN_KEYS,
-    TABLE_COLUMN_SEPARATOR,
-    OPTION_TYPE,
-    FILTER,
-    SELECTED,
-    FILTERED_SELECTOR,
-    COLUMN_NAME,
-    MAIN_DATA_SOURCE,
-    ADDITIONAL_DATA_SOURCES,
-    DATA_UPLOAD_METADATA,
-    ACTIVE,
-    SQLALCHEMY_DATABASE_URI,
-    SELECTOR_TYPE,
-    NUMERICAL_FILTER,
-    USERNAME,
-    UPLOAD_TIME,
-    NOTES,
-    DATETIME_FORMAT,
-    MAX_ENTRIES_FOR_FILTER_SELECTOR,
+from utility.available_selectors import (
+    get_key_for_form,
+    get_base_info_for_selector,
+    make_filter_dict,
+    convert_string_for_numerical_filter,
 )
+
+from utility.constants import *
 
 # from: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.api.types.infer_dtype.html
 SQL_DATA_TYPE_MAP = {
@@ -65,6 +47,7 @@ SQL_DATA_TYPE_MAP = {
     "bytes": Text,
     "date": DateTime,
     "datetime64": DateTime,
+    "datetime": DateTime,
     "datetime.date": Date,
     "time": Time,
     "timedelta64": Interval,
@@ -78,6 +61,30 @@ SQL_DATA_TYPE_MAP = {
 REPLACE = "replace"
 APPEND = "append"
 FAIL = "fail"
+
+OPERATIONS_FOR_NUMERICAL_FILTERS = OrderedDict(
+    [(">", gt), (">=", ge), ("=", eq), ("<=", le), ("<", lt)]
+)
+NUMERICAL_FILTER_DICT = {MAX: "<=", MIN: ">="}
+
+
+def sql_handler_filter_operation(data_column, filter_dict):
+    """
+    Applies filter operations for queries in the SqlHandler.
+    :param data_column: sql column object
+    :param filter_dict:
+    :return: an operation function that can be applied on the query when executed
+    """
+    if filter_dict[SELECTOR_TYPE] == FILTER:
+        entry_values_to_be_shown_in_plot = filter_dict[SELECTED]  # Always a list
+        # data backends may handle a single value differently from multiple values for performance reasons
+        if len(entry_values_to_be_shown_in_plot) > 1:
+            return data_column.in_(entry_values_to_be_shown_in_plot)
+        else:
+            return eq(data_column, entry_values_to_be_shown_in_plot[0])
+    elif filter_dict[SELECTOR_TYPE] == NUMERICAL_FILTER:
+        operation_function = OPERATIONS_FOR_NUMERICAL_FILTERS[filter_dict[OPERATION]]
+        return operation_function(data_column, filter_dict[VALUE])
 
 
 def connect_to_db_using_psycopg2():
@@ -126,15 +133,10 @@ def psycopg2_copy_from_stringio(conn, df, table_name):
 
 
 class SqlHandler(DataHandler):
-    def __init__(self, data_sources, only_use_active: bool = True):
-        """
-        :param only_use_active: filters the query based on the "active" value
-        in the upload_metadata table for each upload
-        :param data_sources:
-        """
-        self.data_sources = data_sources
+    def __init__(self, *arg, **kwargs):
+        super().__init__(*arg, **kwargs)
+        self.data_filters = []
         self.table_lookup_by_name = {}
-        self.only_use_active = only_use_active
         # create a flattened list from the data_sources object
         self.flat_data_sources = [
             self.data_sources[MAIN_DATA_SOURCE]
@@ -250,14 +252,8 @@ class SqlHandler(DataHandler):
             for c in column_object.columns
         }
 
-    def get_column_data(self, columns: set, filters: [] = None) -> dict:
-        """
-        :param columns: A complete set of the columns to be returned
-        :param filters: Optional list specifying how to filter the requested columns based on the row values
-        :return: a dict keyed by column name and valued with lists of row datapoints for the column
-        """
-        if filters is None:
-            filters = []
+    def get_column_data(self, columns: set, orient="list") -> dict:
+        filters = self.data_filters
         all_to_include_cols = columns.union(
             [filter_dict[OPTION_COL] for filter_dict in filters]
         )
@@ -282,7 +278,7 @@ class SqlHandler(DataHandler):
         else:
             # if the sql query returns no rows, we want an empty df to format our response
             response_as_df = pd.DataFrame(columns=columns)
-        return response_as_df[columns]
+        return response_as_df[columns].to_dict(orient)
 
     def get_table_data(self, filters: [] = None) -> dict:
         """
@@ -322,17 +318,14 @@ class SqlHandler(DataHandler):
             response_as_df = pd.DataFrame(columns=column_rename_dict.values())
         return response_as_df
 
-    def get_column_unique_entries(
-        self, cols: list, filter_active_data=True, filters: list = None
-    ) -> dict:
+    def get_column_unique_entries(self, cols, filter_active_data=True) -> dict:
         """
         :param cols: a list of column names
         :param filters: Optional list specifying how to filter the requested columns based on the row values
         :param filter_active_data: Whether to filter the column entries to only include those for active data sources
         :return: A dict keyed by column names and valued with the unique values in that column
         """
-        if filters is None:
-            filters = []
+        filters = self.data_filters
         unique_dict = {}
         for col in cols:
             renamed_col = self.sanitize_column_name(col)
@@ -359,6 +352,228 @@ class SqlHandler(DataHandler):
             response = query.limit(limit_values_returned).all()
             unique_dict[col] = [str(r[0]) for r in response if r[0] is not None]
         return unique_dict
+
+    def get_column_unique_entries_based_on_type(self, cols, filter_active_data=True):
+        """
+        We only allow numerical data types to be filtered with a numerical inequality filter,
+        and any data column with fewer than MAX_ENTRIES_FOR_FILTER_SELECTOR unique entries
+        to be filtered by identity matching
+        """
+        column_types_dict = self.get_schema_for_data_source()
+        unique_entries_dict = self.get_column_unique_entries(cols, filter_active_data)
+        numerical_types = [Integer, Float, DateTime]
+        unique_entries_dict_copy = {}
+        numerical_filter_column_names = []
+        filter_column_names = []
+        for col_name, list_of_entries in unique_entries_dict.items():
+            if any(
+                [
+                    isinstance(column_types_dict[col_name], num_type)
+                    for num_type in numerical_types
+                ]
+            ):
+                numerical_filter_column_names.append(col_name)
+            if len(list_of_entries) <= MAX_ENTRIES_FOR_FILTER_SELECTOR:
+                filter_column_names.append(col_name)
+                unique_entries_dict_copy[col_name] = list_of_entries
+        filter_dict = {
+            FILTER: filter_column_names,
+            NUMERICAL_FILTER: numerical_filter_column_names,
+        }
+        return unique_entries_dict_copy, filter_dict
+
+    def add_instructions_to_config_dict(self):
+        if self.selectable_data_dict:
+            self.add_active_selectors_to_selectable_data_list()
+            if self.addendum_dict:
+                self.add_operations_to_the_data_from_addendum()
+            else:
+                self.add_operations_to_the_data_from_defaults()
+
+    def add_active_selectors_to_selectable_data_list(self):
+        """
+        Sets which selectors are active based on user choices.
+        If none have been selected sets reasonable defaults
+        :return:
+        """
+        filter_list = self.selectable_data_dict.get(FILTER, [])
+        for index, filter_dict in enumerate(filter_list):
+
+            selected_filters = self.addendum_dict.get(
+                get_key_for_form(FILTER, index), []
+            )
+            if SHOW_ALL_ROW in selected_filters:
+                filter_dict[ACTIVE_SELECTORS] = [SHOW_ALL_ROW]
+            else:
+                filter_dict[ACTIVE_SELECTORS] = (
+                    selected_filters
+                    or filter_dict.get(DEFAULT_SELECTED)
+                    or [SHOW_ALL_ROW]
+                )
+
+        numerical_filter_list = self.selectable_data_dict.get(NUMERICAL_FILTER, [])
+        for index, numerical_filter_dict in enumerate(numerical_filter_list):
+            extrema = [MAX, MIN]
+            active_numerical_filter_dict = defaultdict(dict)
+            for extremum in extrema:
+                # pull the relevant filter info from the submitted form
+                # all values in addendum_dict are lists
+                numerical_filter_value = self.addendum_dict.get(
+                    NUMERICAL_FILTER_NUM_LOC_TYPE.format(index, extremum, VALUE)
+                )
+                active_numerical_filter_dict[extremum][VALUE] = (
+                    numerical_filter_value[0]
+                    if numerical_filter_value
+                    else numerical_filter_dict.get(extremum, "")
+                )
+
+            numerical_filter_dict[ACTIVE_SELECTORS] = active_numerical_filter_dict
+
+    def add_operations_to_the_data_from_addendum(self):
+        """
+        Adds operations to be passed to the data handlers for the data
+        Broken into two major parts read in info from selection_dict and addendum_dict and then
+         output a filter dict or change visualization_info_list or data_info_dict depending on the kind of filter
+        :selectable_data_dict: each element of the dictionary on is how to build the selector on the webpage
+        :addendum_dict: User selections form the webpage
+        :return:
+        """
+        operation_list = []
+
+        # creates an operations where only the values selected along a column will be shown in the plot
+        filter_list = self.selectable_data_dict.get(FILTER, [])
+        for index, filter_dict in enumerate(filter_list):
+            base_info_dict_for_selector = get_base_info_for_selector(
+                filter_dict, FILTER
+            )
+            selection = self.addendum_dict.get(get_key_for_form(FILTER, index))
+            if len(selection) == 0 or SHOW_ALL_ROW in selection:
+                continue
+            base_info_dict_for_selector[SELECTED] = selection
+            base_info_dict_for_selector[FILTERED_SELECTOR] = filter_dict.get(
+                FILTERED_SELECTOR, False
+            )
+            operation_list.append(base_info_dict_for_selector)
+
+        # creates an operations where only the values following an (in)equality
+        # along a column will be shown in the plot
+        numerical_filter_list = self.selectable_data_dict.get(NUMERICAL_FILTER, [])
+        for index, numerical_filter_dict in enumerate(numerical_filter_list):
+            base_info_dict_for_selector = get_base_info_for_selector(
+                numerical_filter_dict, NUMERICAL_FILTER
+            )
+            # the numerical filter contains two filters so add them separately
+            for extremum in [MAX, MIN]:
+                # get the value submitted in the web form by using its name
+                # format specified in numeric_filter.html
+                # the value is a list of length one
+                numerical_value = self.addendum_dict[
+                    NUMERICAL_FILTER_NUM_LOC_TYPE.format(index, extremum, VALUE)
+                ][0]
+                if numerical_value == "":
+                    continue
+
+                numerical_filter_info = {
+                    VALUE: convert_string_for_numerical_filter(numerical_value),
+                    OPERATION: NUMERICAL_FILTER_DICT[extremum],
+                }
+                operation_list.append(
+                    {**base_info_dict_for_selector, **numerical_filter_info}
+                )
+        self.data_filters = operation_list
+
+    def add_operations_to_the_data_from_defaults(self):
+        """
+        Adds operations to be passed to the data handlers for the data
+        Broken into two major parts read in info from selection_dict and then output a filter dict
+        :selectable_data_dict: each filter element of the dict is a list of dictionary on how to build
+        the selector on the webpage
+        :return:
+        """
+        operation_list = []
+        filter_list = self.selectable_data_dict.get(FILTER, [])
+        for index, filter_dict in enumerate(filter_list):
+            if DEFAULT_SELECTED in filter_dict:
+                base_info_dict_for_selector = get_base_info_for_selector(
+                    filter_dict, FILTER
+                )
+                selection = filter_dict.get(DEFAULT_SELECTED)
+                # make sure we don't have an empty selection list,
+                #  or a list that only contains an empty string
+                if selection and selection != [""]:
+                    base_info_dict_for_selector[SELECTED] = (
+                        selection if isinstance(selection, list) else [selection]
+                    )
+                    base_info_dict_for_selector[FILTERED_SELECTOR] = filter_dict.get(
+                        FILTERED_SELECTOR, False
+                    )
+                    operation_list.append(base_info_dict_for_selector)
+
+        numerical_filter_list = self.selectable_data_dict.get(NUMERICAL_FILTER, [])
+        for index, numerical_filter_dict in enumerate(numerical_filter_list):
+            for extremum in [MAX, MIN]:
+                numerical_value = numerical_filter_dict.get(extremum)
+                if numerical_value == "" or numerical_value is None:
+                    continue
+                base_info_dict_for_selector = get_base_info_for_selector(
+                    numerical_filter_dict, NUMERICAL_FILTER
+                )
+                numerical_filter_info = {
+                    VALUE: convert_string_for_numerical_filter(numerical_value),
+                    OPERATION: NUMERICAL_FILTER_DICT[extremum],
+                }
+                operation_list.append(
+                    {**base_info_dict_for_selector, **numerical_filter_info}
+                )
+        if operation_list:
+            self.data_filters = operation_list
+
+    def get_columns_that_need_unique_entries(self) -> set:
+        """
+        extracts what data are needed for the selectors
+        :param plot_options:
+        :return:
+        """
+        filter_list = self.selectable_data_dict.get(FILTER, [])
+        column_list = {
+            filter_dict[OPTION_COL]
+            for filter_dict in filter_list
+            if filter_dict.get(VISIBLE, True)
+        }
+        return column_list
+
+    def create_data_subselect_info_for_plot(self):
+        """
+        puts selector data in form to be read by html file
+        Broken into two major parts read in info from selection_option_dict_for_plot and then populate
+         select_info elements
+        :param plot_specification:
+        :param data_handler:
+        :return:
+        """
+        if not self.unique_entry_dict:
+            self.unique_entry_dict = self.get_column_unique_entries(
+                self.get_columns_that_need_unique_entries()
+            )
+        filter_list = self.selectable_data_dict.get(FILTER, [])
+        for index, filter_dict in enumerate(filter_list):
+            if filter_dict.get(VISIBLE, True):
+                column = filter_dict[OPTION_COL]
+
+                selector_entries = self.unique_entry_dict[column]
+                selector_entries.sort()
+                # append show_all_rows to the front of the list
+                selector_entries.insert(0, SHOW_ALL_ROW)
+                self.select_info.append(
+                    make_filter_dict(FILTER, filter_dict, index, selector_entries)
+                )
+
+        numerical_filter_list = self.selectable_data_dict.get(NUMERICAL_FILTER, [])
+        for index, numerical_filter_dict in enumerate(numerical_filter_list):
+            if numerical_filter_dict.get(VISIBLE, True):
+                self.select_info.append(
+                    make_filter_dict(NUMERICAL_FILTER, numerical_filter_dict, index)
+                )
 
 
 class DataFrameConverter:

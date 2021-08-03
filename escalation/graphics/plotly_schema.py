@@ -5,6 +5,8 @@ import json
 
 from graphics.graphic_schema import GraphicsConfigInterfaceBuilder
 from utility.constants import *
+from utility.helper_classes import NestedDict
+from utility.schema_utils import conditional_dict
 
 MODE = "mode"
 
@@ -35,6 +37,7 @@ COLOR_NAMES = [
     "blue-teal",
 ]
 
+
 SUPPORTED_PLOTS = [
     {GRAPHIC_NAME: "Scatter or Line Plot", VALUE: SCATTER},
     {GRAPHIC_NAME: "Bar Plot", VALUE: BAR},
@@ -46,7 +49,20 @@ SUPPORTED_PLOTS = [
     {GRAPHIC_NAME: "2D Histogram", VALUE: HISTOGRAM2D},
     {GRAPHIC_NAME: "3D Scatter or Line Plot", VALUE: SCATTER3D},
     {GRAPHIC_NAME: "3D Mesh Plot", VALUE: MESH3D},
+    {GRAPHIC_NAME: "Geographical Scatter", VALUE: SCATTERGEO,},
+    {GRAPHIC_NAME: "Mapbox Scatter", VALUE: SCATTERMAPBOX},
 ]
+
+COLUMN_OPTION_DICT = {
+    SCATTERGEO: [
+        [PROPERTIES, DATA, ITEMS, PROPERTIES, MARKER, PROPERTIES, "size"],
+        [PROPERTIES, DATA, ITEMS, PROPERTIES, MARKER, PROPERTIES, "color"],
+    ],
+    SCATTERMAPBOX: [
+        [PROPERTIES, DATA, ITEMS, PROPERTIES, MARKER, PROPERTIES, "size"],
+        [PROPERTIES, DATA, ITEMS, PROPERTIES, MARKER, PROPERTIES, "color"],
+    ],
+}
 
 
 class PlotlyGraphicSchema(GraphicsConfigInterfaceBuilder):
@@ -62,7 +78,7 @@ class PlotlyGraphicSchema(GraphicsConfigInterfaceBuilder):
             "required": [DATA],
             OPTIONS: {DISABLE_COLLAPSE: True, REMOVE_EMPTY_PROPERTIES: True},
             "defaultProperties": [DATA, LAYOUT],
-            "properties": {
+            PROPERTIES: {
                 DATA: {
                     "type": "array",
                     "description": "list of graphs to be plotted on a single plot",
@@ -96,23 +112,31 @@ class PlotlyGraphicSchema(GraphicsConfigInterfaceBuilder):
                                     "scatter3d",
                                     "surface",
                                     "mesh3d",
+                                    SCATTERGEO,
+                                    SCATTERMAPBOX,
                                 ],
                                 OPTIONS: {HIDDEN: True},
                             },
                             X: {
                                 "type": "string",
                                 TITLE: "Data on X Axis",
-                                "enum": self.possible_column_names,
+                                **conditional_dict(
+                                    ENUM, self.data_holder.possible_column_names
+                                ),
                             },
                             Y: {
                                 "type": "string",
                                 TITLE: "Data on Y Axis",
-                                "enum": self.possible_column_names,
+                                **conditional_dict(
+                                    ENUM, self.data_holder.possible_column_names
+                                ),
                             },
                             Z: {
                                 TYPE: "string",
                                 TITLE: "Data on Z Axis",
-                                ENUM: self.possible_column_names,
+                                **conditional_dict(
+                                    ENUM, self.data_holder.possible_column_names
+                                ),
                             },
                             ERROR_X: {
                                 TYPE: "object",
@@ -120,7 +144,9 @@ class PlotlyGraphicSchema(GraphicsConfigInterfaceBuilder):
                                     ARRAY_STRING: {
                                         "type": "string",
                                         TITLE: "Data column to use for error bars",
-                                        ENUM: self.possible_column_names,
+                                        **conditional_dict(
+                                            ENUM, self.data_holder.possible_column_names
+                                        ),
                                     },
                                 },
                                 TITLE: "Symmetric error bars in the X axis",
@@ -131,7 +157,9 @@ class PlotlyGraphicSchema(GraphicsConfigInterfaceBuilder):
                                     ARRAY_STRING: {
                                         "type": "string",
                                         TITLE: "Data column to use for error bars",
-                                        ENUM: self.possible_column_names,
+                                        **conditional_dict(
+                                            ENUM, self.data_holder.possible_column_names
+                                        ),
                                     },
                                 },
                                 TITLE: "Symmetric error bars in the Y axis",
@@ -142,10 +170,26 @@ class PlotlyGraphicSchema(GraphicsConfigInterfaceBuilder):
                                     ARRAY_STRING: {
                                         "type": "string",
                                         TITLE: "Data column to use for error bars",
-                                        ENUM: self.possible_column_names,
+                                        **conditional_dict(
+                                            ENUM, self.data_holder.possible_column_names
+                                        ),
                                     },
                                 },
                                 TITLE: "Symmetric error bars in the Z axis",
+                            },
+                            LATITUDE: {
+                                TYPE: "string",
+                                TITLE: "Data column with latitude values",
+                                **conditional_dict(
+                                    ENUM, self.data_holder.possible_column_names
+                                ),
+                            },
+                            LONGITUDE: {
+                                TYPE: "string",
+                                TITLE: "Data column with longitude values",
+                                **conditional_dict(
+                                    ENUM, self.data_holder.possible_column_names
+                                ),
                             },
                             HOVERTEXT: {
                                 DESCRIPTION: "Differs from the plotly documentation."
@@ -158,7 +202,9 @@ class PlotlyGraphicSchema(GraphicsConfigInterfaceBuilder):
                                 "items": {
                                     "type": "string",
                                     TITLE: "Column Name",
-                                    "enum": self.possible_column_names,
+                                    **conditional_dict(
+                                        ENUM, self.data_holder.possible_column_names
+                                    ),
                                 },
                             },
                             MODE: {
@@ -227,7 +273,13 @@ class PlotlyGraphicSchema(GraphicsConfigInterfaceBuilder):
                                                 "items": {
                                                     "type": "string",
                                                     TITLE: "Column Name",
-                                                    "enum": self.possible_column_names,
+                                                    **conditional_dict(
+                                                        ENUM,
+                                                        self.data_holder.filter_dict[
+                                                            FILTER
+                                                        ],
+                                                        [NO_GROUP_BY],
+                                                    ),
                                                 },
                                             },
                                             "Styles": {
@@ -249,22 +301,28 @@ class PlotlyGraphicSchema(GraphicsConfigInterfaceBuilder):
                                                             # identity_callback; defined in the JS) whenever COLUMN_NAME is changed,
                                                             # it will also store the value of COLUMN_NAME to a variable called COLUMN_NAME
                                                             #  to be used by the JS
-                                                            "watch": {
-                                                                GROUPS: ".".join(
-                                                                    [
-                                                                        "groupby_id",
-                                                                        GROUPS,
-                                                                    ]
-                                                                ),
-                                                            },
-                                                            "enumSource": [
+                                                            **(
                                                                 {
-                                                                    "source": self.unique_entry_values_list,
-                                                                    "filter": COLUMN_VALUE_FILTER,
-                                                                    "title": CALLBACK,
-                                                                    "value": CALLBACK,
+                                                                    "watch": {
+                                                                        GROUPS: ".".join(
+                                                                            [
+                                                                                "groupby_id",
+                                                                                GROUPS,
+                                                                            ]
+                                                                        ),
+                                                                    },
+                                                                    "enumSource": [
+                                                                        {
+                                                                            "source": self.data_holder.unique_entry_values_list,
+                                                                            "filter": COLUMN_VALUE_FILTER,
+                                                                            "title": CALLBACK,
+                                                                            "value": CALLBACK,
+                                                                        }
+                                                                    ],
                                                                 }
-                                                            ],
+                                                                if self.data_holder.unique_entry_values_list
+                                                                else {}
+                                                            ),
                                                         },
                                                         "value": {
                                                             TYPE: "object",
@@ -280,6 +338,24 @@ class PlotlyGraphicSchema(GraphicsConfigInterfaceBuilder):
                                                             },
                                                         },
                                                     },
+                                                },
+                                            },
+                                            USER_SELECTABLE_OPTIONS: {
+                                                TYPE: "array",
+                                                TITLE: "Interactive Group By Selector",
+                                                DESCRIPTION: "A non-empty array will allow a user to"
+                                                "change the group by of the visualization on the dashboard. The "
+                                                "elements of the array specify columns available to the user.",
+                                                OPTIONS: {DISABLE_COLLAPSE: True},
+                                                "items": {
+                                                    "type": "string",
+                                                    TITLE: "Column Name",
+                                                    **conditional_dict(
+                                                        ENUM,
+                                                        self.data_holder.filter_dict[
+                                                            FILTER
+                                                        ],
+                                                    ),
                                                 },
                                             },
                                         },
@@ -314,7 +390,10 @@ class PlotlyGraphicSchema(GraphicsConfigInterfaceBuilder):
                                                     "items": {
                                                         "type": "string",
                                                         TITLE: "Column Name",
-                                                        "enum": self.possible_column_names,
+                                                        **conditional_dict(
+                                                            ENUM,
+                                                            self.data_holder.possible_column_names,
+                                                        ),
                                                     },
                                                 },
                                                 AGGREGATIONS: {
@@ -415,7 +494,7 @@ class PlotlyGraphicSchema(GraphicsConfigInterfaceBuilder):
         :return: dict_of_schemas, schema_to_type
         """
         # If the element is not in required we will delete it
-        programmed_data_options = [TYPE, X, Y, Z, MODE]
+        programmed_data_options = [TYPE, X, Y, Z, MODE, LATITUDE, LONGITUDE]
 
         directions_for_building_schemas = {
             SCATTER: {
@@ -426,22 +505,8 @@ class PlotlyGraphicSchema(GraphicsConfigInterfaceBuilder):
                 },
             },
             BAR: {ENUM: [BAR], REQUIRED: [TYPE, X, Y],},
-            BOX: {
-                ENUM: [BOX],
-                REQUIRED: [TYPE, X, Y],
-                DESCRIPTION: {
-                    TYPE: "To show more than one box in the plot, "
-                    'set "group by" in visualization options below',
-                },
-            },
-            VIOLIN: {
-                ENUM: [VIOLIN],
-                REQUIRED: [TYPE, Y],
-                DESCRIPTION: {
-                    TYPE: "To show more than one violin in the plot, "
-                    'set "group by" in visualization options below',
-                },
-            },
+            BOX: {ENUM: [BOX], REQUIRED: [TYPE, X, Y],},
+            VIOLIN: {ENUM: [VIOLIN], REQUIRED: [TYPE, X, Y],},
             HISTOGRAM: {ENUM: [HISTOGRAM], REQUIRED: [TYPE, X],},
             CONTOUR: {ENUM: [CONTOUR], REQUIRED: [TYPE, X, Y, Z],},
             HISTOGRAM2D: {
@@ -457,6 +522,14 @@ class PlotlyGraphicSchema(GraphicsConfigInterfaceBuilder):
                 },
             },
             SCATTER3D: {ENUM: [SCATTER3D], REQUIRED: [TYPE, X, Y, Z, MODE],},
+            SCATTERGEO: {
+                ENUM: [SCATTERGEO],
+                REQUIRED: [TYPE, LATITUDE, LONGITUDE, MODE],
+            },
+            SCATTERMAPBOX: {
+                ENUM: [SCATTERMAPBOX],
+                REQUIRED: [TYPE, LATITUDE, LONGITUDE, MODE],
+            },
         }
 
         plot_schema = self.build_generic_plotly_plot_schema_template()
@@ -486,7 +559,10 @@ class PlotlyGraphicSchema(GraphicsConfigInterfaceBuilder):
             ] = description
 
         plot_schema = merge_with_plotly_api(plot_schema, plot_type)
-
+        if plot_type in COLUMN_OPTION_DICT:
+            plot_schema = self.add_column_name_as_option(
+                plot_schema, COLUMN_OPTION_DICT[plot_type]
+            )
         return plot_schema
 
     def build_data_filter_schema(self):
@@ -495,21 +571,27 @@ class PlotlyGraphicSchema(GraphicsConfigInterfaceBuilder):
             "type": "object",
             "title": "Group By Selector",
             "required": [ENTRIES],
-            OPTIONS: {COLLAPSED: self.collapse_dict[GROUPBY_SELECTOR]},
+            OPTIONS: {COLLAPSED: self.data_holder.collapse_dict[GROUPBY_SELECTOR]},
             "additionalProperties": False,
             PROPERTIES: {
                 ENTRIES: {
                     "type": "array",
                     OPTIONS: {DISABLE_COLLAPSE: True},
                     TITLE: "Entries",
-                    "items": {"type": "string", "enum": self.filter_column_names,},
+                    "items": {
+                        "type": "string",
+                        "enum": self.data_holder.filter_dict[FILTER],
+                    },
                 },
                 "multiple": {"type": "boolean"},
                 DEFAULT_SELECTED: {
                     "type": "array",
                     TITLE: "Default Selected",
                     "description": "optional, default filter, list of column values",
-                    "items": {"type": "string", "enum": self.filter_column_names,},
+                    "items": {
+                        "type": "string",
+                        "enum": self.data_holder.filter_dict[FILTER],
+                    },
                 },
             },
         }
@@ -518,6 +600,32 @@ class PlotlyGraphicSchema(GraphicsConfigInterfaceBuilder):
     @staticmethod
     def get_available_plots():
         return SUPPORTED_PLOTS
+
+    def add_column_name_as_option(self, plot_schema, paths):
+        def add_column_names_to_schema(path):
+            """
+            Adds an option to pick from the list of column names in the database to the schema at path.
+            Done inplace
+            :param path:
+            :return:
+            """
+            plot_schema_nested = NestedDict(plot_schema)
+            child_dict = plot_schema_nested[path]
+            new_dict = {DESCRIPTION: child_dict.pop(DESCRIPTION, ""), ANYOF: []}
+            child_dict[TITLE] = child_dict[TYPE]
+            new_dict[ANYOF].append(child_dict)
+            new_dict[ANYOF].append(
+                {
+                    TYPE: "string",
+                    TITLE: "Column Name",
+                    **conditional_dict(ENUM, self.data_holder.possible_column_names),
+                }
+            )
+            plot_schema_nested[path] = new_dict
+
+        for cur_path in paths:
+            add_column_names_to_schema(cur_path)
+        return plot_schema
 
 
 def merge_with_plotly_api(schema_dict: dict, plot_type: str) -> dict:

@@ -1,5 +1,6 @@
 {
     "plot_manager": "seaborn",
+    "plot_type": "scatterplot",
     "data_sources": {
         "main_data_source": {"data_source_type": "penguin_size"}
     },

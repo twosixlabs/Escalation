@@ -10,15 +10,17 @@ import pandas as pd
 from sqlacodegen.codegen import CodeGenerator
 
 from controller import get_data_for_page
+from database.available_backends import AVAILABLE_BACKEND_SCHEMAS
 from database.sql_handler import CreateTablesFromCSVs, REPLACE, SqlDataInventory
-from graphics.graphic_schema import GraphicsConfigInterfaceBuilder
-from graphics.utils.available_graphics import (
+from graphics.available_graphics import (
     PLOT_DELIMITER,
     get_all_available_graphics,
     AVAILABLE_GRAPHICS,
 )
 from utility.constants import *
 from utility.exceptions import ValidationError
+from utility.schema_class import ConfigInterfaceBuilder
+from utility.schema_utils import get_data_sources_and_column_names
 from utility.wizard_utils import (
     load_graphic_config_dict,
     save_main_config_dict,
@@ -30,10 +32,8 @@ from utility.wizard_utils import (
     extract_data_sources_from_config,
     copy_data_from_form_to_config,
     make_page_dict_for_main_config,
-    generate_collapse_dict_from_graphic_component_dict,
-    get_default_collapse_dict,
 )
-from views.file_upload import upload_page
+from views.file_upload import upload_page, load_csvfile, apply_file_transforms
 
 
 GRAPHIC_CONFIG_EDITOR_HTML = "wizard_graphic_config_editor.html"
@@ -107,15 +107,20 @@ def modify_layout():
 
 @wizard_blueprint.route("/wizard/graphic/landing", methods=("POST",))
 def graphic_landing_setup():
+    data_schema_class = AVAILABLE_BACKEND_SCHEMAS[
+        current_app.config[APP_CONFIG_JSON][DATA_BACKEND]
+    ]
+    data_sources, possible_column_names = get_data_sources_and_column_names()
+    data_source_schema = data_schema_class.build_data_sources_schema(
+        data_sources, possible_column_names
+    )
     return render_template(
         GRAPHIC_CONFIG_LANDING_PAGE,
         page_id=request.form[PAGE_ID],
         graphic_status=request.form[GRAPHIC_STATUS],
         graphic_path=request.form[GRAPHIC],
         plot_dict=get_all_available_graphics(),
-        data_source_schema=json.dumps(
-            GraphicsConfigInterfaceBuilder.get_wizard_data_source_schema()
-        ),
+        data_source_schema=json.dumps(data_source_schema),
     )
 
 
@@ -124,12 +129,10 @@ def graphic_config_setup():
     graphic_status = request.form[GRAPHIC_STATUS]
     graphic_dict = {}
 
-    collapse_dict = get_default_collapse_dict()
     if graphic_status in [COPY, OLD]:
         graphic_dict = json.loads(load_graphic_config_dict(request.form[GRAPHIC]))
         plot_manager = graphic_dict[PLOT_MANAGER]
         plot_type = graphic_dict[PLOT_TYPE]
-        collapse_dict = generate_collapse_dict_from_graphic_component_dict(graphic_dict)
     else:
         plot_manager, plot_type = request.form[PLOT_TYPE].split(PLOT_DELIMITER)
         graphic_dict[PLOT_MANAGER] = plot_manager
@@ -137,28 +140,31 @@ def graphic_config_setup():
         graphic_dict[DATA_SOURCES] = json.loads(request.form[DATA_SOURCES])
     active_data_source_names = extract_data_sources_from_config(graphic_dict)
     kwargs = {
+        "backend": current_app.config[APP_CONFIG_JSON][DATA_BACKEND],
+        "plot_manager": plot_manager,
         "active_data_source_names": active_data_source_names,
-        "collapse_dict": collapse_dict,
     }
-    plot_info = AVAILABLE_GRAPHICS[plot_manager]
-    if plot_manager in PLOT_MANAGERS:
-        graphic_config = plot_info[SCHEMA_CLASS](**kwargs)
-    else:
-        raise ValueError(f"plot_manager {plot_manager} not recognized")
-
-    ui_formatted_schema = graphic_config.build_graphic_schemas_for_ui(plot_type)
+    config = ConfigInterfaceBuilder(**kwargs)
+    ui_formatted_schema = config.build_graphic_schemas_for_ui(plot_type)
     component_graphic_dict = graphic_dict_to_graphic_component_dict(graphic_dict)
+    graph_html_template = (
+        AVAILABLE_GRAPHICS[plot_manager][GRAPHICS_CLASS].get_graph_html_template()
+        if AVAILABLE_GRAPHICS[plot_manager].get(PREVIEW_SUPPORT, False)
+        else ""
+    )
     return render_template(
         GRAPHIC_CONFIG_EDITOR_HTML,
         # todo: rename 'schema'
-        schema=json.dumps(ui_formatted_schema, indent=4,),
+        schema=json.dumps(
+            ui_formatted_schema,
+            indent=4,
+        ),
         page_id=request.form[PAGE_ID],
         current_config=json.dumps(component_graphic_dict),
         graphic_status=graphic_status,
-        schema_selector_dict=json.dumps(graphic_config.plot_selector_dict),
         graphic_path=request.form[GRAPHIC],
-        default_entries_dict=json.dumps(graphic_config.unique_entries_dict),
-        graph_html_template=plot_info[OBJECT].get_graph_html_template(),
+        default_entries_dict=json.dumps(config.data_holder.unique_entries_dict),
+        graph_html_template=graph_html_template,
     )
 
 
@@ -288,8 +294,11 @@ def validate_wizard_upload_submission(
     mismatches = []
 
     for csvfile in csvfiles:
-        data = csv_sql_creator.get_data_from_csv(csvfile)
-        df, schema = csv_sql_creator.get_schema_from_df(data)
+        filename, file_df = load_csvfile(csvfile)
+        data_file_df = apply_file_transforms(
+            data_file_df=file_df, filename=filename, data_source_name=table_name
+        )
+        df, schema = csv_sql_creator.get_schema_from_df(data_file_df)
         if not data_file_schemas:
             data_file_schemas = schema
             base_schema_file = csvfile.filename

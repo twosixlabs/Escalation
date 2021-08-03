@@ -1,0 +1,12 @@
+<!--# Copyright [2020] [Two Six Labs, LLC]-->
+<!--# Licensed under the Apache License, Version 2.0-->
+
+{% set name=selector['name'] %}
+{% set type="datetime-local" if selector["type"]=="datetime" else "number" %}
+<h6 class="text-break">{{ selector['text'] }}</h6>
+<div class="input-group input-group-sm m-2">
+    <div class="input-group-prepend">
+        <span class="input-group-text ">{{ selector["operation"] }}</span>
+   </div>
+    <input class="form-control" name={{ name }}  type={{ type }} {{ "value="~selector['active_selector'] if selector['active_selector']}} form={{ "form_" ~ plot_id }}>
+</div>

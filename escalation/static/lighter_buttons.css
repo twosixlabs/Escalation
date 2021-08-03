@@ -3,3 +3,8 @@ button[class*="json-editor-btntype-"] {
     border-color: #cccccc;
     color: #333333;
 }
+
+select[class="form-control je-switcher"] {
+  background-color: #ffffff;
+  margin: 5px;
+}

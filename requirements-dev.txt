@@ -5,3 +5,4 @@ pytest
 selenium
 chromedriver-binary
 pytest-mock
+coverage

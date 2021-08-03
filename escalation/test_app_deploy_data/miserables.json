@@ -1,5 +1,6 @@
 {
     "plot_manager": "cytoscape",
+    "plot_type": "graphvis",
     "data_sources": {
         "main_data_source": {"data_source_type": "miserables_edges"}
     },

@@ -107,8 +107,6 @@ class SeabornGraphicSchema(GraphicsConfigInterfaceBuilder):
         super().__init__(*args, **kwargs)
 
     def build_individual_plot_type_schema(self, plot_name):
-        if self.possible_column_names:
-            self.possible_column_names.sort()
         plot_function = getattr(sns, plot_name)
         plot_function_signature = inspect.signature(plot_function).parameters
         doc_object = NumpyDocString(plot_function.__doc__)
@@ -130,7 +128,8 @@ class SeabornGraphicSchema(GraphicsConfigInterfaceBuilder):
                 and configurable_param_type == COLUMN_NAMES
             ):
                 param_dict[TYPE] = STRING
-                param_dict[ENUM] = self.possible_column_names
+                if self.data_holder.possible_column_names:
+                    param_dict[ENUM] = self.data_holder.possible_column_names
             else:
                 param_dict[TYPE] = configurable_param_type
             try:

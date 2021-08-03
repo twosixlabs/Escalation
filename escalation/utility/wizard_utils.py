@@ -10,6 +10,7 @@ from utility.constants import *
 UI_SCHEMA_PAIRS = {
     SELECTOR: SELECTABLE_DATA_DICT,
     GRAPHIC: PLOT_SPECIFIC_INFO,
+    VISUALIZATION: VISUALIZATION_OPTIONS,
 }
 
 
@@ -62,20 +63,8 @@ def graphic_dict_to_graphic_component_dict(graphic_dict):
     graphic_dict_copy = copy.deepcopy(graphic_dict)
     component_dict = {}
     for ui_name, schema_name in UI_SCHEMA_PAIRS.items():
-        component_dict[ui_name] = graphic_dict_copy.pop(schema_name, {})
+        component_dict[ui_name] = graphic_dict_copy.pop(schema_name, None)
     component_dict[GRAPHIC_META_INFO] = graphic_dict_copy
-
-    selector_components = {FILTER: [], NUMERICAL_FILTER: [], GROUPBY: []}
-
-    # add in missing elements so the options show up in the json editor
-    component_dict[GRAPHIC_META_INFO][DATA_SOURCES][
-        ADDITIONAL_DATA_SOURCES
-    ] = component_dict[GRAPHIC_META_INFO][DATA_SOURCES].get(ADDITIONAL_DATA_SOURCES, [])
-
-    for component, empty_element in selector_components.items():
-        component_dict[SELECTOR][component] = component_dict[SELECTOR].get(
-            component, empty_element
-        )
 
     return component_dict
 
@@ -93,100 +82,11 @@ def graphic_component_dict_to_graphic_dict(graphic_component_dict):
     ):
         del graphic_dict[DATA_SOURCES][ADDITIONAL_DATA_SOURCES]
 
-    graphic_dict[PLOT_SPECIFIC_INFO] = graphic_component_dict[GRAPHIC]
-
-    selector_dict = prune_selector_dict(graphic_component_dict[SELECTOR])
-    if selector_dict:
-        graphic_dict[SELECTABLE_DATA_DICT] = selector_dict
-
-    return graphic_dict
-
-
-def generate_collapse_dict_from_graphic_component_dict(graphic_dict):
-    """
-    Makes a dictionary for the ui wizard which elements should be collapsed (True)/ not collapsed (False)
-    :param graphic_dict:
-    :return:
-    """
-    HIGH_LEVEL_COLLAPSE = {
-        ADDITIONAL_DATA_SOURCES: [DATA_SOURCES, ADDITIONAL_DATA_SOURCES],
-        FILTER: [SELECTABLE_DATA_DICT, FILTER],
-        NUMERICAL_FILTER: [SELECTABLE_DATA_DICT, NUMERICAL_FILTER],
-        GROUPBY_SELECTOR: [SELECTABLE_DATA_DICT, GROUPBY],
-    }
-    FIRST_LEVEL_COLLAPSE = {
-        SELECTABLE_DATA_DICT: [FILTER, NUMERICAL_FILTER, GROUPBY_SELECTOR],
-    }
-
-    collapse_dict = {}
-    for key, path in HIGH_LEVEL_COLLAPSE.items():
-        collapse_dict[key] = (
-            False if graphic_dict.get(path[0], {}).get(path[1]) else True
-        )
-
-    for key, dependant_elements in FIRST_LEVEL_COLLAPSE.items():
-        collapse_dict[key] = all([collapse_dict[item] for item in dependant_elements])
-
-    return collapse_dict
-
-
-def get_default_collapse_dict():
-    """
-    collapse dict for a new graphic
-    :return:
-    """
-    keys = [
-        SELECTABLE_DATA_DICT,
-        ADDITIONAL_DATA_SOURCES,
-        FILTER,
-        NUMERICAL_FILTER,
-        GROUPBY_SELECTOR,
-    ]
-    return dict.fromkeys(keys, True)
-
-
-def prune_selector_dict(selector_dict):
-    """
-    Get rid of empty entries in selector dict
-    :param selector_dict:
-    :return:
-    """
-    new_selector_dict = {}
-    for sel_key, sel_info in selector_dict.items():
-        if sel_key == GROUPBY and sel_info.get(ENTRIES):
-            new_selector_dict[sel_key] = sel_info
-        if sel_key == FILTER and sel_info:
-
-            new_sel_info = []
-            # Getting rid empty DEFAULT_SELECTED
-            for filter_dict in sel_info:
-                if not filter_dict.get(DEFAULT_SELECTED, []):
-                    filter_dict.pop(DEFAULT_SELECTED, None)
-                new_sel_info.append(filter_dict)
-            new_selector_dict[sel_key] = new_sel_info
-        if sel_key == NUMERICAL_FILTER and sel_info:
-            new_sel_info = []
-            # Getting rid of null values in max and min
-            for numerical_filter_dict in sel_info:
-                for extrema in [MAX, MIN]:
-                    if numerical_filter_dict.get(extrema, None) is None:
-                        numerical_filter_dict.pop(extrema, None)
-                new_sel_info.append(numerical_filter_dict)
-                new_selector_dict[sel_key] = new_sel_info
-
-    return new_selector_dict
-
-
-def make_empty_component_dict():
-    """
-    makes an empty version of component dict to be used by wizard ui
-    :return:
-    """
-    component_dict = {}
     for ui_name, schema_name in UI_SCHEMA_PAIRS.items():
-        component_dict[ui_name] = {}
-    component_dict[GRAPHIC_META_INFO] = {}
-    return component_dict
+        ui_dict = graphic_component_dict.get(ui_name, {})
+        if ui_dict:
+            graphic_dict[schema_name] = ui_dict
+    return graphic_dict
 
 
 def get_layout_for_dashboard(available_pages_list):

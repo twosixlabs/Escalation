@@ -34,6 +34,9 @@
                 <div class="w-100" id="editor_holder_selector"></div>
             </div>
             <div class="row">
+                <div class="w-100" id="editor_holder_visualization"></div>
+            </div>
+            <div class="row">
                 <hr>
             </div>
         </div>
@@ -58,6 +61,7 @@
                  <div class="row ml-1 mt-3">
                         {% include "config_buttons.html" %}
                     </div>
+                {% if graph_html_template %}
                 <div class="row">
                     <span class="border rounded m-3 p-1">
                         <button type="button" class="btn btn-primary btn-sm m-1" data-toggle="tooltip"
@@ -68,6 +72,7 @@
                         </div>
                     </span>
                 </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -94,6 +99,7 @@
     };
     // Has to come after setting the callbacks
     set_json_editor_value(current_state);
+
 
 
     function save_json_editor_to_file(){
@@ -163,7 +169,7 @@
                     preview.style.width = width.toString().concat("px");
                     preview.style.height = height.toString().concat("px");
                     {% set plot_id_str = "preview"  %}
-                    {% include graph_html_template %}
+                    {% include graph_html_template ignore missing %}
 
                 } else if (xhr.status !== 200) {
                     success_text.innerHTML = "Failed";
@@ -219,6 +225,7 @@
         editors['graphic_meta_info'] = new_editor('header', false, dict_of_schemas['graphic_schema']);
         editors['graphic'] = new_editor('graphic', true, dict_of_schemas['plot_manager_schema']);
         editors['selector'] = new_editor('selector', false, dict_of_schemas["selector_schema"]);
+        editors['visualization'] = new_editor('visualization', false, dict_of_schemas["visualization_schema"]);
     }
     function get_json_editor_value(){
         let editor_values= new Object();
@@ -239,7 +246,9 @@
     }
     function set_json_editor_value(values_to_set) {
         for (let editor_name in editors) {
-            editors[editor_name].setValue(values_to_set[editor_name]);
+            if(values_to_set[editor_name]){
+                editors[editor_name].setValue(values_to_set[editor_name]);
+            }
         }
     }
 

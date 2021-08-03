@@ -1,0 +1,30 @@
+{
+    "plot_manager": "plotly",
+    "plot_type": "box",
+    "data_sources": {
+        "main_data_source": {"data_source_type": "accounts"}
+    },
+    "title": "Which state has the people with the most money in their bank account?",
+    "brief_desc": "This plot looks at the relationship between...",
+    "plot_specific_info": {
+        "data": [
+            {
+                "type": "box",
+                "x": "state",
+                "y": "balance"
+            }
+        ]
+    },
+    "selectable_data_dict": {
+        "filter_term": [
+            {
+                "field": "state",
+                "entries": [
+                    "IL",
+                    "VA"
+                ],
+                "user_selectable": true
+            }
+        ]
+    }
+}

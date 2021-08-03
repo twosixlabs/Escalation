@@ -1,5 +1,6 @@
 {
     "plot_manager": "plotly",
+    "plot_type": "histogram",
     "data_sources": {
     "main_data_source": {"data_source_type": "penguin_size"}
     },
@@ -10,7 +11,18 @@
             {
                 "type": "histogram",
                 "x": "penguin_size:body_mass_g",
-                "opacity": 0.5
+                "opacity": 0.5,
+                "transforms": {
+                    "groupby": {
+                        "groups": [
+                            "No Group By"
+                        ],
+                        "user_selectable_options":  [
+                            "penguin_size:sex",
+                            "penguin_size:island"
+                        ]
+                    }
+                }
             }
         ],
         "layout": {
@@ -23,12 +35,5 @@
         }
     },
     "selectable_data_dict": {
-        "groupby": {
-            "entries": [
-                "penguin_size:sex",
-                "penguin_size:island"
-            ],
-            "multiple": true
-        }
     }
 }

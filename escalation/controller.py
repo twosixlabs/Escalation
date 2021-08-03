@@ -6,91 +6,28 @@ import json
 import os
 
 from flask import current_app
-
-from database.data_handler import DataHandler
-from graphics.utils.available_graphics import AVAILABLE_GRAPHICS
 from utility.constants import *
+from utility.figure_class import Figure
 
 
 def get_data_for_page(single_page_config_dict: dict, addendum_dict=None) -> list:
     """
-
     :param single_page_config_dict: A dictionary containing all the information from the config json file
-    :param addendum_dict: json received from post. # todo: describe how this form is structured, and how we restructure it in reformat_html_form_dict
+    :param addendum_dict: json received from post.
     :return: dictionary to be read by jinja to build the page
     """
 
-    single_page_config_dict = copy.deepcopy(single_page_config_dict)
-    graphic_object_dict = make_dict_of_graphic_objects(
-        single_page_config_dict, addendum_dict
-    )
-    plot_specs = assemble_html_with_graphs_from_page_config(graphic_object_dict)
-
-    return plot_specs
-
-
-def make_dict_of_graphic_objects(
-    single_page_graphic_config_dict: dict, addendum_dict: dict = None
-) -> dict:
-    """
-    We build a page based on 2 dictonaries, what is in the config and what is submitted in the HTML form.
-    :param single_page_graphic_config_dict: Copy of part of the original config dict.
-    :param addendum_dict: e.g ImmutableMultiDict([('graphic_name', 'graphic_0'), ('selection_0', 'SHOW_ALL_ROW'),
-     ('selection_2_upper_operation', '<='), ('selection_2_upper_value', '4'))])
-    Should not pass an empty ImmutableMultiDict
-    :return: dictionary of Graphic classes
-    """
-    if addendum_dict is None:
-        addendum_dict = {}
-    graphic_object_dict = {}
-    for graphic_name, graphic_dict in single_page_graphic_config_dict.items():
-        graphic_class = AVAILABLE_GRAPHICS[graphic_dict[PLOT_MANAGER]][OBJECT]
-        graphic_object = graphic_class(
-            graphic_dict, addendum_dict.get(graphic_name, {})
-        )
-        graphic_object.add_instructions_to_config_dict()
-        graphic_object_dict[graphic_name] = graphic_object
-    return graphic_object_dict
-
-
-def assemble_html_with_graphs_from_page_config(graphic_object_dict: dict) -> list:
-    """
-    creates dictionary to be read in by the html file to plot the graphics and selectors
-    :param plot_list:
-    :param filter_dict:
-    :param axes_to_show_per_plot: keyed by html_id of plot, value is dict with some of xyz keys and valued by column name
-    :return:
-    """
+    single_page_config_dict_copy = copy.deepcopy(single_page_config_dict)
     plot_specs = []
 
-    for plot_key, graphic_object in graphic_object_dict.items():
-        plot_data_handler = current_app.config.data_handler(
-            graphic_object.graphic_dict[DATA_SOURCES]
+    if addendum_dict is None:
+        addendum_dict = {}
+    for figure_name, figure_name_dict in single_page_config_dict_copy.items():
+        figure_object = Figure(
+            figure_name, figure_name_dict, addendum_dict.get(figure_name, {})
         )
+        plot_specs.append(figure_object.make_html_dict())
 
-        data_filters = graphic_object.graphic_dict.get(DATA_FILTERS, [])
-        plot_data = plot_data_handler.get_column_data(
-            graphic_object.get_data_columns(), data_filters,
-        )
-        # makes a json file as required by js plotting documentation
-        graphic_object.data = plot_data
-        graphic_object.make_dict_for_html_plot()
-
-        unique_entry_dict = plot_data_handler.get_column_unique_entries(
-            graphic_object.get_columns_that_need_unique_entries(), filters=data_filters
-        )
-        graphic_object.unique_entry_dict = unique_entry_dict
-        graphic_object.create_data_subselect_info_for_plot()
-
-        html_dict = {
-            JINJA_GRAPH_HTML_FILE: graphic_object.get_graph_html_template(),
-            JINJA_SELECT_INFO: graphic_object.select_info,
-            GRAPHIC_TITLE: graphic_object.graphic_dict.get(GRAPHIC_TITLE, plot_key),
-            GRAPHIC_DESC: graphic_object.graphic_dict.get(GRAPHIC_DESC, ""),
-            JINJA_PLOT_INFO: graphic_object.graph_json_str,
-            PLOT_ID: plot_key,
-        }
-        plot_specs.append(html_dict)
     return plot_specs
 
 

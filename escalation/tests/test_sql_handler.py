@@ -52,8 +52,34 @@ def test_get_column_data_no_filter(get_sql_handler_fixture_small):
         "penguin_size_small:flipper_length_mm",
     }
     test_dict = get_sql_handler_fixture_small.get_column_data(data_dict)
-    assert (test_dict["penguin_size_small:body_mass_g"] == [3750, 3800, 3250]).all()
-    assert (test_dict["penguin_size_small:flipper_length_mm"] == [181, 186, 195]).all()
+    assert test_dict["penguin_size_small:body_mass_g"] == [3750, 3800, 3250]
+    assert test_dict["penguin_size_small:flipper_length_mm"] == [181, 186, 195]
+
+
+def test_get_column_data_records(get_sql_handler_fixture_small):
+    # also test apply filters to data
+    data_dict = {
+        "penguin_size_small:body_mass_g",
+        "penguin_size_small:flipper_length_mm",
+    }
+    test_dict = get_sql_handler_fixture_small.get_column_data(
+        data_dict, orient="records"
+    )
+    expected_list = [
+        {
+            "penguin_size_small:body_mass_g": 3750,
+            "penguin_size_small:flipper_length_mm": 181,
+        },
+        {
+            "penguin_size_small:body_mass_g": 3800,
+            "penguin_size_small:flipper_length_mm": 186,
+        },
+        {
+            "penguin_size_small:body_mass_g": 3250,
+            "penguin_size_small:flipper_length_mm": 195,
+        },
+    ]
+    assert expected_list == test_dict
 
 
 def test_get_column_data_filter(get_sql_handler_fixture_small):
@@ -62,12 +88,12 @@ def test_get_column_data_filter(get_sql_handler_fixture_small):
         "penguin_size_small:body_mass_g",
         "penguin_size_small:flipper_length_mm",
     }
-    test_dict = get_sql_handler_fixture_small.get_column_data(
-        data_dict,
-        [{"type": "filter", "column": "penguin_size_small:sex", "selected": ["MALE"]}],
-    )
-    assert (test_dict["penguin_size_small:body_mass_g"] == [3750]).all()
-    assert (test_dict["penguin_size_small:flipper_length_mm"] == [181]).all()
+    get_sql_handler_fixture_small.data_filters = [
+        {"type": "filter", "column": "penguin_size_small:sex", "selected": ["MALE"]}
+    ]
+    test_dict = get_sql_handler_fixture_small.get_column_data(data_dict)
+    assert test_dict["penguin_size_small:body_mass_g"] == [3750]
+    assert test_dict["penguin_size_small:flipper_length_mm"] == [181]
 
 
 def test_get_column_data_numerical_filter(get_sql_handler_fixture_small):
@@ -75,20 +101,18 @@ def test_get_column_data_numerical_filter(get_sql_handler_fixture_small):
         "penguin_size_small:body_mass_g",
         "penguin_size_small:flipper_length_mm",
     }
-    test_dict = get_sql_handler_fixture_small.get_column_data(
-        data_dict,
-        [
-            {
-                "type": "numerical_filter",
-                "column": "penguin_size_small:body_mass_g",
-                "operation": ">",
-                "value": 3250,
-            }
-        ],
-    )
+    get_sql_handler_fixture_small.data_filters = [
+        {
+            "type": "numerical_filter",
+            "column": "penguin_size_small:body_mass_g",
+            "operation": ">",
+            "value": 3250,
+        }
+    ]
+    test_dict = get_sql_handler_fixture_small.get_column_data(data_dict,)
 
-    assert list(test_dict["penguin_size_small:body_mass_g"]) == [3750, 3800]
-    assert list(test_dict["penguin_size_small:flipper_length_mm"]) == [181, 186]
+    assert test_dict["penguin_size_small:body_mass_g"] == [3750, 3800]
+    assert test_dict["penguin_size_small:flipper_length_mm"] == [181, 186]
 
 
 def test_get_column_data_numerical_filter_datetime(get_sql_handler_fixture_temperature):
@@ -96,19 +120,17 @@ def test_get_column_data_numerical_filter_datetime(get_sql_handler_fixture_tempe
         "temperature:Date",
         "temperature:Temp",
     }
-    test_dict = get_sql_handler_fixture_temperature.get_column_data(
-        data_dict,
-        [
-            {
-                "type": "numerical_filter",
-                "column": "temperature:Date",
-                "operation": "<=",
-                "value": datetime.datetime(1981, 1, 2),
-            }
-        ],
-    )
+    get_sql_handler_fixture_temperature.data_filters = [
+        {
+            "type": "numerical_filter",
+            "column": "temperature:Date",
+            "operation": "<=",
+            "value": datetime.datetime(1981, 1, 2),
+        }
+    ]
+    test_dict = get_sql_handler_fixture_temperature.get_column_data(data_dict,)
 
-    assert list(test_dict["temperature:Date"]) == [
+    assert test_dict["temperature:Date"] == [
         datetime.datetime(1981, 1, 1),
         datetime.datetime(1981, 1, 2),
     ]
@@ -162,11 +184,13 @@ def test_build_combined_data_table_with_filtered_data_source(sql_handler_fixture
     SqlDataInventory.update_data_upload_metadata_active(
         PENGUIN_SIZE, {"id_1": "ACTIVE", "id_2": "INACTIVE"}
     )
+    sql_handler_fixture.data_filters = [
+        {"type": FILTER, "column": f"{PENGUIN_SIZE}:upload_id", "selected": [1],}
+    ]
     num_rows_in_combined_table = len(
-        sql_handler_fixture.get_column_data(
-            {f"{PENGUIN_SIZE}:{ISLAND}"},
-            [{"type": FILTER, "column": f"{PENGUIN_SIZE}:upload_id", "selected": [1],}],
-        )[f"{PENGUIN_SIZE}:{ISLAND}"]
+        sql_handler_fixture.get_column_data({f"{PENGUIN_SIZE}:{ISLAND}"},)[
+            f"{PENGUIN_SIZE}:{ISLAND}"
+        ]
     )
     assert num_rows_in_inner_table == num_rows_in_combined_table
 
@@ -181,8 +205,8 @@ def test_get_available_data_sources(rebuild_test_database):
     assert len(file_names) == 7
 
 
-def get_column_names_for_data_source(get_sql_handler_fixture):
-    column_names = get_sql_handler_fixture.get_column_names_for_data_source()
+def test_get_column_names_for_data_source(sql_handler_fixture):
+    column_names = sql_handler_fixture.get_column_names_for_data_source()
     expected_column_names = {
         "mean_penguin_stat:body_mass",
         "mean_penguin_stat:culmen_depth",
@@ -209,6 +233,55 @@ def get_column_names_for_data_source(get_sql_handler_fixture):
     }
 
     assert set(column_names) == expected_column_names
+
+
+def test_get_column_unique_entries_based_on_type(sql_handler_fixture):
+    column_names = sql_handler_fixture.get_column_names_for_data_source()
+    _, filter_dict = sql_handler_fixture.get_column_unique_entries_based_on_type(
+        column_names
+    )
+    expected_filter = {
+        "penguin_size:upload_id",
+        "penguin_size:study_name",
+        "penguin_size:species",
+        "penguin_size:island",
+        "penguin_size:sex",
+        "penguin_size:region",
+        "penguin_size:culmen_depth_mm",
+        "penguin_size:culmen_length_mm",
+        "penguin_size:flipper_length_mm",
+        "penguin_size:body_mass_g",
+        "mean_penguin_stat:upload_id",
+        "mean_penguin_stat:row_index",
+        "mean_penguin_stat:study_name",
+        "mean_penguin_stat:species",
+        "mean_penguin_stat:sex",
+        "mean_penguin_stat:culmen_length",
+        "mean_penguin_stat:culmen_depth",
+        "mean_penguin_stat:flipper_length",
+        "mean_penguin_stat:body_mass",
+        "mean_penguin_stat:delta_15_n",
+        "mean_penguin_stat:delta_13_c",
+    }
+    expected_numerical_filter = {
+        "penguin_size:upload_id",
+        "penguin_size:row_index",
+        "penguin_size:culmen_depth_mm",
+        "penguin_size:culmen_length_mm",
+        "penguin_size:flipper_length_mm",
+        "penguin_size:body_mass_g",
+        "mean_penguin_stat:upload_id",
+        "mean_penguin_stat:row_index",
+        "mean_penguin_stat:culmen_length",
+        "mean_penguin_stat:culmen_depth",
+        "mean_penguin_stat:flipper_length",
+        "mean_penguin_stat:body_mass",
+        "mean_penguin_stat:delta_15_n",
+        "mean_penguin_stat:delta_13_c",
+    }
+
+    assert expected_filter == set(filter_dict[FILTER])
+    assert expected_numerical_filter == set(filter_dict[NUMERICAL_FILTER])
 
 
 def test_get_schema_for_data_source(sql_handler_fixture):
@@ -311,3 +384,229 @@ def test_get_table_data(get_sql_handler_fixture_small):
         result.sort_index().sort_index(axis=1)
         == penguin_small.sort_index().sort_index(axis=1)
     )
+
+
+def test_add_active_selectors_to_selectable_data_list_with_addendum(
+    graphic_json_fixture, addendum_dict, rebuild_test_database
+):
+    graphic_0_dict = graphic_json_fixture["graphic_0"]
+    data_handler = SqlHandler(
+        graphic_0_dict[DATA_SOURCES],
+        graphic_0_dict.get(SELECTABLE_DATA_DICT, {}),
+        addendum_dict["graphic_0"],
+    )
+    data_handler.add_active_selectors_to_selectable_data_list()
+    filter_list = data_handler.selectable_data_dict[FILTER]
+    assert len(filter_list[0][ACTIVE_SELECTORS]) == 1
+    assert "MALE" in filter_list[0][ACTIVE_SELECTORS]
+    assert len(filter_list[1][ACTIVE_SELECTORS]) == 2
+    assert "Torgersen" in filter_list[1][ACTIVE_SELECTORS]
+    assert "Dream" in filter_list[1][ACTIVE_SELECTORS]
+
+    numerical_filter_list = data_handler.selectable_data_dict[NUMERICAL_FILTER]
+    assert numerical_filter_list[0][ACTIVE_SELECTORS][MAX][VALUE] == "4"
+    assert numerical_filter_list[0][ACTIVE_SELECTORS][MIN][VALUE] == ""
+
+
+def test_add_active_selectors_to_selectable_data_list_with_SHOW_ALL_ROWS_chosen(
+    graphic_json_fixture, rebuild_test_database
+):
+    addendum_dict = {
+        "filter_0": ["MALE"],
+        "filter_1": [SHOW_ALL_ROW],
+        "numerical_filter_0_max_value": ["4"],
+        "numerical_filter_0_min_value": [""],
+    }
+    graphic_0_dict = graphic_json_fixture["graphic_0"]
+    data_handler = SqlHandler(
+        graphic_0_dict[DATA_SOURCES],
+        graphic_0_dict.get(SELECTABLE_DATA_DICT, {}),
+        addendum_dict,
+    )
+    data_handler.add_active_selectors_to_selectable_data_list()
+    selectable_data_dict = data_handler.selectable_data_dict
+    assert len(selectable_data_dict[FILTER][1][ACTIVE_SELECTORS]) == 1
+    assert SHOW_ALL_ROW in selectable_data_dict[FILTER][1][ACTIVE_SELECTORS]
+
+
+def test_add_active_selectors_to_selectable_data_list_without_addendum(
+    graphic_json_fixture, rebuild_test_database
+):
+    graphic_0_dict = graphic_json_fixture["graphic_0"]
+    graphic_0_dict[SELECTABLE_DATA_DICT][FILTER][1][DEFAULT_SELECTED] = ["Dream"]
+
+    data_handler = SqlHandler(
+        graphic_0_dict[DATA_SOURCES], graphic_0_dict.get(SELECTABLE_DATA_DICT, {}),
+    )
+    data_handler.add_active_selectors_to_selectable_data_list()
+
+    filter_list = data_handler.selectable_data_dict[FILTER]
+    assert len(filter_list[0][ACTIVE_SELECTORS]) == 1
+    assert SHOW_ALL_ROW in filter_list[0][ACTIVE_SELECTORS]
+    assert len(filter_list[1][ACTIVE_SELECTORS]) == 1
+    assert "Dream" in filter_list[1][ACTIVE_SELECTORS]
+
+    numerical_filter_list = data_handler.selectable_data_dict[NUMERICAL_FILTER]
+    assert numerical_filter_list[0][ACTIVE_SELECTORS][MAX][VALUE] == ""
+    assert numerical_filter_list[0][ACTIVE_SELECTORS][MIN][VALUE] == ""
+
+    graphic_0_dict[SELECTABLE_DATA_DICT][FILTER][1][DEFAULT_SELECTED] = []
+
+    data_handler = SqlHandler(
+        graphic_0_dict[DATA_SOURCES], graphic_0_dict.get(SELECTABLE_DATA_DICT, {}),
+    )
+    data_handler.add_active_selectors_to_selectable_data_list()
+
+    filter_list = data_handler.selectable_data_dict[FILTER]
+
+    assert len(filter_list[1][ACTIVE_SELECTORS]) == 1
+    assert SHOW_ALL_ROW in filter_list[1][ACTIVE_SELECTORS]
+
+
+def test_add_operations_to_the_data(
+    graphic_json_fixture, addendum_dict, rebuild_test_database
+):
+    graphic_json_fixture = graphic_json_fixture
+    graphic_0_dict = graphic_json_fixture["graphic_0"]
+    data_handler = SqlHandler(
+        graphic_0_dict[DATA_SOURCES],
+        graphic_0_dict.get(SELECTABLE_DATA_DICT, {}),
+        addendum_dict["graphic_0"],
+    )
+    data_handler.add_operations_to_the_data_from_addendum()
+    operations_list = data_handler.data_filters
+    assert len(operations_list) == 3
+
+    assert operations_list[0] == {
+        "type": "filter",
+        "column": "penguin_size:sex",
+        "selected": ["MALE"],
+        FILTERED_SELECTOR: False,
+    }
+    assert operations_list[1] == {
+        "type": "filter",
+        "column": "penguin_size:island",
+        "selected": ["Torgersen", "Dream"],
+        FILTERED_SELECTOR: False,
+    }
+    assert operations_list[2] == {
+        "type": "numerical_filter",
+        "column": "penguin_size:culmen_length_mm",
+        "operation": "<=",
+        "value": 4.0,
+    }
+
+
+def test_add_operations_to_the_data_from_defaults(
+    graphic_json_fixture, rebuild_test_database
+):
+    selectable_data_dict = graphic_json_fixture["graphic_0"][SELECTABLE_DATA_DICT]
+    selectable_data_dict[NUMERICAL_FILTER][0][MIN] = 2
+    graphic_0_dict = graphic_json_fixture["graphic_0"]
+    data_handler = SqlHandler(
+        graphic_0_dict[DATA_SOURCES], graphic_0_dict.get(SELECTABLE_DATA_DICT, {}),
+    )
+    data_handler.add_operations_to_the_data_from_defaults()
+    operations_list = data_handler.data_filters
+    assert len(operations_list) == 1
+
+    assert operations_list[0] == {
+        "type": "numerical_filter",
+        "column": "penguin_size:culmen_length_mm",
+        "operation": ">=",
+        "value": 2.0,
+    }
+
+
+def test_get_columns_that_need_unique_entries(
+    graphic_json_fixture, rebuild_test_database
+):
+    graphic_0_dict = graphic_json_fixture["graphic_0"]
+    data_handler = SqlHandler(
+        graphic_0_dict[DATA_SOURCES], graphic_0_dict.get(SELECTABLE_DATA_DICT, {}),
+    )
+    cols = data_handler.get_columns_that_need_unique_entries()
+    expected_cols = {"penguin_size:sex", "penguin_size:island"}
+    assert expected_cols == cols
+
+
+def test_create_data_subselect_info(graphic_json_fixture, rebuild_test_database):
+    select_dict = {
+        FILTER: [
+            {
+                "column": "penguin_size:sex",
+                "multiple": False,
+                ACTIVE_SELECTORS: ["MALE"],
+            },
+            {
+                "column": "penguin_size:island",
+                "multiple": True,
+                ACTIVE_SELECTORS: [SHOW_ALL_ROW],
+            },
+        ]
+    }
+    graphic_0_dict = graphic_json_fixture["graphic_0"]
+    sql_handler = SqlHandler(graphic_0_dict[DATA_SOURCES], {})
+    sql_handler.selectable_data_dict = select_dict
+    sql_handler.create_data_subselect_info_for_plot()
+    select_info = sql_handler.select_info
+    assert select_info[1][JINJA_SELECT_HTML_FILE] == "selector.html"
+
+    assert "MALE" in select_info[0][ACTIVE_SELECTORS]
+    assert "MALE" in select_info[0][ENTRIES]
+    assert "FEMALE" in select_info[0][ENTRIES]
+    assert "." in select_info[0][ENTRIES]  # yes this is a unique entry in the data set
+    assert SHOW_ALL_ROW in select_info[1][ACTIVE_SELECTORS]
+    assert "Biscoe" in select_info[1][ENTRIES]
+    assert select_info[1][MULTIPLE]
+    assert not select_info[0][MULTIPLE]
+
+
+def test_create_data_subselect_info_for_plot_with_defaults(
+    sql_handler_fixture, graphic_json_fixture
+):
+    graphic_0_dict = graphic_json_fixture["graphic_0"]
+    # add_active_selectors_to_selectable_data_list adds default  SHOW_ALL_ROWS to selectors
+    for selector in graphic_0_dict[SELECTABLE_DATA_DICT][FILTER]:
+        selector[ACTIVE_SELECTORS] = [SHOW_ALL_ROW]
+    numerical_filter_example_dict = {MAX: {VALUE: "3"}, MIN: {VALUE: ""}}
+    graphic_0_dict[SELECTABLE_DATA_DICT][NUMERICAL_FILTER][0][
+        ACTIVE_SELECTORS
+    ] = numerical_filter_example_dict
+
+    sql_handler = SqlHandler(graphic_0_dict[DATA_SOURCES], {})
+    sql_handler.selectable_data_dict = graphic_0_dict[SELECTABLE_DATA_DICT]
+    sql_handler.create_data_subselect_info_for_plot()
+    select_info = sql_handler.select_info
+    expected_select_info = [
+        {
+            "select_html_file": "selector.html",
+            "type": "",
+            "name": "filter_0",
+            "active_selector": [SHOW_ALL_ROW],
+            "entries": [SHOW_ALL_ROW, ".", "FEMALE", "MALE"],
+            "multiple": False,
+            TEXT: "Filter by penguin_size:sex",
+        },
+        {
+            "select_html_file": "selector.html",
+            "type": "",
+            "name": "filter_1",
+            "active_selector": [SHOW_ALL_ROW],
+            "entries": [SHOW_ALL_ROW, "Biscoe", "Dream", "Torgersen"],
+            "multiple": True,
+            TEXT: "Filter by penguin_size:island",
+        },
+        {
+            "select_html_file": "numerical_filter.html",
+            "type": "number",
+            "name": "numerical_filter_0",
+            "active_selector": numerical_filter_example_dict,
+            "entries": None,
+            "multiple": False,
+            TEXT: "Filter by penguin_size:culmen_length_mm",
+        },
+    ]
+    assert select_info[0] == expected_select_info[0]
+    assert select_info[1] == expected_select_info[1]
+    assert select_info[2] == expected_select_info[2]
